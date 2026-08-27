@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="pulp.css">
+<style>
+  body { margin: 0; background: #e9dcc6; }
+  .mono { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; }
+  .phone { width: 420px; margin: 22px auto; border: 3px solid var(--color-text); background: var(--color-bg); box-shadow: 10px 10px 0 var(--color-text); height: 840px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .statusbar { display: flex; align-items: center; padding: 7px 16px; background: var(--color-text); color: var(--color-bg); }
+  .appbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 3px solid var(--color-text); }
+  .appbar b { font-family: var(--font-display); font-size: 18px; text-transform: uppercase; flex: 1; }
+  .appbar button { min-height: 44px; min-width: 44px; }
+  .scroll { flex: 1; overflow-y: auto; padding: 18px 16px 26px; }
+  .tabs { display: flex; border-top: 3px solid var(--color-text); }
+  .tab { flex: 1; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; border: 0; background: transparent; font-family: var(--font-heading); font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--color-neutral-700); }
+  .tab + .tab { border-left: 3px solid var(--color-text); }
+  .tab.on { background: var(--color-accent); color: #EFECE3; }
+  .tab i { font-style: normal; font-family: var(--font-display); font-size: 17px; line-height: 1; }
+  .cover { background-color: var(--color-link); background-image: repeating-linear-gradient(135deg, rgba(239,236,227,0.24) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; color: #EFECE3; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 86%; overflow-y: auto; background: var(--color-bg); border-top: 3px solid var(--color-text); padding: 16px 16px 22px; }
+  .veil { position: absolute; inset: 0; background: rgba(20,17,15,0.55); }
+  .row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 3px solid var(--color-divider); align-items: center; cursor: pointer; }
+  .chip { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 12px; font-weight: 700; text-transform: uppercase; border: 2px solid var(--color-text); min-height: 48px; padding: 10px 15px; cursor: pointer; }
+  .tagchip { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 11px; font-weight: 700; text-transform: uppercase; border: 2px solid var(--color-text); padding: 4px 10px; }
+  .grab { width: 54px; height: 5px; background: var(--color-text); margin: 0 auto 14px; }
+  .starbtn { background: none; border: 0; cursor: pointer; font-size: 34px; line-height: 1; padding: 4px 7px; min-height: 48px; color: var(--color-neutral-400); }
+  .starbtn.on { color: var(--color-accent); }
+  a { color: var(--color-link); }
+  a:hover { color: var(--color-accent); }
+</style>
+</helmet>
+
+<div style="{{ theme }}">
+<div class="mono" style="text-align: center; padding: 20px 16px 0; color: #6b5b48;">BOOK HUB · MOBILE · EVERY READER SCREEN · {{ screenUp }}</div>
+
+<div class="phone">
+  <div class="statusbar"><span class="mono" style="font-weight: 700; flex: 1;">9:41</span><span class="mono" style="font-weight: 700;">{{ modeUp }}</span></div>
+
+  <sc-if value="{{ showAppbar }}" hint-placeholder-val="{{ true }}">
+    <div class="appbar">
+      <sc-if value="{{ canGoBack }}" hint-placeholder-val="{{ false }}">
+        <button class="btn btn-secondary" style="padding: 0 12px; flex: none;" onClick="{{ back }}">←</button>
+      </sc-if>
+      <b>{{ title }}</b>
+      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}">
+        <span style="{{ avatarStyle }}">{{ initials }}</span>
+      </sc-if>
+      <button class="btn btn-secondary" style="padding: 0 12px; flex: none;" onClick="{{ toggleMode }}">{{ modeIcon }}</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ unverified }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; align-items: center; gap: 10px; background: #ff3d9a; color: #14110f; border-bottom: 3px solid var(--color-text); padding: 9px 14px;">
+      <span class="mono" style="flex: 1; font-weight: 700;">EMAIL NOT VERIFIED — REVIEWS AND SHARING LOCKED</span>
+      <button class="btn btn-secondary" style="border-color: #14110f; color: #14110f; min-height: 40px;" onClick="{{ go.verify }}">Code</button>
+    </div>
+  </sc-if>
+
+  <div class="scroll">
+
+    <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+      <div class="cover" style="height: 140px; margin-bottom: 18px;"><span class="mono">HERO — COLLAGE OF COVERS</span></div>
+      <h1 style="font-size: 44px; margin: 0 0 12px;">Find your<br><span style="color: var(--color-accent);">next book</span></h1>
+      <p style="font-size: 15px; margin-bottom: 18px;">Answer three questions. Get books that actually sound like you.</p>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px; font-size: 17px;" onClick="{{ go.start }}">Get started</button>
+      <button class="btn btn-secondary" style="width: 100%; min-height: 52px; font-size: 17px; margin-top: 10px;" onClick="{{ go.search }}">Just browsing</button>
+      <div style="border-top: 3px solid var(--color-divider); margin-top: 22px; padding-top: 16px;">
+        <h4 style="margin: 0 0 8px;">Why this exists</h4>
+        <p style="font-size: 14px; margin: 0 0 16px;">I got tired of standing in a bookshop with no idea what to pick up. So I built the thing I wanted.</p>
+        <h4 style="margin: 0 0 10px;">Why read at all</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div style="border: 3px solid var(--color-divider); padding: 10px; font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Vocabulary</div>
+          <div style="border: 3px solid var(--color-divider); padding: 10px; font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Knowledge</div>
+          <div style="border: 3px solid var(--color-divider); padding: 10px; font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Imagination</div>
+          <div style="border: 3px solid var(--color-divider); padding: 10px; font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Quiet</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isStart }}" hint-placeholder-val="{{ false }}">
+      <h1 style="font-size: 34px; margin: 0 0 8px;">Welcome</h1>
+      <p style="font-size: 15px; margin-bottom: 20px;">New here, or coming back?</p>
+      <div style="border: 3px solid var(--color-text); padding: 16px; margin-bottom: 12px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">I'm new</div>
+        <p style="font-size: 13px; margin: 4px 0 14px;">Free account, then three quick questions.</p>
+        <button class="btn btn-primary" style="width: 100%; min-height: 50px;" onClick="{{ go.signup }}">Sign up</button>
+      </div>
+      <div style="border: 3px solid var(--color-divider); padding: 16px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">I've been here before</div>
+        <button class="btn btn-secondary" style="width: 100%; min-height: 50px; margin-top: 12px;" onClick="{{ go.login }}">Log in</button>
+      </div>
+      <button class="btn btn-ghost" style="margin-top: 16px; min-height: 48px;" onClick="{{ go.landing }}">Keep browsing instead</button>
+    </sc-if>
+
+    <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">STEP 1 OF 4</div>
+      <h1 style="font-size: 32px; margin: 0 0 8px;">Make your account</h1>
+      <p style="font-size: 14px; margin-bottom: 20px;">Email and a password. Then a display name and three questions.</p>
+      <div class="field" style="margin-bottom: 14px;"><label>Email address</label><input class="input" style="min-height: 50px;" placeholder="you@school.uk" value="{{ email }}" onInput="{{ setEmail }}"></div>
+      <div class="field" style="margin-bottom: 8px;"><label>Password</label><input class="input" type="password" style="min-height: 50px;" placeholder="At least 8 characters" value="{{ pw }}" onInput="{{ setPw }}"></div>
+      <sc-if value="{{ signupError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700;">{{ signupError }}</div>
+      </sc-if>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px; margin-top: 14px;" onClick="{{ submitSignup }}">Continue</button>
+      <button class="btn btn-ghost" style="width: 100%; min-height: 48px; margin-top: 10px;" onClick="{{ go.login }}">I already have an account</button>
+    </sc-if>
+
+    <sc-if value="{{ isProfileSetup }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">STEP 2 OF 4</div>
+      <h1 style="font-size: 32px; margin: 0 0 8px;">What should we call you?</h1>
+      <p style="font-size: 14px; margin-bottom: 16px;">This is the name on your reviews and shared lists. It doesn't have to be your real name.</p>
+      <div class="field" style="margin-bottom: 10px;"><label>Display name</label><input class="input" style="min-height: 50px;" placeholder="e.g. maya, or bookdragon03" value="{{ displayName }}" onInput="{{ setDisplayName }}"></div>
+      <sc-if value="{{ nameShow }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-bottom: 10px;"><div style="{{ nameChipStyle }}"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ nameMark }}</span><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">{{ nameText }}</span></div></div>
+      </sc-if>
+      <sc-if value="{{ nameIsTaken }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+          <sc-for list="{{ suggestions }}" as="g" hint-placeholder-count="3">
+            <button class="btn btn-secondary" style="min-height: 48px; font-size: 13px;" onClick="{{ g.pick }}">{{ g.label }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6; margin-bottom: 20px;">WE NEVER SHOW YOUR EMAIL ADDRESS TO ANYONE UNLESS REQUIRED BY LAW. THIS NAME IS THE ONLY NAME OTHERS SEE.</div>
+      <div style="border-top: 3px solid var(--color-divider); padding-top: 16px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Your monogram colour</div>
+        <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 12px;">PICK ONE — CHANGE IT ANY TIME</div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="{{ bigMonogram }}">{{ initials }}</div>
+          <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <sc-for list="{{ colorOpts }}" as="c" hint-placeholder-count="7">
+              <button class="btn" style="{{ c.style }}" onClick="{{ c.pick }}">{{ c.mark }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px; margin-top: 22px;" onClick="{{ submitProfile }}">Continue</button>
+      <sc-if value="{{ nameError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-top: 10px;">{{ nameError }}</div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isSurvey }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">{{ surveyKicker }}</div>
+      <h1 style="font-size: 32px; margin: 0 0 14px;">What do you like to read?</h1>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Favourite genres</div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">TAP ANY THAT SOUND LIKE YOU</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;">
+        <sc-for list="{{ genreChips }}" as="g" hint-placeholder-count="11">
+          <button class="chip" style="{{ g.style }}" onClick="{{ g.toggle }}">{{ g.label }}</button>
+        </sc-for>
+      </div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Age range</div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">PICK ONE</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;">
+        <sc-for list="{{ levelChips }}" as="l" hint-placeholder-count="3">
+          <button class="chip" style="{{ l.style }}" onClick="{{ l.pick }}">{{ l.label }}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ levelWarnShow }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px solid #C41031; padding: 12px; margin: -12px 0 22px;">
+          <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 5px;">{{ levelWarnHead }}</div>
+          <div class="mono" style="color: var(--color-problem-text); line-height: 1.7;">{{ levelWarnText }}</div>
+        </div>
+      </sc-if>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">How long?</div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">PICK ONE</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px;">
+        <sc-for list="{{ lengthOpts }}" as="p" hint-placeholder-count="5">
+          <label class="radio" style="border: 3px solid var(--color-divider); padding: 12px; min-height: 52px;"><input type="radio" name="len" checked="{{ p.on }}" onChange="{{ p.pick }}"><span class="dot"></span>{{ p.label }}</label>
+        </sc-for>
+      </div>
+      <button class="btn btn-primary" style="width: 100%; min-height: 54px; font-size: 17px;" onClick="{{ submitSurvey }}">{{ surveyCta }}</button>
+    </sc-if>
+
+    <sc-if value="{{ isVerify }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">STEP 4 OF 4</div>
+      <h1 style="font-size: 32px; margin: 0 0 8px;">One last thing</h1>
+      <p style="font-size: 14px; margin-bottom: 4px;">We've emailed <b>{{ accountEmail }}</b>. Tap the link, or type the code.</p>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 18px;">THE CODE EXPIRES IN 10 MINUTES</div>
+      <input class="input" style="min-height: 64px; font-family: var(--font-mono); font-size: 28px; font-weight: 700; letter-spacing: 0.3em; text-align: center;" placeholder="000000" value="{{ verifyCode }}" onInput="{{ setVerifyCode }}">
+      <sc-if value="{{ verifyError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-top: 10px;">{{ verifyError }}</div>
+      </sc-if>
+      <button class="btn btn-primary" style="width: 100%; min-height: 54px; margin-top: 16px;" onClick="{{ submitVerify }}">Verify my email</button>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button class="btn btn-ghost" style="flex: 1; min-height: 48px;" onClick="{{ resend }}">Send it again</button>
+        <button class="btn btn-ghost" style="flex: 1; min-height: 48px;" onClick="{{ go.signup }}">Wrong address?</button>
+      </div>
+      <sc-if value="{{ resent }}" hint-placeholder-val="{{ false }}">
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); padding: 6px 12px; margin-top: 10px;"><span class="mono" style="font-weight: 700;">SENT AGAIN</span></div>
+      </sc-if>
+      <div style="border-top: 3px solid var(--color-divider); margin-top: 20px; padding-top: 16px;">
+        <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">CAN'T FIND IT? CHECK SPAM — SCHOOL FILTERS ARE STRICT.</div>
+        <button class="btn btn-secondary" style="width: 100%; min-height: 50px;" onClick="{{ skipVerify }}">Skip — take me to my books</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+      <h1 style="font-size: 32px; margin: 0 0 8px;">Welcome back</h1>
+      <div class="field" style="margin: 16px 0 14px;"><label>Email</label><input class="input" style="min-height: 50px;" value="{{ email }}" onInput="{{ setEmail }}"></div>
+      <div class="field" style="margin-bottom: 8px;"><label>Password</label><input class="input" type="password" style="min-height: 50px;" value="{{ pw }}" onInput="{{ setPw }}"></div>
+      <sc-if value="{{ loginError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700;">{{ loginError }}</div>
+      </sc-if>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px; margin-top: 14px;" onClick="{{ submitLogin }}">Log in</button>
+      <button class="btn btn-ghost" style="width: 100%; min-height: 48px; margin-top: 10px;" onClick="{{ go.reset }}">Forgot password</button>
+      <div style="display: flex; align-items: center; gap: 10px; border-top: 3px solid var(--color-divider); margin-top: 16px; padding-top: 16px;">
+        <span style="font-size: 14px; flex: 1;">No account yet?</span>
+        <button class="btn btn-secondary" style="min-height: 48px;" onClick="{{ go.signup }}">Sign up</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReset }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ resetOpen }}" hint-placeholder-val="{{ true }}">
+        <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">PASSWORD RESET · STEP 1 OF 2</div>
+        <h1 style="font-size: 32px; margin: 0 0 8px;">Forgotten your password?</h1>
+        <p style="font-size: 14px; margin-bottom: 18px;">Enter your email and we'll send a link to set a new one.</p>
+        <div class="field"><label>Email</label><input class="input" style="min-height: 50px;" value="{{ email }}" onInput="{{ setEmail }}"></div>
+        <button class="btn btn-primary" style="width: 100%; min-height: 52px; margin-top: 16px;" onClick="{{ sendReset }}">Send reset link</button>
+      </sc-if>
+      <sc-if value="{{ resetSent }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px solid var(--color-text); padding: 20px;">
+          <h2 style="margin: 0 0 8px;">Check your email</h2>
+          <p style="font-size: 14px;">We've sent a link to set a new password. It works once and expires in an hour.</p>
+          <button class="btn btn-primary" style="width: 100%; min-height: 50px;" onClick="{{ go.newPassword }}">Open the link</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isNewPassword }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">PASSWORD RESET · STEP 2 OF 2</div>
+      <h1 style="font-size: 32px; margin: 0 0 14px;">Set a new password</h1>
+      <div class="field" style="margin-bottom: 14px;"><label>New password</label><input class="input" type="password" style="min-height: 50px;" placeholder="At least 8 characters" value="{{ np1 }}" onInput="{{ setNp1 }}"></div>
+      <div class="field" style="margin-bottom: 8px;"><label>Type it again</label><input class="input" type="password" style="min-height: 50px;" value="{{ np2 }}" onInput="{{ setNp2 }}"></div>
+      <sc-if value="{{ pwError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700;">{{ pwError }}</div>
+      </sc-if>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px; margin-top: 16px;" onClick="{{ savePassword }}">Save and log in</button>
+    </sc-if>
+
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+      <h1 style="font-size: 30px; margin: 0 0 6px;">Hello, {{ name }}</h1>
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 14px;">{{ basedOn }}</div>
+      <sc-if value="{{ hasRead }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; gap: 10px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); padding: 8px 14px; margin-bottom: 18px;">
+          <span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">✓ {{ finishedLine }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasReading }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px; margin-bottom: 10px;">On the go</div>
+        <div style="border: 3px solid var(--color-text); margin-bottom: 20px;">
+          <sc-for list="{{ reading }}" as="b" hint-placeholder-count="1">
+            <div style="display: flex; gap: 12px; padding: 12px; align-items: center; border-bottom: 3px solid var(--color-divider); cursor: pointer;" onClick="{{ b.open }}">
+              <div class="cover" style="width: 42px; height: 62px; flex: none;"></div>
+              <div style="flex: 1;">
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ b.title }}</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                  <div style="flex: 1; height: 10px; border: 2px solid var(--color-text);"><div style="{{ b.barStyle }}"></div></div>
+                  <span class="mono" style="color: var(--color-neutral-700);">{{ b.pct }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px; flex: 1;">Picked for you</div>
+        <button class="btn btn-ghost" onClick="{{ go.recs }}">See all</button>
+      </div>
+      <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+        <sc-for list="{{ recsStrip }}" as="b" hint-placeholder-count="4">
+          <div style="width: 118px; flex: none; cursor: pointer;" onClick="{{ b.open }}">
+            <div class="cover" style="aspect-ratio: 2/3; border: 3px solid var(--color-text);"><span class="mono">COVER</span></div>
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 14px; line-height: 1.15; margin-top: 6px;">{{ b.title }}</div>
+            <span class="mono" style="color: var(--color-neutral-700);">{{ b.rating }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+        <div style="border: 3px solid var(--color-text); background: #c6f24e; color: #14110f; padding: 10px 12px; cursor: pointer;" onClick="{{ go.tracker }}"><div style="font-family: var(--font-display); font-size: 26px; line-height: 1;">{{ counts.read }}</div><div class="mono" style="font-weight: 700;">READ</div></div>
+        <div style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; padding: 10px 12px; cursor: pointer;" onClick="{{ go.tracker }}"><div style="font-family: var(--font-display); font-size: 26px; line-height: 1;">{{ counts.reading }}</div><div class="mono" style="font-weight: 700;">READING</div></div>
+        <div style="border: 3px solid var(--color-text); background: #1B3BFF; color: #EFECE3; padding: 10px 12px; cursor: pointer;" onClick="{{ go.tracker }}"><div style="font-family: var(--font-display); font-size: 26px; line-height: 1;">{{ counts.want }}</div><div class="mono" style="font-weight: 700;">WANT</div></div>
+        <div style="border: 3px solid var(--color-text); padding: 10px 12px; cursor: pointer;" onClick="{{ go.lists }}"><div style="font-family: var(--font-display); font-size: 26px; line-height: 1;">{{ counts.lists }}</div><div class="mono" style="font-weight: 700; color: var(--color-neutral-700);">LISTS</div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRecs }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 12px;">{{ basedOn }}</div>
+      <button class="btn btn-secondary" style="width: 100%; min-height: 48px; margin-bottom: 14px;" onClick="{{ go.editSurvey }}">Edit my answers</button>
+      <sc-for list="{{ recs }}" as="b" hint-placeholder-count="5">
+        <div class="row" onClick="{{ b.open }}">
+          <div class="cover" style="width: 56px; height: 82px; flex: none;"><span class="mono">COVER</span></div>
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px; line-height: 1.15;">{{ b.title }}</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin: 3px 0 6px;">{{ b.meta }}</div>
+            <sc-if value="{{ b.hasBadge }}" hint-placeholder-val="{{ false }}">
+              <span class="tagchip" style="{{ b.badgeStyle }}">{{ b.badgeLabel }}</span>
+            </sc-if>
+          </div>
+          <span class="mono" style="color: var(--color-accent-700); font-weight: 700;">›</span>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+        <input class="input" style="flex: 1; min-height: 50px;" placeholder="Title or author" value="{{ query }}" onInput="{{ setQuery }}">
+        <button class="btn btn-secondary" style="flex: none; min-height: 50px;" onClick="{{ openFilters }}">Filters</button>
+      </div>
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
+        <span class="mono" style="color: var(--color-neutral-700);">{{ resultCount }}</span>
+        <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+          <button class="btn btn-ghost" onClick="{{ clearFilters }}">Clear</button>
+        </sc-if>
+      </div>
+      <sc-for list="{{ results }}" as="b" hint-placeholder-count="5">
+        <div class="row" onClick="{{ b.open }}">
+          <div class="cover" style="width: 56px; height: 82px; flex: none;"><span class="mono">COVER</span></div>
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px; line-height: 1.15;">{{ b.title }}</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin: 3px 0 6px;">{{ b.meta }}</div>
+            <sc-if value="{{ b.hasBadge }}" hint-placeholder-val="{{ false }}">
+              <span class="tagchip" style="{{ b.badgeStyle }}">{{ b.badgeLabel }}</span>
+            </sc-if>
+          </div>
+          <span class="mono" style="color: var(--color-accent-700); font-weight: 700;">›</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ manyResults }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 16px;">
+          <button class="btn btn-secondary" style="min-height: 48px; flex: none;" onClick="{{ prevResults }}">←</button>
+          <span class="mono" style="flex: 1; text-align: center; color: var(--color-neutral-700);">{{ resultPageLabel }} · 5 A PAGE</span>
+          <button class="btn btn-secondary" style="min-height: 48px; flex: none;" onClick="{{ nextResults }}">→</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px dashed var(--color-divider); padding: 26px; text-align: center; margin-top: 14px;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Nothing matched</div>
+          <p style="font-size: 13px; margin: 6px 0 14px;" class="text-muted">Try fewer filters, or ask us to add the book.</p>
+          <button class="btn btn-secondary" style="min-height: 48px;" onClick="{{ go.request }}">Request a book</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isBook }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 14px; margin-bottom: 16px;">
+        <div class="cover" style="width: 104px; height: 152px; flex: none; border: 3px solid var(--color-text);"><span class="mono">COVER</span></div>
+        <div style="flex: 1;">
+          <div style="font-family: var(--font-display); font-size: 26px; line-height: 0.95; text-transform: uppercase;">{{ book.title }}</div>
+          <div style="font-size: 14px; margin: 4px 0 8px;">{{ book.author }}</div>
+          <span style="background: var(--color-text); color: var(--color-bg); font-family: var(--font-display); font-size: 17px; padding: 2px 8px;">{{ book.rating }}</span>
+          <div class="mono" style="color: var(--color-neutral-700); margin-top: 6px;">{{ book.reviewCount }}</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+        <sc-for list="{{ book.tags }}" as="t" hint-placeholder-count="3"><span class="tagchip">{{ t }}</span></sc-for>
+      </div>
+      <p style="font-size: 14px; margin-bottom: 18px;">{{ book.summary }}</p>
+      <div style="border-top: 3px solid var(--color-divider); padding-top: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px; flex: 1;">Reviews</div>
+          <button class="btn btn-primary" style="min-height: 48px;" onClick="{{ writeReview }}">{{ reviewCta }}</button>
+        </div>
+        <sc-for list="{{ book.reviews }}" as="r" hint-placeholder-count="2">
+          <div style="border: 3px solid var(--color-divider); padding: 12px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ r.who }}</div>
+              <span class="mono" style="color: var(--color-neutral-700);">{{ r.rating }}</span>
+            </div>
+            <p style="font-size: 13px; margin: 6px 0 0;">{{ r.text }}</p>
+            <sc-if value="{{ r.mine }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 6px; margin-top: 8px;">
+                <button class="btn btn-ghost" style="min-height: 44px;" onClick="{{ r.edit }}">Edit</button>
+                <button class="btn btn-ghost" style="min-height: 44px; color: var(--color-problem-text);" onClick="{{ r.del }}">Delete</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ r.canReport }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 6px; margin-top: 8px;">
+                <button class="btn btn-ghost" style="min-height: 44px;" onClick="{{ r.report }}">Report review</button>
+                <button class="btn btn-ghost" style="min-height: 44px;" onClick="{{ r.reportUser }}">Report reader</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 6px;">REVIEWING</div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 21px; margin-bottom: 16px;">{{ book.title }}</div>
+      <sc-if value="{{ reviewBlocked }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 14px; margin-bottom: 16px;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px; margin-bottom: 4px;">This one can't be posted</div>
+          <p style="font-size: 13px; margin: 0;">Reviews are public and plenty of younger readers use this site. Have another go without the offensive language — your words are still below.</p>
+        </div>
+      </sc-if>
+      <div class="field" style="margin-bottom: 16px;">
+        <label>Your rating</label>
+        <div style="display: flex; gap: 2px; margin-left: -7px;">
+          <sc-for list="{{ starPicker }}" as="s" hint-placeholder-count="5">
+            <button class="starbtn {{ s.cls }}" onClick="{{ s.pick }}">★</button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom: 14px;">
+        <label>What did you think?</label>
+        <textarea class="input" style="min-height: 120px;" placeholder="What did you like? Who would enjoy it?" value="{{ draftText }}" onInput="{{ setDraftText }}"></textarea>
+      </div>
+      <sc-if value="{{ reviewError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 12px;">{{ reviewError }}</div>
+      </sc-if>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px;" onClick="{{ postReview }}">Post review</button>
+      <div class="mono" style="color: var(--color-neutral-700); margin-top: 12px;">POSTED REVIEWS ARE PUBLIC · YOU CAN EDIT YOURS LATER</div>
+    </sc-if>
+
+    <sc-if value="{{ isTracker }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; border: 3px solid var(--color-text); margin-bottom: 16px;">
+        <sc-for list="{{ shelfTabs }}" as="t" hint-placeholder-count="3">
+          <button style="{{ t.style }}" onClick="{{ t.pick }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ shelfEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px dashed var(--color-divider); padding: 30px; text-align: center;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Nothing here yet</div>
+          <p style="font-size: 13px; margin: 6px 0 14px;" class="text-muted">{{ shelfEmptyMsg }}</p>
+          <button class="btn btn-secondary" style="min-height: 48px;" onClick="{{ go.search }}">Browse books</button>
+        </div>
+      </sc-if>
+      <sc-for list="{{ shelfBooks }}" as="b" hint-placeholder-count="3">
+        <div class="row" onClick="{{ b.open }}">
+          <div class="cover" style="width: 44px; height: 64px; flex: none;"></div>
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ b.title }}</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ b.meta }}</div>
+          </div>
+          <span class="mono" style="color: var(--color-accent-700); font-weight: 700;">›</span>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isLists }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ myLists }}" as="l" hint-placeholder-count="2">
+        <div class="row" onClick="{{ l.open }}">
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ l.name }}</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ l.meta }}</div>
+          </div>
+          <span class="tagchip" style="{{ l.visStyle }}">{{ l.vis }}</span>
+          <span class="mono" style="color: var(--color-accent-700); font-weight: 700;">›</span>
+        </div>
+      </sc-for>
+      <div style="display: flex; gap: 8px; margin-top: 16px;">
+        <input class="input" style="flex: 1; min-height: 50px;" placeholder="New list name" value="{{ newListName }}" onInput="{{ setNewListName }}">
+        <button class="btn btn-primary" style="min-height: 50px;" onClick="{{ createList }}">Add</button>
+      </div>
+      <sc-if value="{{ listError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-top: 10px; line-height: 1.6;">{{ listError }}</div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isListDetail }}" hint-placeholder-val="{{ false }}">
+      <h1 style="font-size: 28px; margin: 0 0 4px;">{{ curList.name }}</h1>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 16px;">{{ curList.metaUp }}</div>
+      <div style="border: 3px solid var(--color-divider); padding: 12px; margin-bottom: 14px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Who can see this?</div>
+        <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">PUBLIC SHOWS ON YOUR PROFILE · PRIVATE IS LINK ONLY</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="chip" style="{{ curList.pubStyle }}" onClick="{{ setPublic }}">Public</button>
+          <button class="chip" style="{{ curList.privStyle }}" onClick="{{ setPrivate }}">Private</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width: 100%; min-height: 50px;" onClick="{{ openShared }}">Open share link</button>
+      <sc-if value="{{ shareLocked }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px; line-height: 1.6;">SHARING IS LOCKED UNTIL YOUR EMAIL IS VERIFIED</div>
+      </sc-if>
+      <div style="margin-top: 18px;">
+        <sc-for list="{{ curList.books }}" as="b" hint-placeholder-count="2">
+          <div class="row">
+            <div class="cover" style="width: 40px; height: 58px; flex: none;"></div>
+            <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ b.title }}</div><div class="mono" style="color: var(--color-neutral-700);">{{ b.alsoUp }}</div></div>
+            <button class="btn btn-ghost" style="min-height: 44px;" onClick="{{ b.remove }}">Remove</button>
+          </div>
+        </sc-for>
+      </div>
+      <button class="btn" style="width: 100%; min-height: 50px; margin-top: 18px; background: #C41031; color: #EFECE3;" onClick="{{ askDeleteList }}">Delete this list</button>
+    </sc-if>
+
+    <sc-if value="{{ isShared }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 6px;">A READING LIST SHARED BY {{ nameUp }}</div>
+      <h1 style="font-size: 30px; margin: 0 0 4px;">{{ curList.name }}</h1>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 18px;">{{ curList.sharedUp }}</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+        <sc-for list="{{ curList.books }}" as="b" hint-placeholder-count="2">
+          <div>
+            <div class="cover" style="aspect-ratio: 2/3; border: 3px solid var(--color-text);"><span class="mono">COVER</span></div>
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 14px; margin-top: 6px;">{{ b.title }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border: 3px solid var(--color-text); padding: 16px; background: var(--color-accent-100);">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Want a list like this?</div>
+        <p style="font-size: 13px; margin: 4px 0 12px;">Make a free account and start tracking what you read.</p>
+        <button class="btn btn-primary" style="width: 100%; min-height: 50px;" onClick="{{ go.start }}">Get started</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRequests }}" hint-placeholder-val="{{ false }}">
+      <p style="font-size: 14px; margin-bottom: 18px;">Books you've told us are missing, and where they got to.</p>
+      <sc-for list="{{ myRequests }}" as="r" hint-placeholder-count="3">
+        <div style="border: 3px solid var(--color-divider); padding: 12px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+            <div>
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ r.title }}</div>
+              <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ r.author }}</div>
+            </div>
+            <span class="tagchip" style="{{ r.chip }}">{{ r.label }}</span>
+          </div>
+          <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px;">{{ r.note }}</div>
+          <sc-if value="{{ r.hasReason }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 13px; margin: 6px 0 0;">{{ r.reason }}</p>
+          </sc-if>
+        </div>
+      </sc-for>
+      <button class="btn btn-primary" style="width: 100%; min-height: 50px;" onClick="{{ go.request }}">Ask for another book</button>
+    </sc-if>
+
+    <sc-if value="{{ isRequest }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ requestSent }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px solid var(--color-text); padding: 20px;">
+          <h2 style="margin: 0 0 8px;">Request sent</h2>
+          <p style="font-size: 14px;">We'll look it up by hand and add it if we can find it.</p>
+          <button class="btn btn-primary" style="width: 100%; min-height: 50px;" onClick="{{ go.requests }}">See my requests</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ requestOpen }}" hint-placeholder-val="{{ true }}">
+        <h1 style="font-size: 30px; margin: 0 0 8px;">Ask us to add a book</h1>
+        <div class="field" style="margin: 16px 0 12px;"><label>Book title</label><input class="input" style="min-height: 50px;" value="{{ reqTitle }}" onInput="{{ setReqTitle }}"></div>
+        <div class="field" style="margin-bottom: 12px;"><label>Author (if you know it)</label><input class="input" style="min-height: 50px;" value="{{ reqAuthor }}" onInput="{{ setReqAuthor }}"></div>
+        <sc-if value="{{ reqError }}" hint-placeholder-val="{{ false }}">
+          <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 12px;">{{ reqError }}</div>
+        </sc-if>
+        <button class="btn btn-primary" style="width: 100%; min-height: 52px;" onClick="{{ sendRequest }}">Send request</button>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+        <span style="{{ bigMonogram }}">{{ initials }}</span>
+        <div>
+          <h1 style="font-size: 26px; margin: 0;">{{ name }}</h1>
+          <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">{{ profileCounts }}</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px;">
+        <sc-for list="{{ prefTags }}" as="t" hint-placeholder-count="4"><span class="tagchip">{{ t }}</span></sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-secondary" style="width: 100%; min-height: 50px; justify-content: space-between;" onClick="{{ go.editSurvey }}">What I like<span>›</span></button>
+        <button class="btn btn-secondary" style="width: 100%; min-height: 50px; justify-content: space-between;" onClick="{{ go.editProfile }}">Name &amp; colour<span>›</span></button>
+        <button class="btn btn-secondary" style="width: 100%; min-height: 50px; justify-content: space-between;" onClick="{{ go.requests }}">Books I've asked for<span>›</span></button>
+        <button class="btn btn-secondary" style="width: 100%; min-height: 50px; justify-content: space-between;" onClick="{{ go.reset }}">Change password<span>›</span></button>
+        <button class="btn btn-ghost" style="min-height: 50px;" onClick="{{ logout }}">Log out</button>
+      </div>
+      <div style="border: 3px solid #C41031; padding: 14px; margin-top: 20px;">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 6px;">DELETE MY ACCOUNT</div>
+        <p style="font-size: 13px; margin-bottom: 12px;">Shelves, lists, reviews and requests all go. Only the site owner can recover it, and only for 14 days.</p>
+        <button class="btn" style="background: #C41031; color: #EFECE3; width: 100%; min-height: 48px;" onClick="{{ askDeleteAccount }}">Delete my account</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isNotFound }}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 20px 0;">
+        <div style="font-family: var(--font-display); font-size: 92px; line-height: 0.82; color: var(--color-accent);">404</div>
+        <h1 style="font-size: 30px; margin: 12px 0 10px;">This page has gone missing</h1>
+        <p style="font-size: 15px;">The list or profile you were looking for has been deleted by whoever made it. Nothing has gone wrong at your end.</p>
+        <button class="btn btn-primary" style="width: 100%; min-height: 52px; margin-top: 18px;" onClick="{{ go.safety }}">Back to safety</button>
+        <button class="btn btn-secondary" style="width: 100%; min-height: 52px; margin-top: 10px;" onClick="{{ go.search }}">Find something to read</button>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ isBook }}" hint-placeholder-val="{{ false }}">
+    <div style="border-top: 3px solid var(--color-text); padding: 11px 16px; display: flex; gap: 10px; align-items: center;">
+      <div style="flex: 1;">
+        <div class="mono" style="color: var(--color-neutral-700);">YOUR STATUS</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ statusLabel }}</div>
+      </div>
+      <button class="btn btn-primary" style="min-height: 48px;" onClick="{{ openStatus }}">Change</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+    <div class="tabs">
+      <sc-for list="{{ tabBar }}" as="t" hint-placeholder-count="5">
+        <button class="{{ t.cls }}" onClick="{{ t.pick }}"><i>{{ t.icon }}</i>{{ t.label }}</button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="veil" onClick="{{ closeSheet }}"></div>
+  </sc-if>
+
+  <sc-if value="{{ statusSheet }}" hint-placeholder-val="{{ false }}">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 21px;">Where are you with this?</div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 14px;">TAP ONE — IT SAVES STRAIGHT AWAY</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <sc-for list="{{ statusOptions }}" as="o" hint-placeholder-count="4">
+          <button class="btn" style="{{ o.style }}" onClick="{{ o.pick }}">{{ o.label }}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ isReading }}" hint-placeholder-val="{{ false }}">
+        <div style="border-top: 3px solid var(--color-divider); margin-top: 16px; padding-top: 14px;">
+          <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">HOW FAR ARE YOU?</div>
+          <div style="display: flex; gap: 8px;">
+            <sc-for list="{{ progressOptions }}" as="p" hint-placeholder-count="3">
+              <button class="btn" style="{{ p.style }}" onClick="{{ p.pick }}">{{ p.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <div style="display: flex; gap: 8px; margin-top: 14px;">
+        <button class="btn btn-secondary" style="flex: 1; min-height: 48px;" onClick="{{ addToList }}">＋ Add to a list</button>
+        <button class="btn btn-ghost" style="flex: none; min-height: 48px;" onClick="{{ closeSheet }}">Done</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ filterSheet }}" hint-placeholder-val="{{ false }}">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 21px; margin-bottom: 12px;">Filters</div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 8px;">GENRE</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+        <sc-for list="{{ genreFilters }}" as="f" hint-placeholder-count="11">
+          <button class="chip" style="{{ f.style }}" onClick="{{ f.toggle }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 8px;">LENGTH</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+        <sc-for list="{{ lengthFilters }}" as="f" hint-placeholder-count="4">
+          <button class="chip" style="{{ f.style }}" onClick="{{ f.toggle }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 8px;">READING LEVEL</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;">
+        <sc-for list="{{ levelFilters }}" as="f" hint-placeholder-count="3">
+          <button class="chip" style="{{ f.style }}" onClick="{{ f.toggle }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px;" onClick="{{ closeSheet }}">Show {{ resultTotal }}</button>
+      <button class="btn btn-ghost" style="width: 100%; min-height: 48px; margin-top: 8px;" onClick="{{ clearFilters }}">Clear everything</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ gateSheet }}" hint-placeholder-val="{{ false }}">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700;">FREE ACCOUNT</div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 22px; margin: 4px 0 6px;">{{ gateTitle }}</div>
+      <p style="font-size: 14px; margin-bottom: 16px;">It takes about a minute, and then we can recommend books that match what you like.</p>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px;" onClick="{{ go.start }}">Get started</button>
+      <button class="btn btn-ghost" style="width: 100%; min-height: 48px; margin-top: 8px;" onClick="{{ closeSheet }}">Keep browsing</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ verifySheet }}" hint-placeholder-val="{{ false }}">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700;">ALMOST THERE</div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 22px; margin: 4px 0 6px;">{{ verifyGateTitle }}</div>
+      <p style="font-size: 14px; margin-bottom: 16px;">Anything public — reviews and shared lists — needs a confirmed email address. Your shelves work either way.</p>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px;" onClick="{{ go.verify }}">Enter my code</button>
+      <button class="btn btn-ghost" style="width: 100%; min-height: 48px; margin-top: 8px;" onClick="{{ closeSheet }}">Not now</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ reportSheet }}" hint-placeholder-val="{{ false }}">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700;">REPORT</div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 21px; margin: 4px 0 6px;">{{ reportTitle }}</div>
+      <p style="font-size: 13px; margin-bottom: 14px;">Only the site owner sees this — they will not know who reported it.</p>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+        <sc-for list="{{ reportReasons }}" as="r" hint-placeholder-count="5">
+          <label class="radio" style="border: 3px solid var(--color-divider); padding: 11px; min-height: 50px;"><input type="radio" name="rep" checked="{{ r.on }}" onChange="{{ r.pick }}"><span class="dot"></span>{{ r.label }}</label>
+        </sc-for>
+      </div>
+      <sc-if value="{{ isSafeguarding }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 12px; margin-bottom: 12px;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">If someone is in danger, tell an adult you trust</div>
+          <p style="font-size: 13px; margin: 4px 0 0;">We read every report, but we are a book site — we cannot help in an emergency.</p>
+        </div>
+      </sc-if>
+      <textarea class="input" style="min-height: 70px;" placeholder="Anything else? (optional)" value="{{ reportOther }}" onInput="{{ setReportOther }}"></textarea>
+      <sc-if value="{{ reportError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-top: 10px;">{{ reportError }}</div>
+      </sc-if>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px; margin-top: 12px;" onClick="{{ submitReport }}">Send report</button>
+      <button class="btn btn-ghost" style="width: 100%; min-height: 48px; margin-top: 8px;" onClick="{{ closeSheet }}">Cancel</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ limitSheet }}" hint-placeholder-val="{{ false }}">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div style="display: inline-flex; align-items: center; gap: 10px; background: #FFD400; color: #14110f; border: 3px solid var(--color-text); padding: 6px 12px;"><span class="mono" style="font-weight: 700;">ALREADY REPORTED THREE TIMES</span></div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 21px; margin: 10px 0 6px;">You've reported this as much as you can</div>
+      <p style="font-size: 14px; margin-bottom: 14px;">Three reports on the same thing is the limit — sending more does not make it go faster, and it stops one person burying someone else.</p>
+      <button class="btn btn-primary" style="width: 100%; min-height: 52px;" onClick="{{ closeSheet }}">Fair enough</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmSheet }}" hint-placeholder-val="{{ false }}">
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700;">CHECK BEFORE YOU ACT</div>
+      <div style="font-family: var(--font-heading); font-weight: 700; font-size: 21px; margin: 4px 0 6px;">{{ confirmTitle }}</div>
+      <p style="font-size: 14px; margin-bottom: 16px;">{{ confirmBody }}</p>
+      <button class="btn" style="width: 100%; min-height: 52px; background: #C41031; color: #EFECE3;" onClick="{{ doConfirm }}">{{ confirmCta }}</button>
+      <button class="btn btn-ghost" style="width: 100%; min-height: 48px; margin-top: 8px;" onClick="{{ closeSheet }}">Cancel</button>
+    </div>
+  </sc-if>
+</div>
+
+<div style="max-width: 420px; margin: 0 auto 40px; display: flex; flex-direction: column; gap: 6px;">
+  <div class="mono" style="color: #6b5b48; line-height: 1.7;">01 · FIVE TABS, NOT A HAMBURGER. REVIEWS AND RECOMMENDATIONS FOLD INTO HOME AND THE BOOK PAGE RATHER THAN EARNING A TAB.</div>
+  <div class="mono" style="color: #6b5b48; line-height: 1.7;">02 · EVERY DIALOG FROM THE DESKTOP BUILD IS A BOTTOM SHEET HERE: STATUS, FILTERS, GUEST GATE, VERIFY GATE, REPORT, REPORT LIMIT, CONFIRMATIONS.</div>
+  <div class="mono" style="color: #6b5b48; line-height: 1.7;">03 · THE STATUS BAR ON A BOOK IS STICKY ABOVE THE TABS. ON DESKTOP IT SAT IN A SIDEBAR; ON A PHONE IT WOULD SCROLL AWAY.</div>
+  <div class="mono" style="color: #6b5b48; line-height: 1.7;">04 · EVERY TARGET IS 48PT OR MORE. THE SURVEY AND FILTERS USE TAP CHIPS INSTEAD OF CHECKBOXES.</div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:520,&quot;height&quot;:1040}}">
+class Component extends DCLogic {
+  books = [
+    { id: 'nevermoor', title: 'Nevermoor', author: 'Jessica Townsend', genres: ['Fantasy', 'Mystery/Thriller'], level: 'Middle Grade', pages: 464, stars: 4.6,
+      summary: 'A cursed girl is smuggled into a hidden city and has to win a place at its strangest institution before her luck runs out.',
+      reviews: [{ who: 'Priya S.', stars: 5, text: 'If you liked the idea of a magic school but wanted something newer, start here.' }] },
+    { id: 'holes', title: 'Holes', author: 'Louis Sachar', genres: ['Mystery/Thriller', 'Comedy/Humour'], level: 'Middle Grade', pages: 233, stars: 4.5,
+      summary: 'Sent to a desert camp for a crime he did not commit, Stanley digs one hole a day and works out what is buried under all of them.',
+      reviews: [{ who: 'Dan R.', stars: 5, text: 'Three stories that turn out to be one story. I re-read it immediately.' }] },
+    { id: 'coraline', title: 'Coraline', author: 'Neil Gaiman', genres: ['Horror', 'Fantasy'], level: 'Middle Grade', pages: 176, stars: 4.8,
+      summary: 'Behind a bricked-up door is a copy of Coraline\u2019s family that is much more interested in her, and that is the problem.',
+      reviews: [{ who: 'Tomas B.', stars: 5, text: 'Genuinely frightening in about four places. Buttons.' }] },
+    { id: 'amari', title: 'Amari and the Night Brothers', author: 'B.B. Alston', genres: ['Fantasy', 'Adventure'], level: 'Middle Grade', pages: 407, stars: 4.7,
+      summary: 'Amari\u2019s brother has vanished, and the nomination he left behind drags her into a supernatural bureau.',
+      reviews: [{ who: 'Kofi A.', stars: 5, text: 'Funny and fast. The magician thing is a great twist.' }] },
+    { id: 'skellig', title: 'Skellig', author: 'David Almond', genres: ['Realistic/Contemporary Fiction'], level: 'Middle Grade', pages: 182, stars: 4.2,
+      summary: 'A boy finds something impossible in the garage of his family\u2019s new house.',
+      reviews: [{ who: 'Mr Hale', stars: 4, text: 'Short, strange and quietly sad. Good for readers who say they hate reading.' }] },
+    { id: 'rooftoppers', title: 'Rooftoppers', author: 'Katherine Rundell', genres: ['Adventure', 'Historical Fiction'], level: 'Middle Grade', pages: 278, stars: 4.4,
+      summary: 'Found in a cello case after a shipwreck, Sophie goes looking for her mother across the roofs of Paris.',
+      reviews: [{ who: 'Ines P.', stars: 5, text: 'Best last chapter of anything I read this year.' }] },
+    { id: 'eragon', title: 'Eragon', author: 'Christopher Paolini', genres: ['Fantasy', 'Adventure'], level: 'Young Adult', pages: 528, stars: 4.1,
+      summary: 'A farm boy finds a blue stone in the mountains. It hatches, and the empire notices.',
+      reviews: [{ who: 'Lena M.', stars: 4, text: 'Very long and very worth it if you like dragons, which I do.' }] },
+    { id: 'longway', title: 'A Long Way Down', author: 'Jason Reynolds', genres: ['Realistic/Contemporary Fiction'], level: 'Young Adult', pages: 306, stars: 4.9,
+      summary: 'Sixty seconds in a lift, one floor at a time, told in verse.',
+      reviews: [{ who: 'Ms Okafor', stars: 5, text: 'Reluctant readers finish this one. Every time.' }] }
+  ];
+  allGenres = ['Fantasy', 'Adventure', 'Sci-Fi', 'Romance', 'Mystery/Thriller', 'Horror', 'Historical Fiction', 'Realistic/Contemporary Fiction', 'Comedy/Humour', 'Non-fiction', 'Other'];
+  levels = ['Middle Grade', 'Young Adult', 'Adult'];
+  lengths = ['Under 200 pages', '200\u2013400 pages', '400\u2013600 pages', '600+ pages'];
+  steps = [{ k: 'started', l: 'Just started', pct: 15, cap: 'JUST STARTED' }, { k: 'halfway', l: 'Halfway', pct: 50, cap: 'ABOUT HALFWAY' }, { k: 'nearly', l: 'Nearly done', pct: 85, cap: 'NEARLY DONE' }];
+  palette = [
+    { name: 'Red', css: '#C41031', ink: '#EFECE3' }, { name: 'Orange', css: '#FF4D00', ink: '#EFECE3' },
+    { name: 'Yellow', css: '#FFD400', ink: '#14110F' }, { name: 'Lime', css: '#C6F24E', ink: '#14110F' },
+    { name: 'Blue', css: '#1B3BFF', ink: '#EFECE3' }, { name: 'Purple', css: '#7B2DFF', ink: '#EFECE3' },
+    { name: 'Pink', css: '#FF3D9A', ink: '#14110F' }
+  ];
+  takenNames = ['maya', 'bookworm', 'reader', 'admin', 'librarian'];
+  alwaysBad = ['fuck', 'fck', 'bitch', 'wanker', 'twat', 'bollocks'];
+  wholeWords = ['shit', 'damn', 'crap', 'arse', 'ass', 'dick', 'cock', 'piss', 'prick', 'slag', 'whore', 'bastard'];
+
+  fold = (v) => (v || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[|!1l]/g, 'i').replace(/0/g, 'o').replace(/3/g, 'e').replace(/[4@]/g, 'a')
+    .replace(/[5$]/g, 's').replace(/7/g, 't').replace(/8/g, 'b').replace(/vv/g, 'w')
+    .replace(/[^a-z]/g, '').replace(/(.)\1+/g, '$1');
+  hasBanned = (t) => {
+    const joined = this.fold(t);
+    if (this.alwaysBad.some(w => joined.includes(this.fold(w)))) return true;
+    return String(t || '').split(/[^A-Za-z0-9@$!|]+/).map(x => this.fold(x)).filter(Boolean)
+      .some(tok => this.wholeWords.some(w => tok === this.fold(w)));
+  };
+
+  initial() {
+    return {
+      screen: 'landing', prev: 'landing', guest: true, dark: false, sheet: null,
+      email: '', pw: '', signupError: '', loginError: '', resetSent: false, np1: '', np2: '', pwError: '',
+      displayName: '', colour: 'Blue', nameError: '', checking: false, seq: 0,
+      verified: false, verifyCode: '', verifyError: '', resent: false,
+      survey: { genres: ['Fantasy'], level: 'Middle Grade', length: '200\u2013400 pages' }, surveyEditing: false,
+      statuses: {}, progress: {}, extraReviews: {}, bookId: 'nevermoor',
+      query: '', fGenres: [], fLengths: [], fLevels: [], resultPage: 0, shelf: 'reading',
+      lists: [{ name: 'Favourite fiction reads', public: true, books: ['nevermoor', 'holes'] }, { name: 'Scary but not too scary', public: false, books: ['coraline'] }],
+      listIdx: 0, newListName: '', listError: '',
+      draftStars: 0, draftText: '', reviewError: '', reviewBlocked: false,
+      requests: [
+        { title: 'Impossible Creatures', author: 'Katherine Rundell', status: 'approved', reason: '' },
+        { title: 'The Boy in the Striped Pyjamas', author: 'John Boyne', status: 'declined', reason: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' },
+        { title: 'Skandar and the Unicorn Thief', author: 'A.F. Steadman', status: 'pending', reason: '' }
+      ],
+      reqTitle: '', reqAuthor: '', reqError: '', requestSent: false,
+      reportTarget: null, reportReason: '', reportOther: '', reportError: '', myReports: {}, reported: {},
+      confirm: null, notFoundKind: 'list'
+    };
+  }
+  state = this.initial();
+
+  lengthOf = (p) => p < 200 ? 'Under 200 pages' : p <= 400 ? '200\u2013400 pages' : p <= 600 ? '400\u2013600 pages' : '600+ pages';
+  statusOf = (id) => this.state.statuses[id] || 'none';
+  stepOf = (id) => this.steps.find(x => x.k === this.state.progress[id]) || this.steps[0];
+  book = () => this.books.find(b => b.id === this.state.bookId) || this.books[0];
+  reviewsFor = (b) => (b.reviews || []).concat(this.state.extraReviews[b.id] || []);
+  colourOf = () => this.palette.find(p => p.name === this.state.colour) || this.palette[4];
+  chip = (on) => on
+    ? { background: 'var(--color-link)', color: '#EFECE3', borderColor: 'var(--color-text)' }
+    : { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' };
+  badge = (st) => ({
+    read: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+    reading: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+    want: { background: '#1B3BFF', color: '#EFECE3', borderColor: '#14110f' }
+  })[st] || {};
+  go = (screen) => this.setState(s => ({ screen, prev: s.screen, sheet: null }));
+  nameState = () => {
+    const v = this.state.displayName.trim(), low = v.toLowerCase();
+    if (!v.length) return 'idle';
+    if (!/^[A-Za-z0-9_]+$/.test(v)) return 'invalid';
+    if (v.length < 2) return 'short';
+    if (this.hasBanned(v)) return 'banned';
+    if (this.state.checking) return 'checking';
+    if (this.takenNames.includes(low)) return 'taken';
+    return 'available';
+  };
+  checkName = (value) => {
+    const seq = this.state.seq + 1;
+    this.setState({ displayName: value, nameError: '', seq, checking: value.trim().length >= 2 });
+    if (value.trim().length < 2) return;
+    setTimeout(() => { if (this.state.seq === seq) this.setState({ checking: false }); }, 700);
+  };
+
+  renderVals() {
+    const s = this.state, S = s.screen, b = this.book();
+    const name = s.displayName.trim() || 'Maya';
+    const col = this.colourOf();
+    const gate = (fn) => s.guest ? this.setState({ sheet: 'gate' }) : fn();
+
+    const decorate = (x) => ({
+      title: x.title, author: x.author, rating: x.stars.toFixed(1),
+      meta: (x.author + ' \u00b7 ' + x.pages + ' pages').toUpperCase(),
+      hasBadge: this.statusOf(x.id) !== 'none',
+      badgeLabel: ({ read: 'Read', reading: 'Reading', want: 'Want to read' })[this.statusOf(x.id)] || '',
+      badgeStyle: this.badge(this.statusOf(x.id)),
+      barStyle: { width: this.stepOf(x.id).pct + '%', height: '100%', background: '#ff3d9a' },
+      pct: this.stepOf(x.id).cap,
+      open: () => this.setState({ bookId: x.id, screen: 'book', prev: S, sheet: null })
+    });
+
+    const q = s.query.trim().toLowerCase();
+    const matches = this.books.filter(x =>
+      (!q || x.title.toLowerCase().includes(q) || x.author.toLowerCase().includes(q)) &&
+      (!s.fGenres.length || x.genres.some(g => s.fGenres.includes(g))) &&
+      (!s.fLengths.length || s.fLengths.includes(this.lengthOf(x.pages))) &&
+      (!s.fLevels.length || s.fLevels.includes(x.level))
+    );
+    const byStatus = (v) => this.books.filter(x => this.statusOf(x.id) === v);
+    const recBooks = this.books.filter(x => x.genres.some(g => s.survey.genres.includes(g)));
+    const recs = recBooks.length ? recBooks : this.books;
+    const shelfNames = { read: 'Read', reading: 'Reading', want: 'Want' };
+    const list = s.lists[s.listIdx] || { name: '\u2014', public: false, books: [] };
+    const nst = this.nameState();
+    const nameCfg = {
+      idle: { show: false }, short: { show: true, mark: '!', text: 'A bit short \u2014 2 characters or more' },
+      invalid: { show: true, mark: '!', text: 'Letters, numbers and underscores only' },
+      banned: { show: true, mark: '!', text: 'That name isn\u2019t allowed here' },
+      checking: { show: true, mark: '\u00b7\u00b7\u00b7', text: 'Checking if that\u2019s free\u2026' },
+      taken: { show: true, mark: '\u2715', text: 'Taken already \u2014 try one of these' },
+      available: { show: true, mark: '\u2713', text: 'That one\u2019s free' }
+    }[nst];
+    const chipBase = { display: 'inline-flex', alignItems: 'center', gap: '9px', borderWidth: '3px', borderStyle: 'solid', padding: '8px 12px' };
+
+    return {
+      theme: s.dark
+        ? { '--color-bg': '#14110f', '--color-surface': '#241f1b', '--color-text': '#EFECE3', '--color-divider': '#EFECE3', '--color-neutral-400': '#4a3f33', '--color-neutral-700': '#9c8b76', '--color-accent-100': '#3a2418', '--color-accent-700': '#ff8a57', '--color-problem-text': '#FF7D8F', '--color-link': '#7B8BFF', background: '#0a0908', color: '#EFECE3', display: 'block' }
+        : { background: '#e9dcc6', color: '#14110f', display: 'block' },
+      modeIcon: s.dark ? '\u2600' : '\u263e',
+      modeUp: s.dark ? 'DARK' : 'LIGHT',
+      screenUp: S.toUpperCase(),
+      toggleMode: () => this.setState({ dark: !s.dark }),
+
+      name, nameUp: name.toUpperCase(), initials: name.slice(0, 1).toUpperCase(), loggedIn: !s.guest,
+      avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '34px', height: '34px', flex: 'none', border: '3px solid var(--color-text)', background: col.css, color: col.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px' },
+      bigMonogram: { display: 'inline-grid', placeItems: 'center', width: '68px', height: '68px', flex: 'none', border: '3px solid var(--color-text)', background: col.css, color: col.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '30px' },
+      unverified: !s.guest && !s.verified && ['home', 'search', 'book', 'tracker', 'lists', 'profile', 'recs'].includes(S),
+
+      isLanding: S === 'landing', isStart: S === 'start', isSignup: S === 'signup',
+      isProfileSetup: S === 'profileSetup', isSurvey: S === 'survey', isVerify: S === 'verify',
+      isLogin: S === 'login', isReset: S === 'reset', isNewPassword: S === 'newPassword',
+      isHome: S === 'home', isRecs: S === 'recs', isSearch: S === 'search', isBook: S === 'book',
+      isReview: S === 'review', isTracker: S === 'tracker', isLists: S === 'lists',
+      isListDetail: S === 'listDetail', isShared: S === 'shared', isRequests: S === 'requests',
+      isRequest: S === 'request', isProfile: S === 'profile', isNotFound: S === 'notFound',
+      showAppbar: S !== 'landing',
+      showTabs: ['home', 'recs', 'search', 'book', 'tracker', 'lists', 'listDetail', 'profile', 'requests'].includes(S),
+      canGoBack: !['landing', 'home', 'search', 'tracker', 'lists', 'profile'].includes(S),
+      title: ({ start: 'Welcome', signup: 'Sign up', profileSetup: 'Your name', survey: 'About you', verify: 'Verify', login: 'Log in', reset: 'Reset', newPassword: 'New password', home: 'Book Hub', recs: 'For you', search: 'Search', book: 'Book', review: 'Write a review', tracker: 'My shelves', lists: 'My lists', listDetail: 'List', shared: 'Shared list', requests: 'My requests', request: 'Ask for a book', profile: 'Profile', notFound: 'Not found' })[S] || 'Book Hub',
+      back: () => this.setState({ screen: s.prev === S ? 'home' : s.prev, sheet: null }),
+      go: {
+        landing: () => this.setState(Object.assign(this.initial(), { dark: s.dark })),
+        start: () => this.go('start'), signup: () => this.go('signup'), login: () => this.go('login'),
+        reset: () => this.setState({ screen: 'reset', resetSent: false, prev: S, sheet: null }),
+        newPassword: () => this.go('newPassword'), verify: () => this.go('verify'),
+        search: () => this.go('search'), recs: () => this.go('recs'), tracker: () => this.go('tracker'),
+        lists: () => this.go('lists'), requests: () => this.go('requests'), request: () => this.go('request'),
+        editSurvey: () => this.setState({ screen: 'survey', surveyEditing: true, sheet: null }),
+        editProfile: () => this.go('profileSetup'),
+        safety: () => this.go(s.guest ? 'landing' : 'home')
+      },
+      tabBar: [
+        { key: 'home', label: 'Home', icon: '\u2302' }, { key: 'search', label: 'Search', icon: '\u2315' },
+        { key: 'tracker', label: 'Shelves', icon: '\u25a4' }, { key: 'lists', label: 'Lists', icon: '\u2263' },
+        { key: 'profile', label: 'You', icon: '\u25cf' }
+      ].map(t => ({
+        label: t.label, icon: t.icon,
+        cls: (S === t.key || (t.key === 'search' && S === 'book') || (t.key === 'lists' && S === 'listDetail') || (t.key === 'home' && S === 'recs') || (t.key === 'profile' && S === 'requests')) ? 'tab on' : 'tab',
+        pick: () => (t.key !== 'search' && s.guest) ? this.setState({ sheet: 'gate' }) : this.setState({ screen: t.key, sheet: null })
+      })),
+
+      email: s.email, pw: s.pw, accountEmail: s.email || 'maya@school.uk',
+      setEmail: (e) => this.setState({ email: e.target.value, signupError: '', loginError: '' }),
+      setPw: (e) => this.setState({ pw: e.target.value, signupError: '', loginError: '' }),
+      signupError: s.signupError, loginError: s.loginError,
+      submitSignup: () => {
+        if (!s.email.includes('@')) return this.setState({ signupError: 'ENTER A VALID EMAIL ADDRESS' });
+        if (s.pw.length < 8) return this.setState({ signupError: 'PASSWORD NEEDS AT LEAST 8 CHARACTERS' });
+        this.go('profileSetup');
+      },
+      submitLogin: () => s.email.includes('@') && s.pw.length
+        ? this.setState({ guest: false, verified: true, screen: 'home', sheet: null })
+        : this.setState({ loginError: 'EMAIL OR PASSWORD DIDN\u2019T MATCH' }),
+      resetSent: s.resetSent, resetOpen: !s.resetSent,
+      sendReset: () => this.setState({ resetSent: true }),
+      np1: s.np1, np2: s.np2, pwError: s.pwError,
+      setNp1: (e) => this.setState({ np1: e.target.value, pwError: '' }),
+      setNp2: (e) => this.setState({ np2: e.target.value, pwError: '' }),
+      savePassword: () => s.np1.length < 8
+        ? this.setState({ pwError: 'AT LEAST 8 CHARACTERS' })
+        : (s.np1 !== s.np2 ? this.setState({ pwError: 'THE TWO PASSWORDS DON\u2019T MATCH' }) : this.setState({ screen: 'login', np1: '', np2: '' })),
+      logout: () => this.setState(Object.assign(this.initial(), { dark: s.dark })),
+
+      displayName: s.displayName, nameError: s.nameError,
+      setDisplayName: (e) => this.checkName(e.target.value),
+      nameShow: nameCfg.show, nameMark: nameCfg.mark || '', nameText: nameCfg.text || '',
+      nameIsTaken: nst === 'taken',
+      nameChipStyle: nst === 'checking'
+        ? Object.assign({}, chipBase, { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' })
+        : nst === 'available'
+          ? Object.assign({}, chipBase, { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' })
+          : Object.assign({}, chipBase, { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }),
+      suggestions: (() => {
+        const base = s.displayName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || 'reader';
+        return [base + '_26', base + '42', base + '_reads'].filter(x => !this.takenNames.includes(x)).slice(0, 3)
+          .map(x => ({ label: x, pick: () => this.checkName(x) }));
+      })(),
+      colorOpts: this.palette.map(p => ({
+        mark: p.name === s.colour ? '\u2713' : '',
+        style: { minHeight: '48px', fontSize: '15px', background: p.css, color: p.ink, borderColor: 'var(--color-text)' },
+        pick: () => this.setState({ colour: p.name })
+      })),
+      submitProfile: () => {
+        if (nst === 'idle') return this.setState({ nameError: 'PICK A DISPLAY NAME FIRST' });
+        if (nst === 'checking') return this.setState({ nameError: 'HANG ON \u2014 STILL CHECKING' });
+        if (nst !== 'available') return this.setState({ nameError: 'THAT NAME WON\u2019T WORK \u2014 SEE ABOVE' });
+        this.setState({ screen: s.surveyEditing ? 'profile' : 'survey', nameError: '', sheet: null });
+      },
+
+      surveyKicker: s.surveyEditing ? 'EDIT YOUR ANSWERS' : 'STEP 3 OF 4',
+      surveyCta: s.surveyEditing ? 'Save and refresh' : 'Find my book',
+      genreChips: this.allGenres.map(g => ({
+        label: g, style: this.chip(s.survey.genres.includes(g)),
+        toggle: () => this.setState(st => ({ survey: Object.assign({}, st.survey, { genres: st.survey.genres.includes(g) ? st.survey.genres.filter(x => x !== g) : st.survey.genres.concat([g]) }) }))
+      })),
+      levelWarnShow: s.survey.level === 'Young Adult' || s.survey.level === 'Adult',
+      levelWarnHead: s.survey.level === 'Adult' ? 'ADULT — WHAT THIS CAN INCLUDE' : 'YOUNG ADULT — WHAT THIS CAN INCLUDE',
+      levelWarnText: s.survey.level === 'Adult' ? 'ADULT BOOKS CAN CONTAIN EXPLICIT SEXUAL CONTENT, GRAPHIC VIOLENCE, DRUG USE AND DISTRESSING THEMES WITH NO AGE FILTERING AT ALL. CHOOSING THIS IS YOUR DECISION AND YOURS ALONE — THE SITE IS NOT RESPONSIBLE FOR WHAT YOU CHOOSE TO READ. IF YOU ARE UNSURE, TALK TO A PARENT, CARER OR TEACHER.' : 'YOUNG ADULT BOOKS OFTEN CARRY STRONGER LANGUAGE, VIOLENCE, ROMANCE AND SEXUAL REFERENCES, AND THEMES LIKE SELF-HARM, GRIEF, BULLYING AND DRUG USE. CHOOSING THIS IS YOUR DECISION AND YOURS ALONE — THE SITE IS NOT RESPONSIBLE FOR WHAT YOU CHOOSE TO READ. IF YOU ARE UNSURE, TALK TO A PARENT, CARER OR TEACHER.',
+      levelChips: this.levels.map(l => ({
+        label: l, style: this.chip(s.survey.level === l),
+        pick: () => this.setState(st => ({ survey: Object.assign({}, st.survey, { level: l }) }))
+      })),
+      lengthOpts: ['Short \u2014 under 200 pages', 'Medium \u2014 200 to 400 pages', 'Long \u2014 400 to 600 pages', 'Very long \u2014 600 pages and up', 'I don\u2019t mind'].map((label, i) => {
+        const v = ['Under 200 pages', '200\u2013400 pages', '400\u2013600 pages', '600+ pages', 'Any'][i];
+        return { label, on: s.survey.length === v, pick: () => this.setState(st => ({ survey: Object.assign({}, st.survey, { length: v }) })) };
+      }),
+      submitSurvey: () => this.setState({ guest: false, screen: s.surveyEditing ? 'home' : 'verify', surveyEditing: false, sheet: null }),
+
+      verifyCode: s.verifyCode, verifyError: s.verifyError, resent: s.resent,
+      setVerifyCode: (e) => this.setState({ verifyCode: e.target.value.replace(/\D/g, '').slice(0, 6), verifyError: '' }),
+      submitVerify: () => s.verifyCode.length < 6
+        ? this.setState({ verifyError: 'ENTER THE 6-DIGIT CODE FROM YOUR EMAIL' })
+        : this.setState({ verified: true, guest: false, screen: 'home', sheet: null }),
+      resend: () => this.setState({ resent: true }),
+      skipVerify: () => this.setState({ guest: false, screen: 'home', sheet: null }),
+
+      basedOn: ('BASED ON ' + s.survey.genres.join(' \u00b7 ') + ' \u00b7 ' + s.survey.level).toUpperCase(),
+      prefTags: s.survey.genres.concat([s.survey.level, s.survey.length]),
+      recsStrip: recs.slice(0, 6).map(decorate),
+      recs: recs.map(decorate),
+      reading: byStatus('reading').map(decorate),
+      hasReading: byStatus('reading').length > 0,
+      hasRead: byStatus('read').length > 0,
+      finishedLine: byStatus('read').length + (byStatus('read').length === 1 ? ' book finished' : ' books finished'),
+      counts: { read: byStatus('read').length, reading: byStatus('reading').length, want: byStatus('want').length, lists: s.lists.length },
+      profileCounts: byStatus('read').length + ' read \u00b7 ' + byStatus('want').length + ' saved \u00b7 ' + s.lists.length + ' lists',
+
+      query: s.query, setQuery: (e) => this.setState({ query: e.target.value, resultPage: 0 }),
+      results: matches.slice(s.resultPage * 5, s.resultPage * 5 + 5).map(decorate),
+      noResults: matches.length === 0,
+      manyResults: matches.length > 5,
+      resultPageLabel: 'PAGE ' + (s.resultPage + 1) + ' OF ' + Math.max(1, Math.ceil(matches.length / 5)),
+      prevResults: () => this.setState(st => ({ resultPage: Math.max(0, st.resultPage - 1) })),
+      nextResults: () => this.setState(st => ({ resultPage: (st.resultPage + 1) * 5 < matches.length ? st.resultPage + 1 : st.resultPage })),
+      resultCount: matches.length + (matches.length === 1 ? ' BOOK' : ' BOOKS'),
+      resultTotal: matches.length + (matches.length === 1 ? ' book' : ' books'),
+      hasFilters: s.fGenres.length + s.fLengths.length + s.fLevels.length > 0,
+      clearFilters: () => this.setState({ fGenres: [], fLengths: [], fLevels: [], resultPage: 0, sheet: null }),
+      genreFilters: this.allGenres.map(g => ({
+        label: g, style: this.chip(s.fGenres.includes(g)),
+        toggle: () => this.setState(st => ({ fGenres: st.fGenres.includes(g) ? st.fGenres.filter(x => x !== g) : st.fGenres.concat([g]), resultPage: 0 }))
+      })),
+      lengthFilters: this.lengths.map(l => ({
+        label: l, style: this.chip(s.fLengths.includes(l)),
+        toggle: () => this.setState(st => ({ fLengths: st.fLengths.includes(l) ? st.fLengths.filter(x => x !== l) : st.fLengths.concat([l]), resultPage: 0 }))
+      })),
+      levelFilters: this.levels.map(l => ({
+        label: l, style: this.chip(s.fLevels.includes(l)),
+        toggle: () => this.setState(st => ({ fLevels: st.fLevels.includes(l) ? st.fLevels.filter(x => x !== l) : st.fLevels.concat([l]), resultPage: 0 }))
+      })),
+      openFilters: () => this.setState({ sheet: 'filters' }),
+
+      book: {
+        title: b.title, author: b.author, authorUp: b.author.toUpperCase(), summary: b.summary,
+        rating: b.stars.toFixed(1),
+        reviewCount: this.reviewsFor(b).length + (this.reviewsFor(b).length === 1 ? ' REVIEW' : ' REVIEWS'),
+        tags: b.genres.concat([b.level, this.lengthOf(b.pages)]),
+        reviews: this.reviewsFor(b).map((r, i) => ({
+          who: r.who, rating: r.stars + '/5', text: r.text,
+          mine: r.who === name,
+          canReport: r.who !== name && !s.guest,
+          edit: () => this.setState({ screen: 'review', prev: 'book', draftStars: r.stars, draftText: r.text }),
+          del: () => this.setState({ confirm: { kind: 'myReview', id: b.id }, sheet: 'confirm' }),
+          report: () => this.setState({ reportTarget: { key: b.id + ':' + i, kind: 'review', who: r.who }, reportReason: '', reportOther: '', sheet: 'report' }),
+          reportUser: () => this.setState({ reportTarget: { key: 'u:' + r.who, kind: 'reader', who: r.who }, reportReason: '', reportOther: '', sheet: 'report' })
+        }))
+      },
+      reviewCta: (s.extraReviews[b.id] || []).length ? 'Edit mine' : 'Write one',
+      writeReview: () => gate(() => s.verified
+        ? this.setState({ screen: 'review', prev: 'book', draftStars: 0, draftText: '', reviewError: '', reviewBlocked: false })
+        : this.setState({ sheet: 'verifyGate' })),
+      statusLabel: ({ read: 'Read', reading: 'Currently reading', want: 'Want to read', none: 'Not on a shelf' })[this.statusOf(b.id)],
+      openStatus: () => gate(() => this.setState({ sheet: 'status' })),
+      statusOptions: [
+        { k: 'read', l: 'Read', bg: '#c6f24e', ink: '#14110f' },
+        { k: 'reading', l: 'Currently reading', bg: '#ff3d9a', ink: '#14110f' },
+        { k: 'want', l: 'Want to read', bg: '#1B3BFF', ink: '#EFECE3' },
+        { k: 'none', l: 'Take it off my shelves', bg: 'transparent', ink: 'var(--color-text)' }
+      ].map(o => ({
+        label: o.l,
+        style: this.statusOf(b.id) === o.k
+          ? { width: '100%', minHeight: '52px', background: o.bg, color: o.ink, borderColor: 'var(--color-text)', justifyContent: 'flex-start', fontSize: '16px' }
+          : { width: '100%', minHeight: '52px', background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-divider)', justifyContent: 'flex-start', fontSize: '16px' },
+        pick: () => this.setState(st => ({ statuses: Object.assign({}, st.statuses, { [b.id]: o.k }) }))
+      })),
+      isReading: this.statusOf(b.id) === 'reading',
+      progressOptions: this.steps.map(x => ({
+        label: x.l,
+        style: this.stepOf(b.id).k === x.k
+          ? { flex: 1, minHeight: '48px', background: '#ff3d9a', color: '#14110f', borderColor: 'var(--color-text)', fontSize: '13px' }
+          : { flex: 1, minHeight: '48px', background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-divider)', fontSize: '13px' },
+        pick: () => this.setState(st => ({ progress: Object.assign({}, st.progress, { [b.id]: x.k }) }))
+      })),
+      addToList: () => this.setState(st => ({
+        lists: st.lists.map((l, i) => i === st.listIdx && !l.books.includes(b.id) ? Object.assign({}, l, { books: l.books.concat([b.id]) }) : l),
+        sheet: null, screen: 'listDetail'
+      })),
+
+      starPicker: [1, 2, 3, 4, 5].map(n => ({ cls: n <= s.draftStars ? 'on' : '', pick: () => this.setState({ draftStars: n, reviewError: '' }) })),
+      draftText: s.draftText,
+      setDraftText: (e) => this.setState({ draftText: e.target.value, reviewError: '', reviewBlocked: false }),
+      reviewError: s.reviewError, reviewBlocked: s.reviewBlocked,
+      postReview: () => {
+        if (!s.draftStars) return this.setState({ reviewError: 'PICK A STAR RATING FIRST' });
+        if (s.draftText.trim().length < 4) return this.setState({ reviewError: 'WRITE A LINE OR TWO SO IT HELPS SOMEONE' });
+        if (this.hasBanned(s.draftText)) return this.setState({ reviewBlocked: true });
+        this.setState(st => ({ extraReviews: Object.assign({}, st.extraReviews, { [b.id]: [{ who: name, stars: st.draftStars, text: st.draftText }] }), screen: 'book', draftStars: 0, draftText: '' }));
+      },
+
+      shelfTabs: Object.keys(shelfNames).map((k, i) => ({
+        label: shelfNames[k] + ' ' + byStatus(k).length,
+        style: Object.assign({ flex: 1, minHeight: '48px', border: 0, cursor: 'pointer', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '13px' },
+          i > 0 ? { borderLeft: '3px solid var(--color-text)' } : {},
+          s.shelf === k
+            ? { background: ({ read: '#c6f24e', reading: '#ff3d9a', want: '#1B3BFF' })[k], color: k === 'want' ? '#EFECE3' : '#14110f' }
+            : { background: 'transparent', color: 'var(--color-neutral-700)' }),
+        pick: () => this.setState({ shelf: k })
+      })),
+      shelfBooks: byStatus(s.shelf).map(decorate),
+      shelfEmpty: byStatus(s.shelf).length === 0,
+      shelfEmptyMsg: ({ read: 'Books you finish land here.', reading: 'Open a book and mark it as currently reading.', want: 'Save anything you fancy for later.' })[s.shelf],
+
+      myLists: s.lists.map((l, i) => ({
+        name: l.name,
+        meta: (l.books.length + (l.books.length === 1 ? ' BOOK' : ' BOOKS')),
+        vis: l.public ? 'Public' : 'Private',
+        visStyle: l.public ? { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' } : { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' },
+        open: () => this.setState({ listIdx: i, screen: 'listDetail', prev: 'lists' })
+      })),
+      newListName: s.newListName, listError: s.listError,
+      setNewListName: (e) => this.setState({ newListName: e.target.value, listError: '' }),
+      createList: () => {
+        const n = s.newListName.trim();
+        if (!n) return;
+        if (this.hasBanned(n)) return this.setState({ listError: 'THAT LIST NAME ISN\u2019T ALLOWED \u2014 LISTS CAN BE SHARED WITH ANYONE' });
+        this.setState(st => ({ lists: st.lists.concat([{ name: n, public: false, books: [] }]), listIdx: st.lists.length, newListName: '' }));
+      },
+      curList: {
+        name: list.name,
+        metaUp: (list.books.length + ' BOOKS \u00b7 ' + (list.public ? 'PUBLIC' : 'PRIVATE')),
+        sharedUp: list.books.length + ' BOOKS \u00b7 VIEW ONLY',
+        pubStyle: this.chip(list.public), privStyle: this.chip(!list.public),
+        books: list.books.map(id => {
+          const bk = this.books.find(x => x.id === id) || this.books[0];
+          return {
+            title: bk.title,
+            alsoUp: ({ read: 'ALSO IN: READ', reading: 'ALSO IN: CURRENTLY READING', want: 'ALSO IN: WANT TO READ', none: 'NOT ON A SHELF' })[this.statusOf(id)],
+            remove: () => this.setState(st => ({ lists: st.lists.map((l, i) => i === st.listIdx ? Object.assign({}, l, { books: l.books.filter(x => x !== id) }) : l) }))
+          };
+        })
+      },
+      setPublic: () => this.setState(st => ({ lists: st.lists.map((l, i) => i === st.listIdx ? Object.assign({}, l, { public: true }) : l) })),
+      setPrivate: () => this.setState(st => ({ lists: st.lists.map((l, i) => i === st.listIdx ? Object.assign({}, l, { public: false }) : l) })),
+      shareLocked: !s.verified,
+      openShared: () => s.verified ? this.go('shared') : this.setState({ sheet: 'verifyGate' }),
+      askDeleteList: () => this.setState({ confirm: { kind: 'myList', id: s.listIdx, name: list.name }, sheet: 'confirm' }),
+
+      myRequests: s.requests.map(r => ({
+        title: r.title, author: (r.author || 'AUTHOR NOT GIVEN').toUpperCase(), reason: r.reason, hasReason: !!r.reason,
+        label: ({ pending: 'Pending', approved: 'Approved', declined: 'Declined' })[r.status],
+        chip: ({
+          pending: { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' },
+          approved: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+          declined: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+        })[r.status],
+        note: ({ pending: 'WE LOOK AT THESE BY HAND', approved: 'IT IS IN THE CATALOGUE NOW', declined: 'WHY:' })[r.status]
+      })),
+      reqTitle: s.reqTitle, reqAuthor: s.reqAuthor, reqError: s.reqError,
+      requestSent: s.requestSent, requestOpen: !s.requestSent,
+      setReqTitle: (e) => this.setState({ reqTitle: e.target.value, reqError: '' }),
+      setReqAuthor: (e) => this.setState({ reqAuthor: e.target.value }),
+      sendRequest: () => this.hasBanned(s.reqTitle + ' ' + s.reqAuthor)
+        ? this.setState({ reqError: 'THAT LOOKS LIKE A JOKE ENTRY \u2014 TRY THE REAL TITLE' })
+        : (s.reqTitle.trim()
+          ? this.setState(st => ({ requestSent: true, requests: [{ title: st.reqTitle.trim(), author: st.reqAuthor.trim(), status: 'pending', reason: '' }].concat(st.requests), reqTitle: '', reqAuthor: '' }))
+          : this.setState({ reqError: 'WE NEED AT LEAST A TITLE' })),
+
+      reportTitle: s.reportTarget ? (s.reportTarget.kind === 'reader' ? 'Report ' + s.reportTarget.who : 'Report this review') : '',
+      reportReasons: ['Rude or unkind to other readers', 'Bad language or slurs', 'Nothing to do with the book', 'Spam or advertising', 'Something that worries me about their safety']
+        .map(r => ({ label: r, on: s.reportReason === r, pick: () => this.setState({ reportReason: r }) })),
+      isSafeguarding: s.reportReason === 'Something that worries me about their safety',
+      reportOther: s.reportOther, reportError: s.reportError,
+      setReportOther: (e) => this.setState({ reportOther: e.target.value, reportError: '' }),
+      submitReport: () => {
+        if (!s.reportReason && !s.reportOther.trim()) return this.setState({ reportError: 'PICK A REASON, OR TELL US IN YOUR OWN WORDS' });
+        const k = s.reportTarget.key;
+        if ((s.myReports[k] || 0) >= 3) return this.setState({ sheet: 'limit' });
+        this.setState(st => ({
+          myReports: Object.assign({}, st.myReports, { [k]: (st.myReports[k] || 0) + 1 }),
+          reported: Object.assign({}, st.reported, { [k]: true }),
+          sheet: null, reportReason: '', reportOther: ''
+        }));
+      },
+
+      confirmTitle: s.confirm ? ({ myReview: 'Delete your review?', myList: 'Delete \u201c' + (s.confirm.name || '') + '\u201d?', myAccount: 'Delete your account?' })[s.confirm.kind] : '',
+      confirmBody: s.confirm ? ({
+        myReview: 'It disappears from the book page straight away. Your star rating goes with it.',
+        myList: 'The list goes and its share link stops working \u2014 anyone you sent it to sees a not-found page. The books stay on your shelves.',
+        myAccount: 'Everything goes: your shelves, your lists, your reviews and your requests. Only the site owner can recover it, and only for 14 days.'
+      })[s.confirm.kind] : '',
+      confirmCta: s.confirm ? ({ myReview: 'Yes, delete it', myList: 'Yes, delete the list', myAccount: 'Yes, delete everything' })[s.confirm.kind] : '',
+      askDeleteAccount: () => this.setState({ confirm: { kind: 'myAccount' }, sheet: 'confirm' }),
+      doConfirm: () => {
+        const c = s.confirm;
+        if (!c) return;
+        if (c.kind === 'myReview') {
+          return this.setState(st => {
+            const copy = Object.assign({}, st.extraReviews); delete copy[c.id];
+            return { extraReviews: copy, sheet: null, confirm: null };
+          });
+        }
+        if (c.kind === 'myList') {
+          return this.setState(st => ({ lists: st.lists.filter((l, i) => i !== c.id), listIdx: 0, sheet: null, confirm: null, screen: 'notFound' }));
+        }
+        return this.setState(Object.assign(this.initial(), { dark: s.dark }));
+      },
+
+      gateTitle: 'Sign up to save what you read',
+      verifyGateTitle: 'Verify your email first',
+      sheetOpen: !!s.sheet,
+      statusSheet: s.sheet === 'status', filterSheet: s.sheet === 'filters', gateSheet: s.sheet === 'gate',
+      verifySheet: s.sheet === 'verifyGate', reportSheet: s.sheet === 'report', limitSheet: s.sheet === 'limit',
+      confirmSheet: s.sheet === 'confirm',
+      closeSheet: () => this.setState({ sheet: null })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

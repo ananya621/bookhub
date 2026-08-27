@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(claude mcp add --transport http lovable \"https://mcp.lovable.dev\")",
+      "PowerShell(Get-Command claude -ErrorAction SilentlyContinue)",
+      "PowerShell(npm root -g 2>$null)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "supabase",
+    "vercel"
+  ]
+}

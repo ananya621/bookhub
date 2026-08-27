@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #E9DCC6; color: #14110F; font-family: 'Space Grotesk', system-ui, sans-serif; }
+  a { color: #1B3BFF; }
+  a:hover { color: #FF4D00; }
+  .mono { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.1em; }
+  .board { width: 880px; flex: none; border: 3px solid #14110F; background: #FFF3E2; box-shadow: 8px 8px 0 #14110F; }
+  .board-m { width: 375px; flex: none; border: 3px solid #14110F; background: #FFF3E2; box-shadow: 8px 8px 0 #14110F; }
+  .plate { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .plate-id { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; background: #14110F; color: #FFF3E2; padding: 4px 9px; }
+  .plate-name { font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+  .nav { display: flex; align-items: center; gap: 20px; padding: 16px 24px; border-bottom: 3px solid #14110F; }
+  .nav b { font-family: 'Anton', sans-serif; font-size: 21px; letter-spacing: 0.01em; text-transform: uppercase; margin-right: auto; }
+  .nav span { font-size: 13px; font-weight: 500; }
+  .btn { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; border: 3px solid #14110F; padding: 10px 18px; cursor: pointer; background: transparent; color: #14110F; }
+  .btn-cta { background: #FF4D00; color: #FFF3E2; box-shadow: 4px 4px 0 #14110F; }
+  .cov { background-color: #1B3BFF; background-image: repeating-linear-gradient(135deg, rgba(255,243,226,0.24) 0 7px, transparent 7px 14px); display: grid; place-items: center; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: #FFF3E2; }
+  .in { border: 3px solid #14110F; background: #FFEAD1; padding: 10px 12px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; }
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 9px; border: 2px solid #14110F; }
+  .note { display: flex; gap: 8px; font-family: 'Space Mono', monospace; font-size: 10.5px; line-height: 1.55; color: #6B5B48; }
+  .note i { color: #FF4D00; font-style: normal; flex: none; }
+  .arrow { flex: none; align-self: center; width: 110px; text-align: center; }
+  .arrow div { font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; color: #6B5B48; }
+  .arrow span { font-size: 30px; color: #FF4D00; }
+</style>
+</helmet>
+
+<div style="background: #14110F; color: #FFF3E2; padding: 52px 44px;">
+  <div class="mono" style="color: #FF4D00; margin-bottom: 12px;">PULP × SPACE GROTESK · VISUAL DIRECTION · V1</div>
+  <h1 style="font-family: 'Anton', sans-serif; font-size: 78px; line-height: 0.9; text-transform: uppercase; margin: 0 0 14px; letter-spacing: -0.005em;">Book Hub<br><span style="color: #FF3D9A;">gets loud</span></h1>
+  <p style="max-width: 620px; margin: 0; font-size: 16px; opacity: 0.85;">Anton for the one giant headline per screen, Space Grotesk for everything else, Space Mono for data. Four accents, each with exactly one job. Eight screens plus a dark variant.</p>
+</div>
+
+<div style="padding: 44px; display: flex; flex-direction: column; gap: 64px;">
+
+  <div>
+    <div class="plate"><span class="plate-id">RULES</span><span class="plate-name">Four accents, four jobs</span></div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 1200px;">
+      <div class="board" style="width: auto; box-shadow: 6px 6px 0 #14110F;">
+        <div style="height: 76px; background: #FF4D00; border-bottom: 3px solid #14110F;"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: #6B5B48;">#FF4D00</div>
+          <div style="font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Orange = go</div>
+          <p style="font-size: 13px; margin: 0;">The one primary action on a screen. Nothing else is ever orange — that is what makes it obvious.</p>
+        </div>
+      </div>
+      <div class="board" style="width: auto; box-shadow: 6px 6px 0 #14110F;">
+        <div style="height: 76px; background: #1B3BFF; border-bottom: 3px solid #14110F;"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: #6B5B48;">#1B3BFF</div>
+          <div style="font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Blue = links</div>
+          <p style="font-size: 13px; margin: 0;">Anything that navigates: links, selected filters, cover fields, “Want to Read”.</p>
+        </div>
+      </div>
+      <div class="board" style="width: auto; box-shadow: 6px 6px 0 #14110F;">
+        <div style="height: 76px; background: #C6F24E; border-bottom: 3px solid #14110F;"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: #6B5B48;">#C6F24E</div>
+          <div style="font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Lime = done</div>
+          <p style="font-size: 13px; margin: 0;">Finished, read, saved, confirmed. Always with ink text on it — never cream.</p>
+        </div>
+      </div>
+      <div class="board" style="width: auto; box-shadow: 6px 6px 0 #14110F;">
+        <div style="height: 76px; background: #FF3D9A; border-bottom: 3px solid #14110F;"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: #6B5B48;">#FF3D9A</div>
+          <div style="font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Pink = live</div>
+          <p style="font-size: 13px; margin: 0;">Happening now or yours: currently reading, new, your own review.</p>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 14px; max-width: 900px;">
+      <div class="note"><i>01</i><span>Genre tags are ink outlines, not colours. If genres got colours too, four accents would become decoration and the state colours would stop meaning anything.</span></div>
+      <div class="note"><i>02</i><span>Cream ground #FFF3E2, ink #14110F, 3px outlines, 4–8px hard offset shadows. No soft shadows, no gradients, no rounded corners.</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="plate"><span class="plate-id">P1</span><span class="plate-name">Landing</span></div>
+    <div style="display: flex; align-items: flex-start;">
+      <div class="board">
+        <div class="nav"><b>Book<span style="color: #FF4D00;">Hub</span></b><span>Search</span><span>Shelves</span><span>Lists</span><span>Log in</span><button class="btn btn-cta">Get started</button></div>
+        <div style="padding: 32px 28px 0;">
+          <div style="display: inline-block; transform: rotate(-2deg); background: #14110F; color: #FFF3E2; padding: 6px 12px; margin-bottom: 20px;"><span class="mono" style="font-weight: 700;">FREE · NO ADVERTS · 12,408 BOOKS</span></div>
+          <h1 style="font-family: 'Anton', sans-serif; font-size: 88px; line-height: 0.88; text-transform: uppercase; margin: 0 0 18px;">Find your<br><span style="color: #FF4D00;">next book</span></h1>
+          <p style="font-size: 17px; max-width: 430px; margin: 0 0 24px;">Answer three questions. Get books that actually sound like you. Keep track of the ones you finish.</p>
+          <div style="display: flex; gap: 14px; margin-bottom: 34px;">
+            <button class="btn btn-cta" style="font-size: 19px; padding: 15px 28px; box-shadow: 6px 6px 0 #14110F;">Start here</button>
+            <button class="btn" style="font-size: 19px; padding: 15px 28px;">Just browsing</button>
+          </div>
+        </div>
+        <div class="cov" style="height: 170px; border-top: 3px solid #14110F; border-bottom: 3px solid #14110F;">HERO — COLLAGE OF REAL COVERS</div>
+        <div style="padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+          <div>
+            <h3 style="font-size: 24px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 8px;">Why this exists</h3>
+            <p style="font-size: 14px; margin: 0;">I got tired of standing in a bookshop for twenty minutes with no idea what to pick up. So I built the thing I wanted: somewhere that asks what you like, then just tells you.</p>
+          </div>
+          <div>
+            <h3 style="font-size: 24px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 12px;">Why read at all</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="border: 3px solid #14110F; padding: 10px;"><div style="font-weight: 700; font-size: 15px;">Vocabulary</div></div>
+              <div style="border: 3px solid #14110F; padding: 10px;"><div style="font-weight: 700; font-size: 15px;">Knowledge</div></div>
+              <div style="border: 3px solid #14110F; padding: 10px;"><div style="font-weight: 700; font-size: 15px;">Imagination</div></div>
+              <div style="border: 3px solid #14110F; padding: 10px;"><div style="font-weight: 700; font-size: 15px;">Quiet</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow"><div>GET STARTED</div><span>→</span></div>
+      <div>
+        <div class="plate"><span class="plate-id">P2</span><span class="plate-name">Onboarding survey</span></div>
+        <div class="board" style="width: 520px;">
+          <div style="padding: 28px 26px 32px;">
+            <div class="mono" style="color: #FF4D00; font-weight: 700; margin-bottom: 12px;">STEP 3 OF 3</div>
+            <h1 style="font-family: 'Anton', sans-serif; font-size: 46px; line-height: 0.92; text-transform: uppercase; margin: 0 0 8px;">What do you<br>like to read?</h1>
+            <p style="font-size: 14px; margin: 0 0 22px;">Pick anything that sounds like you. Change it whenever.</p>
+            <div style="font-weight: 700; font-size: 17px; margin-bottom: 4px;">Genres</div>
+            <div class="mono" style="color: #6B5B48; margin-bottom: 10px;">CHOOSE ONE OR MORE</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;">
+              <span class="tag" style="background: #1B3BFF; color: #FFF3E2; font-size: 13px; padding: 7px 12px;">Fantasy ✓</span>
+              <span class="tag" style="font-size: 13px; padding: 7px 12px;">Adventure</span>
+              <span class="tag" style="background: #1B3BFF; color: #FFF3E2; font-size: 13px; padding: 7px 12px;">Mystery ✓</span>
+              <span class="tag" style="font-size: 13px; padding: 7px 12px;">Sci-Fi</span>
+              <span class="tag" style="font-size: 13px; padding: 7px 12px;">Horror</span>
+              <span class="tag" style="font-size: 13px; padding: 7px 12px;">Romance</span>
+              <span class="tag" style="font-size: 13px; padding: 7px 12px;">Non-fiction</span>
+              <span class="tag" style="font-size: 13px; padding: 7px 12px;">Comedy</span>
+            </div>
+            <div style="font-weight: 700; font-size: 17px; margin-bottom: 10px;">How long?</div>
+            <div style="display: flex; border: 3px solid #14110F; margin-bottom: 26px;">
+              <div style="flex: 1; text-align: center; padding: 11px 4px; font-size: 13px; font-weight: 700;">Short</div>
+              <div style="flex: 1; text-align: center; padding: 11px 4px; font-size: 13px; font-weight: 700; background: #1B3BFF; color: #FFF3E2; border-left: 3px solid #14110F; border-right: 3px solid #14110F;">Medium</div>
+              <div style="flex: 1; text-align: center; padding: 11px 4px; font-size: 13px; font-weight: 700;">Long</div>
+            </div>
+            <button class="btn btn-cta" style="width: 100%; font-size: 19px; padding: 15px; box-shadow: 6px 6px 0 #14110F;">Find my book</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 520px;">
+          <div class="note"><i>01</i><span>Selected chips go blue, not orange — selecting is navigation, not the primary action. The one orange button stays the loudest thing on the screen.</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 14px; max-width: 880px;">
+      <div class="note"><i>01</i><span>Anton appears exactly once per screen. Everything else is Space Grotesk — that contrast is what keeps the poster energy without shouting through the whole page.</span></div>
+      <div class="note"><i>02</i><span>The hero collage sits below the headline as a full-bleed band, so the type lands first and the covers do the selling second.</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="plate"><span class="plate-id">P3</span><span class="plate-name">Home dashboard</span></div>
+    <div style="display: flex; align-items: flex-start;">
+      <div class="board">
+        <div class="nav"><b>Book<span style="color: #FF4D00;">Hub</span></b><span style="border-bottom: 3px solid #FF4D00;">Home</span><span>Search</span><span>Picks</span><span>Tracker</span><span>Lists</span><span style="display: inline-grid; place-items: center; width: 30px; height: 30px; background: #FF3D9A; border: 3px solid #14110F; font-weight: 700; font-size: 14px;">M</span></div>
+        <div style="padding: 26px 28px 32px;">
+          <h1 style="font-family: 'Anton', sans-serif; font-size: 54px; line-height: 0.92; text-transform: uppercase; margin: 0 0 6px;">Welcome back, Maya</h1>
+          <div class="mono" style="color: #6B5B48; margin-bottom: 26px;">MATCHED ON: FANTASY · MYSTERY · MEDIUM · <span style="color: #1B3BFF; font-weight: 700;">EDIT</span></div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+            <div style="font-weight: 700; font-size: 22px; letter-spacing: -0.03em;">Picked for you</div>
+            <div style="flex: 1; height: 3px; background: #14110F;"></div>
+            <span style="font-size: 13px; font-weight: 700; color: #1B3BFF;">See all</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 32px;">
+            <div style="border: 3px solid #14110F; box-shadow: 4px 4px 0 #14110F;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #14110F;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Nevermoor</div><span class="mono" style="color: #6B5B48;">4.6</span></div></div>
+            <div style="border: 3px solid #14110F; box-shadow: 4px 4px 0 #14110F;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #14110F;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Coraline</div><span class="mono" style="color: #6B5B48;">4.8</span></div></div>
+            <div style="border: 3px solid #14110F; box-shadow: 4px 4px 0 #14110F;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #14110F;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Amari</div><span class="mono" style="color: #6B5B48;">4.7</span></div></div>
+            <div style="border: 3px solid #14110F; box-shadow: 4px 4px 0 #14110F;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #14110F;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Holes</div><span class="mono" style="color: #6B5B48;">4.5</span></div></div>
+            <div style="border: 3px solid #14110F; box-shadow: 4px 4px 0 #14110F;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #14110F;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Skellig</div><span class="mono" style="color: #6B5B48;">4.2</span></div></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px;">
+            <div>
+              <div style="font-weight: 700; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 12px;">On the go</div>
+              <div style="border: 3px solid #14110F;">
+                <div style="display: flex; gap: 12px; padding: 12px; align-items: center; border-bottom: 3px solid #14110F;">
+                  <div class="cov" style="width: 38px; height: 54px; flex: none;"></div>
+                  <div style="flex: 1;"><div style="font-weight: 700; font-size: 16px;">Nevermoor</div><span class="mono" style="color: #6B5B48;">PAGE 210 OF 464</span></div>
+                  <span class="tag" style="background: #FF3D9A;">Reading</span>
+                </div>
+                <div style="display: flex; gap: 12px; padding: 12px; align-items: center;">
+                  <div class="cov" style="width: 38px; height: 54px; flex: none;"></div>
+                  <div style="flex: 1;"><div style="font-weight: 700; font-size: 16px;">Holes</div><span class="mono" style="color: #6B5B48;">JUST STARTED</span></div>
+                  <span class="tag" style="background: #FF3D9A;">Reading</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 12px;">Shelves</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="border: 3px solid #14110F; background: #C6F24E; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">12</div><span class="mono" style="font-weight: 700;">READ</span></div>
+                <div style="border: 3px solid #14110F; background: #FF3D9A; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">2</div><span class="mono" style="font-weight: 700;">READING</span></div>
+                <div style="border: 3px solid #14110F; background: #1B3BFF; color: #FFF3E2; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">8</div><span class="mono" style="font-weight: 700;">WANT</span></div>
+                <div style="border: 3px solid #14110F; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">3</div><span class="mono" style="font-weight: 700;">LISTS</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow"><div>TAPS A BOOK</div><span>→</span></div>
+      <div>
+        <div class="plate"><span class="plate-id">P4</span><span class="plate-name">Book detail</span></div>
+        <div class="board" style="width: 640px;">
+          <div class="nav"><b>Book<span style="color: #FF4D00;">Hub</span></b><span>Search</span><span>Tracker</span><span>Lists</span></div>
+          <div style="padding: 24px 26px 30px; display: grid; grid-template-columns: 190px 1fr; gap: 24px;">
+            <div>
+              <div class="cov" style="height: 270px; border: 3px solid #14110F; box-shadow: 5px 5px 0 #14110F;">COVER FROM API</div>
+              <div class="mono" style="color: #6B5B48; margin: 16px 0 8px;">YOUR STATUS</div>
+              <div style="border: 3px solid #14110F;">
+                <div style="padding: 11px; font-size: 14px; font-weight: 700; border-bottom: 3px solid #14110F;">Read</div>
+                <div style="padding: 11px; font-size: 14px; font-weight: 700; background: #FF3D9A; border-bottom: 3px solid #14110F;">Currently reading ✓</div>
+                <div style="padding: 11px; font-size: 14px; font-weight: 700;">Want to read</div>
+              </div>
+              <button class="btn" style="width: 100%; margin-top: 10px;">＋ Add to a list</button>
+            </div>
+            <div>
+              <h1 style="font-family: 'Anton', sans-serif; font-size: 52px; line-height: 0.9; text-transform: uppercase; margin: 0 0 6px;">Nevermoor</h1>
+              <div style="font-size: 15px; font-weight: 500; margin-bottom: 12px;">Jessica Townsend</div>
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                <span style="background: #14110F; color: #FFF3E2; font-family: 'Anton', sans-serif; font-size: 19px; padding: 3px 9px;">4.6</span>
+                <span class="mono" style="color: #6B5B48;">318 REVIEWS</span>
+              </div>
+              <div style="display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 20px;">
+                <span class="tag">Fantasy</span><span class="tag">Mystery</span><span class="tag">Middle Grade</span><span class="tag">464pp</span><span class="tag">Series</span>
+              </div>
+              <p style="font-size: 14px; margin: 0 0 22px;">A cursed girl is smuggled into a hidden city and has to win a place at its strangest institution before her luck runs out.</p>
+              <div style="display: flex; align-items: center; gap: 12px; border-top: 3px solid #14110F; padding-top: 16px; margin-bottom: 14px;">
+                <div style="font-weight: 700; font-size: 20px; letter-spacing: -0.03em; flex: 1;">Reviews</div>
+                <button class="btn btn-cta">Write one</button>
+              </div>
+              <div style="border: 3px solid #14110F; padding: 12px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;"><div style="font-weight: 700; font-size: 15px;">Priya S.</div><span class="mono" style="color: #6B5B48;">28 FEB</span></div>
+                <span style="background: #14110F; color: #FFF3E2; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; padding: 2px 6px;">5/5</span>
+                <p style="font-size: 13px; margin: 8px 0 0;">If you liked the idea of a magic school but wanted something newer, start here.</p>
+              </div>
+              <div style="border: 3px solid #14110F; padding: 12px; background: #FFE9F3;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;"><div style="font-weight: 700; font-size: 15px;">You <span class="tag" style="background: #FF3D9A; margin-left: 4px;">Yours</span></div><span class="mono" style="color: #6B5B48;">TODAY</span></div>
+                <p style="font-size: 13px; margin: 8px 0 0;">Read it in three days. The Wundrous Society trials are the best part.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 640px;">
+          <div class="note"><i>01</i><span>Your own review is tinted pink and badged — pink means “yours or live”, the same rule as the Currently Reading status above it.</span></div>
+          <div class="note"><i>02</i><span>Ratings are numerals in an ink block, not star glyphs. At this weight stars turn to mush; numbers stay legible and match the Space Mono data voice.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="plate"><span class="plate-id">P5</span><span class="plate-name">Search results</span></div>
+    <div style="display: flex; align-items: flex-start;">
+      <div class="board">
+        <div class="nav"><b>Book<span style="color: #FF4D00;">Hub</span></b><span>Home</span><span style="border-bottom: 3px solid #FF4D00;">Search</span><span>Tracker</span><span>Lists</span></div>
+        <div style="padding: 22px 28px 30px;">
+          <div style="display: flex; gap: 10px; margin-bottom: 22px;">
+            <div class="in" style="flex: 1; font-weight: 500;">dragons</div>
+            <button class="btn btn-cta">Search</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 180px 1fr; gap: 26px;">
+            <div>
+              <div class="mono" style="color: #6B5B48; margin-bottom: 10px;">FILTERS</div>
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 8px;">Genre</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;">
+                <span class="tag" style="background: #1B3BFF; color: #FFF3E2;">Fantasy ✓</span>
+                <span class="tag">Adventure</span><span class="tag">Horror</span><span class="tag">Sci-Fi</span>
+              </div>
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 8px;">Length</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;">
+                <span class="tag">&lt;200</span><span class="tag">200–400</span><span class="tag" style="background: #1B3BFF; color: #FFF3E2;">400–600 ✓</span><span class="tag">600+</span>
+              </div>
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 8px;">Level</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <span class="tag">Middle</span><span class="tag">YA</span><span class="tag">Adult</span>
+              </div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                <span class="mono" style="color: #6B5B48;">42 RESULTS</span>
+                <span class="mono" style="color: #1B3BFF; font-weight: 700;">SORT: MOST REVIEWED</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; gap: 14px; border: 3px solid #14110F; padding: 12px; box-shadow: 4px 4px 0 #14110F;">
+                  <div class="cov" style="width: 62px; height: 90px; flex: none;">COVER</div>
+                  <div style="flex: 1;">
+                    <div style="font-weight: 700; font-size: 18px; letter-spacing: -0.02em;">Eragon</div>
+                    <span class="mono" style="color: #6B5B48;">CHRISTOPHER PAOLINI · 528PP</span>
+                    <p style="font-size: 13px; margin: 6px 0 8px;">A farm boy finds a blue stone in the mountains. It hatches, and the empire notices.</p>
+                    <div style="display: flex; gap: 6px;"><span class="tag">Fantasy</span><span class="tag">YA</span><span class="tag">Series</span></div>
+                  </div>
+                  <div style="align-self: center;"><span style="background: #14110F; color: #FFF3E2; font-family: 'Anton', sans-serif; font-size: 17px; padding: 3px 8px;">4.1</span></div>
+                </div>
+                <div style="display: flex; gap: 14px; border: 3px solid #14110F; padding: 12px; box-shadow: 4px 4px 0 #14110F;">
+                  <div class="cov" style="width: 62px; height: 90px; flex: none;">COVER</div>
+                  <div style="flex: 1;">
+                    <div style="font-weight: 700; font-size: 18px; letter-spacing: -0.02em;">Seraphina</div>
+                    <span class="mono" style="color: #6B5B48;">RACHEL HARTMAN · 465PP</span>
+                    <p style="font-size: 13px; margin: 6px 0 8px;">A court musician hiding what she is gets pulled into a murder investigation.</p>
+                    <div style="display: flex; gap: 6px;"><span class="tag">Fantasy</span><span class="tag">YA</span></div>
+                  </div>
+                  <div style="align-self: center;"><span style="background: #14110F; color: #FFF3E2; font-family: 'Anton', sans-serif; font-size: 17px; padding: 3px 8px;">4.0</span></div>
+                </div>
+                <div style="border: 3px dashed #14110F; padding: 14px; display: flex; align-items: center; gap: 14px;">
+                  <div style="flex: 1;"><div style="font-weight: 700; font-size: 16px;">Couldn't find it?</div><span class="mono" style="color: #6B5B48;">WE'LL LOOK IT UP BY HAND</span></div>
+                  <button class="btn">Request it</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow"><div>“TRACKER”</div><span>→</span></div>
+      <div>
+        <div class="plate"><span class="plate-id">P6</span><span class="plate-name">Reading tracker</span></div>
+        <div class="board" style="width: 700px;">
+          <div class="nav"><b>Book<span style="color: #FF4D00;">Hub</span></b><span>Home</span><span>Search</span><span style="border-bottom: 3px solid #FF4D00;">Tracker</span><span>Lists</span></div>
+          <div style="padding: 24px 26px 30px;">
+            <h1 style="font-family: 'Anton', sans-serif; font-size: 46px; text-transform: uppercase; margin: 0 0 20px;">Your shelves</h1>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+              <div>
+                <div style="border: 3px solid #14110F; background: #FF3D9A; padding: 8px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;"><span style="font-weight: 700; font-size: 15px;">Reading</span><span class="mono" style="font-weight: 700;">2</span></div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="border: 3px solid #14110F; padding: 9px; display: flex; gap: 9px; align-items: center; box-shadow: 3px 3px 0 #14110F;"><div class="cov" style="width: 30px; height: 44px; flex: none;"></div><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Nevermoor</div></div>
+                  <div style="border: 3px solid #14110F; padding: 9px; display: flex; gap: 9px; align-items: center; box-shadow: 3px 3px 0 #14110F;"><div class="cov" style="width: 30px; height: 44px; flex: none;"></div><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Holes</div></div>
+                </div>
+              </div>
+              <div>
+                <div style="border: 3px solid #14110F; background: #1B3BFF; color: #FFF3E2; padding: 8px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;"><span style="font-weight: 700; font-size: 15px;">Want to read</span><span class="mono" style="font-weight: 700;">8</span></div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="border: 3px solid #14110F; padding: 9px; display: flex; gap: 9px; align-items: center; box-shadow: 3px 3px 0 #14110F;"><div class="cov" style="width: 30px; height: 44px; flex: none;"></div><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Skellig</div></div>
+                  <div style="border: 3px solid #14110F; padding: 9px; display: flex; gap: 9px; align-items: center; box-shadow: 3px 3px 0 #14110F;"><div class="cov" style="width: 30px; height: 44px; flex: none;"></div><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Amari</div></div>
+                  <div style="border: 3px solid #14110F; padding: 9px; display: flex; gap: 9px; align-items: center; box-shadow: 3px 3px 0 #14110F;"><div class="cov" style="width: 30px; height: 44px; flex: none;"></div><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Rooftoppers</div></div>
+                </div>
+              </div>
+              <div>
+                <div style="border: 3px solid #14110F; background: #C6F24E; padding: 8px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;"><span style="font-weight: 700; font-size: 15px;">Read</span><span class="mono" style="font-weight: 700;">12</span></div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="border: 3px solid #14110F; padding: 9px; display: flex; gap: 9px; align-items: center; box-shadow: 3px 3px 0 #14110F;"><div class="cov" style="width: 30px; height: 44px; flex: none;"></div><div style="flex: 1;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">The Hobbit</div><span class="mono" style="color: #6B5B48;">REVIEWED</span></div></div>
+                  <div style="border: 3px solid #14110F; padding: 9px; display: flex; gap: 9px; align-items: center; box-shadow: 3px 3px 0 #14110F;"><div class="cov" style="width: 30px; height: 44px; flex: none;"></div><div style="flex: 1;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Coraline</div><span class="mono" style="color: #1B3BFF; font-weight: 700;">＋ REVIEW</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="margin-top: 12px; max-width: 700px;"><i>01</i><span>Column headers carry the status colour so the shelf you are looking at is obvious at a glance. Cards stay cream — colouring every card would be unreadable.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="plate"><span class="plate-id">P7 / P8</span><span class="plate-name">Mobile landing · dark variant</span></div>
+    <div style="display: flex; align-items: flex-start; gap: 44px;">
+      <div>
+        <div class="board-m">
+          <div style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 3px solid #14110F;">
+            <b style="font-family: 'Anton', sans-serif; font-size: 19px; text-transform: uppercase; flex: 1;">Book<span style="color: #FF4D00;">Hub</span></b><span class="mono" style="font-weight: 700;">MENU</span>
+          </div>
+          <div style="padding: 20px 16px 24px;">
+            <div style="display: inline-block; transform: rotate(-2deg); background: #14110F; color: #FFF3E2; padding: 5px 10px; margin-bottom: 16px;"><span class="mono" style="font-weight: 700;">FREE · NO ADVERTS</span></div>
+            <h1 style="font-family: 'Anton', sans-serif; font-size: 50px; line-height: 0.88; text-transform: uppercase; margin: 0 0 12px;">Find your<br><span style="color: #FF4D00;">next book</span></h1>
+            <p style="font-size: 15px; margin: 0 0 18px;">Three questions. Then books that actually sound like you.</p>
+            <button class="btn btn-cta" style="width: 100%; font-size: 18px; padding: 15px; box-shadow: 5px 5px 0 #14110F;">Start here</button>
+            <button class="btn" style="width: 100%; font-size: 18px; padding: 15px; margin-top: 10px;">Just browsing</button>
+          </div>
+          <div class="cov" style="height: 120px; border-top: 3px solid #14110F;">HERO COLLAGE</div>
+        </div>
+        <div class="note" style="margin-top: 12px; max-width: 375px;"><i>01</i><span>Anton scales down to 50px and still reads as a poster. Both buttons go full width at 48px tall.</span></div>
+      </div>
+
+      <div>
+        <div class="board-m" style="background: #14110F; border-color: #FFF3E2; box-shadow: 8px 8px 0 #6B5B48; color: #FFF3E2;">
+          <div style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 3px solid #FFF3E2;">
+            <b style="font-family: 'Anton', sans-serif; font-size: 19px; text-transform: uppercase; flex: 1;">Book<span style="color: #FF4D00;">Hub</span></b><span class="mono" style="font-weight: 700;">MENU</span>
+          </div>
+          <div style="padding: 20px 16px 24px;">
+            <div style="display: inline-block; transform: rotate(-2deg); background: #C6F24E; color: #14110F; padding: 5px 10px; margin-bottom: 16px;"><span class="mono" style="font-weight: 700;">FREE · NO ADVERTS</span></div>
+            <h1 style="font-family: 'Anton', sans-serif; font-size: 50px; line-height: 0.88; text-transform: uppercase; margin: 0 0 12px;">Find your<br><span style="color: #FF3D9A;">next book</span></h1>
+            <p style="font-size: 15px; margin: 0 0 18px; opacity: 0.85;">Three questions. Then books that actually sound like you.</p>
+            <button class="btn btn-cta" style="width: 100%; font-size: 18px; padding: 15px; box-shadow: 5px 5px 0 #FFF3E2; border-color: #FFF3E2;">Start here</button>
+            <button class="btn" style="width: 100%; font-size: 18px; padding: 15px; margin-top: 10px; border-color: #FFF3E2; color: #FFF3E2;">Just browsing</button>
+          </div>
+          <div class="cov" style="height: 120px; border-top: 3px solid #FFF3E2; background-color: #1B3BFF;">HERO COLLAGE</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 375px;">
+          <div class="note"><i>01</i><span>Ink becomes the ground, cream becomes the outline. The four accents are unchanged — they were picked to work on both.</span></div>
+          <div class="note"><i>02</i><span>Orange on ink is the one weak spot: it dims. Pink carries the headline accent in dark mode instead.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="plate"><span class="plate-id">P9</span><span class="plate-name">Dark variant — desktop home</span></div>
+    <div class="board" style="background: #14110F; border-color: #FFF3E2; color: #FFF3E2; box-shadow: 8px 8px 0 #6B5B48;">
+      <div class="nav" style="border-bottom-color: #FFF3E2;">
+        <b>Book<span style="color: #FF4D00;">Hub</span></b>
+        <span style="border-bottom: 3px solid #FF4D00;">Home</span><span style="opacity: 0.7;">Search</span><span style="opacity: 0.7;">Picks</span><span style="opacity: 0.7;">Tracker</span><span style="opacity: 0.7;">Lists</span>
+        <span style="display: inline-grid; place-items: center; width: 30px; height: 30px; background: #FF3D9A; border: 3px solid #FFF3E2; font-weight: 700; font-size: 14px; color: #14110F;">M</span>
+      </div>
+      <div style="padding: 26px 28px 32px;">
+        <h1 style="font-family: 'Anton', sans-serif; font-size: 54px; line-height: 0.92; text-transform: uppercase; margin: 0 0 6px;">Welcome back, <span style="color: #FF3D9A;">Maya</span></h1>
+        <div class="mono" style="color: #9C8B76; margin-bottom: 26px;">MATCHED ON: FANTASY · MYSTERY · MEDIUM · <span style="color: #C6F24E; font-weight: 700;">EDIT</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+          <div style="font-weight: 700; font-size: 22px; letter-spacing: -0.03em;">Picked for you</div>
+          <div style="flex: 1; height: 3px; background: #FFF3E2;"></div>
+          <span style="font-size: 13px; font-weight: 700; color: #C6F24E;">See all</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 32px;">
+          <div style="border: 3px solid #FFF3E2;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #FFF3E2;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Nevermoor</div><span class="mono" style="color: #9C8B76;">4.6</span></div></div>
+          <div style="border: 3px solid #FFF3E2;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #FFF3E2;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Coraline</div><span class="mono" style="color: #9C8B76;">4.8</span></div></div>
+          <div style="border: 3px solid #FFF3E2;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #FFF3E2;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Amari</div><span class="mono" style="color: #9C8B76;">4.7</span></div></div>
+          <div style="border: 3px solid #FFF3E2;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #FFF3E2;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Holes</div><span class="mono" style="color: #9C8B76;">4.5</span></div></div>
+          <div style="border: 3px solid #FFF3E2;"><div class="cov" style="aspect-ratio: 3/4; border-bottom: 3px solid #FFF3E2;">COVER</div><div style="padding: 8px 10px;"><div style="font-weight: 700; font-size: 14px; line-height: 1.1;">Skellig</div><span class="mono" style="color: #9C8B76;">4.2</span></div></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px;">
+          <div>
+            <div style="font-weight: 700; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 12px;">On the go</div>
+            <div style="border: 3px solid #FFF3E2;">
+              <div style="display: flex; gap: 12px; padding: 12px; align-items: center; border-bottom: 3px solid #FFF3E2;">
+                <div class="cov" style="width: 38px; height: 54px; flex: none;"></div>
+                <div style="flex: 1;"><div style="font-weight: 700; font-size: 16px;">Nevermoor</div><span class="mono" style="color: #9C8B76;">PAGE 210 OF 464</span></div>
+                <span class="tag" style="background: #FF3D9A; color: #14110F; border-color: #FFF3E2;">Reading</span>
+              </div>
+              <div style="display: flex; gap: 12px; padding: 12px; align-items: center;">
+                <div class="cov" style="width: 38px; height: 54px; flex: none;"></div>
+                <div style="flex: 1;"><div style="font-weight: 700; font-size: 16px;">Holes</div><span class="mono" style="color: #9C8B76;">JUST STARTED</span></div>
+                <span class="tag" style="background: #FF3D9A; color: #14110F; border-color: #FFF3E2;">Reading</span>
+              </div>
+            </div>
+            <button class="btn btn-cta" style="margin-top: 14px; border-color: #FFF3E2; box-shadow: 4px 4px 0 #FFF3E2;">Write a review</button>
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 12px;">Shelves</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="border: 3px solid #FFF3E2; background: #C6F24E; color: #14110F; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">12</div><span class="mono" style="font-weight: 700;">READ</span></div>
+              <div style="border: 3px solid #FFF3E2; background: #FF3D9A; color: #14110F; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">2</div><span class="mono" style="font-weight: 700;">READING</span></div>
+              <div style="border: 3px solid #FFF3E2; background: #1B3BFF; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">8</div><span class="mono" style="font-weight: 700;">WANT</span></div>
+              <div style="border: 3px solid #FFF3E2; padding: 10px 12px;"><div style="font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1;">3</div><span class="mono" style="font-weight: 700;">LISTS</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 14px; max-width: 880px;">
+      <div class="note"><i>01</i><span>Ink becomes the ground and cream becomes every outline — the structure is identical to P3, which is what makes this a variant rather than a second design.</span></div>
+      <div class="note"><i>02</i><span>Lime and pink blocks keep ink text, so they stay readable on the dark ground. Blue takes cream text instead.</span></div>
+      <div class="note"><i>03</i><span>Body copy drops to a warm grey (#9C8B76) rather than pure cream — full-strength cream on ink vibrates at paragraph size.</span></div>
+    </div>
+  </div>
+
+  <div style="border: 3px solid #14110F; background: #14110F; color: #FFF3E2; padding: 28px; max-width: 900px; box-shadow: 8px 8px 0 #FF4D00;">
+    <div class="mono" style="color: #C6F24E; font-weight: 700; margin-bottom: 12px;">BEFORE YOU COMMIT TO THIS</div>
+    <ol style="font-size: 14px; margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 9px;">
+      <li><b>Four accents need the rules written down.</b> The moment someone uses lime for a heading “because it looks nice”, the system is gone. Colour = state, never decoration.</li>
+      <li><b>Anton once per screen.</b> It is a display face. Two Antons on one page and neither is special.</li>
+      <li><b>Check contrast on lime and pink.</b> Both need ink text, never cream. Orange on cream passes for large text and buttons but not for body copy — use ink.</li>
+      <li><b>Real covers will fight this.</b> Book jackets bring their own colours. That is why cards stay cream and outlines stay black — the frame has to be neutral enough to hold anything.</li>
+      <li><b>Keep the wireframes in Industry.</b> Quiet wireframes are easier to critique; this theme is for the built thing.</li>
+    </ol>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

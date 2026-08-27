@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="pulp.css">
+<style>
+  body { margin: 0; background: #e9dcc6; }
+  .mono { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; }
+  .board { width: 900px; flex: none; background: var(--color-bg); border: 3px solid var(--color-text); box-shadow: 8px 8px 0 var(--color-text); }
+  .plate { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .plate-id { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; background: var(--color-text); color: var(--color-bg); padding: 4px 9px; }
+  .plate-name { font-family: var(--font-heading); font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+  .chrome { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 3px solid var(--color-text); }
+  .url { flex: 1; font-family: var(--font-mono); font-size: 10px; color: var(--color-neutral-700); background: var(--color-surface); border: 2px solid var(--color-text); padding: 4px 8px; }
+  .dot3 { width: 8px; height: 8px; border: 2px solid var(--color-text); }
+  .anav { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 3px solid var(--color-text); font-size: 13px; white-space: nowrap; }
+  .anav b { font-family: var(--font-display); font-size: 18px; text-transform: uppercase; margin-right: auto; }
+  .anav span { color: var(--color-neutral-700); }
+  .anav span.on { color: var(--color-text); font-weight: 700; border-bottom: 3px solid var(--color-accent); padding-bottom: 2px; }
+  .cover { background-color: var(--color-link); background-image: repeating-linear-gradient(135deg, rgba(239,236,227,0.24) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; color: #EFECE3; }
+  .note { display: flex; gap: 8px; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.55; color: var(--color-neutral-700); }
+  .note i { color: var(--color-accent); font-weight: 700; font-style: normal; flex: none; }
+  .flow-badge { flex: none; white-space: nowrap; background: var(--color-accent); color: var(--color-bg); font-weight: 700; padding: 5px 10px; }
+  .qrow { display: flex; gap: 14px; padding: 14px 0; border-bottom: 3px solid var(--color-divider); align-items: flex-start; }
+  .acts { display: flex; gap: 8px; flex: none; align-self: center; }
+  a { color: var(--color-link); }
+  a:hover { color: var(--color-accent); }
+</style>
+</helmet>
+
+<div style="background: var(--color-text); color: var(--color-bg); padding: 48px 44px;">
+  <div class="mono" style="color: #ff4d00; font-weight: 700; margin-bottom: 10px;">SHEET 03 OF 03 · ADMIN · V1 SCOPE</div>
+  <h1 style="font-size: 52px; margin: 0 0 10px;">Book Hub — Admin</h1>
+  <p style="max-width: 640px; margin: 0; opacity: 0.85; font-size: 15px;">Eleven screens for the person running the site: queues for reviews, accounts and book requests, a user directory, a safeguarding queue, a trash with a 14-day window, and the four dialogs. Same Pulp system as the reader app, deliberately plainer.</p>
+</div>
+
+<div style="padding: 44px; display: flex; flex-direction: column; gap: 64px;">
+
+  <div>
+    <div class="plate"><span class="plate-id">RULES</span><span class="plate-name">How admin differs from the reader app</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 900px;">
+      <div class="card"><div class="card-kicker">Rule 01</div><p class="card-body">Destructive actions are never the primary button. Orange is Approve. Delete and Ban are outlined, and both confirm before acting.</p></div>
+      <div class="card"><div class="card-kicker">Rule 02</div><p class="card-body">Every queue is one list, newest first, with the whole item visible. No expanding rows — you cannot judge a review you have to click to read.</p></div>
+      <div class="card"><div class="card-kicker">Rule 03</div><p class="card-body">Same four state colours: lime approved, red removed or declined, pink awaiting you, blue navigation.</p></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 14px; max-width: 900px;">
+      <div class="note"><i>01</i><span>This is a back office, not a product. No hero type, no imagery, no marketing copy — density and legibility win over personality here.</span></div>
+      <div class="note"><i>02</i><span>Access is a role on the user record, checked server-side. A hidden URL is not access control.</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW G</span>
+      <h2 style="margin: 0;">Admin queues</h2>
+      <span class="mono" style="color: var(--color-neutral-700);">DASHBOARD → REVIEWS → ACCOUNTS → REQUESTS</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 48px;">
+
+      <div>
+        <div class="plate"><span class="plate-id">G1</span><span class="plate-name">Admin dashboard</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / admin</span></div>
+          <div class="anav"><b>Book Hub Admin</b><span class="on">Overview</span><span>Reviews</span><span>Accounts</span><span>Requests</span><span>Back to site</span></div>
+          <div style="padding: 26px 28px 32px;">
+            <h1 style="font-size: 40px; margin: 0 0 20px;">Three things need you</h1>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px;">
+              <div style="border: 3px solid var(--color-text); background: #ff3d9a; box-shadow: 5px 5px 0 var(--color-text); padding: 14px 16px;">
+                <div style="font-family: var(--font-display); font-size: 42px; line-height: 1;">7</div>
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Reported reviews</div>
+                <div class="mono" style="font-weight: 700; margin-top: 4px;">OLDEST: 3 DAYS AGO</div>
+              </div>
+              <div style="border: 3px solid var(--color-text); background: #ff3d9a; box-shadow: 5px 5px 0 var(--color-text); padding: 14px 16px;">
+                <div style="font-family: var(--font-display); font-size: 42px; line-height: 1;">2</div>
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Reported accounts</div>
+                <div class="mono" style="font-weight: 700; margin-top: 4px;">OLDEST: TODAY</div>
+              </div>
+              <div style="border: 3px solid var(--color-text); background: #ff3d9a; box-shadow: 5px 5px 0 var(--color-text); padding: 14px 16px;">
+                <div style="font-family: var(--font-display); font-size: 42px; line-height: 1;">14</div>
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Book requests</div>
+                <div class="mono" style="font-weight: 700; margin-top: 4px;">OLDEST: 6 DAYS AGO</div>
+              </div>
+            </div>
+            <div class="blueprint" style="background: #C41031; color: #EFECE3; padding: 14px 16px; margin-bottom: 26px; display: flex; align-items: center; gap: 14px;">
+              <div style="font-family: var(--font-display); font-size: 34px; line-height: 1;">2</div>
+              <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Safeguarding reports</div><div class="mono" style="font-weight: 700; margin-top: 3px;">READ THESE FIRST — SEE G5</div></div>
+              <button class="btn btn-secondary" style="border-color: #EFECE3; color: #EFECE3;">Open queue</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <div>
+                <h4 style="margin: 0 0 10px;">Last seven days</h4>
+                <table class="table">
+                  <tbody>
+                    <tr><td>Reviews posted</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">128</td></tr>
+                    <tr><td>Reviews auto-blocked by the filter</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">9</td></tr>
+                    <tr><td>New accounts</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">41</td></tr>
+                    <tr><td>Display names refused</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">6</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <h4 style="margin: 0 0 10px;">Nothing waiting</h4>
+                <div style="border: 3px dashed var(--color-divider); padding: 22px; text-align: center;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">All clear state</div>
+                  <p class="mono" style="color: var(--color-neutral-700); margin: 6px 0 0;">WHEN EVERY QUEUE IS EMPTY THE THREE PINK CARDS GO OUTLINED AND READ \u201cNOTHING WAITING\u201d</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 900px;">
+          <div class="note"><i>01</i><span>The dashboard's only job is routing. Pink means awaiting you, and the oldest-item age is the number that actually matters — a queue of 14 is fine, a six-day-old report is not.</span></div>
+          <div class="note"><i>02</i><span>The filter counts are here so you can tune the word list. If \u201crefused\u201d spikes, the list is too aggressive; if reports spike, it is too loose.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G2</span><span class="plate-name">Review queue</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / admin / reviews</span></div>
+          <div class="anav"><b>Book Hub Admin</b><span>Overview</span><span class="on">Reviews</span><span>Accounts</span><span>Requests</span><span>Back to site</span></div>
+          <div style="padding: 22px 28px 30px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+              <h2 style="margin: 0;">Reviews</h2>
+              <div class="seg" style="margin-left: auto;">
+                <label class="seg-opt"><input type="radio" name="rq" checked>Reported (7)</label>
+                <label class="seg-opt"><input type="radio" name="rq">Auto-blocked (9)</label>
+                <label class="seg-opt"><input type="radio" name="rq">All</label>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px;">
+              <input class="input" style="flex: 1;" placeholder="Search reviews, books or readers">
+              <span class="mono" style="color: var(--color-neutral-700);">PAGE 1 OF 3 · 10 A PAGE</span>
+              <button class="btn btn-secondary">←</button>
+              <button class="btn btn-secondary">→</button>
+            </div>
+            <div style="border-top: 3px solid var(--color-text);">
+              <div class="qrow">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="tag" style="background: #ff3d9a; color: #14110f;">Reported \u00d73</span>
+                    <span class="mono" style="color: var(--color-neutral-700);">ON \u201cERAGON\u201d \u00b7 BY <b>dragonlad_09</b> \u00b7 3 DAYS AGO</span>
+                  </div>
+                  <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
+                    <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">2/5</div>
+                    <p style="font-size: 14px; margin: 0;">this book is rubbish and anyone who likes it is an idiot, go and read something with pictures instead</p>
+                  </div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px;">REPORTED FOR: RUDE TO OTHER READERS \u00d73</div>
+                </div>
+                <div class="acts">
+                  <button class="btn btn-primary">Allow</button>
+                  <button class="btn btn-secondary">Delete</button>
+                  <button class="btn btn-secondary">Ban author</button>
+                </div>
+              </div>
+              <div class="qrow">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="tag" style="background: #C41031; color: #EFECE3;">Auto-blocked</span>
+                    <span class="mono" style="color: var(--color-neutral-700);">ON \u201cHOLES\u201d \u00b7 BY <b>zeni_reads</b> \u00b7 YESTERDAY</span>
+                  </div>
+                  <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
+                    <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">5/5</div>
+                    <p style="font-size: 14px; margin: 0;">the bit at the end is so good it made me swear out loud, best book we've done in class</p>
+                  </div>
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 8px;">FILTER MATCHED: \u201cSWEAR\u201d \u2014 LIKELY A FALSE POSITIVE</div>
+                </div>
+                <div class="acts">
+                  <button class="btn btn-primary">Allow</button>
+                  <button class="btn btn-secondary">Delete</button>
+                </div>
+              </div>
+              <div class="qrow" style="border-bottom: 0;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="tag" style="background: #c6f24e; color: #14110f;">Allowed</span>
+                    <span class="mono" style="color: var(--color-neutral-700);">ON \u201cCORALINE\u201d \u00b7 BY <b>tomasb</b> \u00b7 CLEARED 10 MINUTES AGO BY YOU</span>
+                  </div>
+                  <div style="border-left: 5px solid var(--color-neutral-400); padding-left: 12px;">
+                    <p style="font-size: 14px; margin: 0; color: var(--color-neutral-700);">Genuinely frightening in about four places. Buttons.</p>
+                  </div>
+                </div>
+                <div class="acts">
+                  <button class="btn btn-ghost">Undo</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 900px;">
+          <div class="note"><i>01</i><span>The full review text is always visible, with the rating and the book it is on. Anything less and you are moderating blind.</span></div>
+          <div class="note"><i>02</i><span>Allow is the orange primary because it is the commonest and the safest action. Delete and Ban are outlined \u2014 never make destruction the easiest button to hit.</span></div>
+          <div class="note"><i>03</i><span>Auto-blocked items show what the filter matched. Most will be false positives like this one, and seeing the matched word is how you learn to fix the list.</span></div>
+          <div class="note"><i>04</i><span>Cleared items stay in place with an Undo for the rest of the session. A moderation queue with no undo makes every decision frightening.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G3</span><span class="plate-name">Account queue</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / admin / accounts</span></div>
+          <div class="anav"><b>Book Hub Admin</b><span>Overview</span><span>Reviews</span><span class="on">Accounts</span><span>Requests</span><span>Back to site</span></div>
+          <div style="padding: 22px 28px 30px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+              <h2 style="margin: 0;">Accounts</h2>
+              <div class="seg" style="margin-left: auto;">
+                <label class="seg-opt"><input type="radio" name="aq" checked>Reported (2)</label>
+                <label class="seg-opt"><input type="radio" name="aq">Name refused (6)</label>
+                <label class="seg-opt"><input type="radio" name="aq">All</label>
+              </div>
+            </div>
+            <div style="border-top: 3px solid var(--color-text);">
+              <div class="qrow" style="align-items: center;">
+                <div style="display: inline-grid; place-items: center; width: 46px; height: 46px; flex: none; border: 3px solid var(--color-text); background: #7B2DFF; color: #EFECE3; font-family: var(--font-heading); font-weight: 700; font-size: 20px;">D</div>
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">dragonlad_09</div>
+                    <span class="tag" style="background: #ff3d9a; color: #14110f;">Reported \u00d74</span>
+                  </div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">JOINED 12 MAR \u00b7 9 REVIEWS \u00b7 4 REPORTS ACROSS 3 REVIEWS \u00b7 EMAIL VERIFIED</div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">REPORTED FOR: RUDE TO OTHER READERS</div>
+                </div>
+                <div class="acts">
+                  <button class="btn btn-primary">Allow</button>
+                  <button class="btn btn-secondary">Delete account</button>
+                </div>
+              </div>
+              <div class="qrow" style="align-items: center;">
+                <div style="display: inline-grid; place-items: center; width: 46px; height: 46px; flex: none; border: 3px solid var(--color-text); background: #FFD400; color: #14110F; font-family: var(--font-heading); font-weight: 700; font-size: 20px;">B</div>
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">bookhub_official</div>
+                    <span class="tag" style="background: #C41031; color: #EFECE3;">Name refused</span>
+                  </div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">JOINED TODAY \u00b7 0 REVIEWS \u00b7 EMAIL NOT VERIFIED</div>
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">IMPERSONATES THE SITE \u2014 THE FILTER CAUGHT IT AT SIGNUP</div>
+                </div>
+                <div class="acts">
+                  <button class="btn btn-primary">Allow</button>
+                  <button class="btn btn-secondary">Force rename</button>
+                  <button class="btn btn-secondary">Delete account</button>
+                </div>
+              </div>
+              <div class="qrow" style="border-bottom: 0; align-items: center;">
+                <div style="flex: 1;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Delete confirmation</div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">\u201cDELETE DRAGONLAD_09? THIS REMOVES 9 REVIEWS AND 3 LISTS. TYPE THE DISPLAY NAME TO CONFIRM.\u201d</div>
+                </div>
+                <div class="acts">
+                  <input class="input" style="width: 170px;" placeholder="dragonlad_09">
+                  <button class="btn btn-secondary" style="background: #C41031; color: #EFECE3;">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 900px;">
+          <div class="note"><i>01</i><span>Deleting an account takes its reviews and lists with it, so the confirmation says the numbers out loud and asks you to type the name. This is the one place a red fill is used on a button.</span></div>
+          <div class="note"><i>02</i><span>\u201cForce rename\u201d is the proportionate answer to a bad display name \u2014 deleting a whole account over a username is not.</span></div>
+          <div class="note"><i>03</i><span>Report reasons come from the reader-facing report action. Keep the reason list short (rude, spam, not about the book, something worse) or nobody picks accurately.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G4</span><span class="plate-name">Book requests</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / admin / requests</span></div>
+          <div class="anav"><b>Book Hub Admin</b><span>Overview</span><span>Reviews</span><span>Accounts</span><span class="on">Requests</span><span>Back to site</span></div>
+          <div style="padding: 22px 28px 30px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+              <h2 style="margin: 0;">Book requests</h2>
+              <div class="seg" style="margin-left: auto;">
+                <label class="seg-opt"><input type="radio" name="bq" checked>Pending (14)</label>
+                <label class="seg-opt"><input type="radio" name="bq">Approved</label>
+                <label class="seg-opt"><input type="radio" name="bq">Declined</label>
+              </div>
+            </div>
+            <div style="border-top: 3px solid var(--color-text);">
+              <div class="qrow" style="align-items: center;">
+                <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
+                <div style="flex: 1;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Skandar and the Unicorn Thief</div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">A.F. STEADMAN \u00b7 ASKED BY <b>maya</b> \u00b7 2 DAYS AGO \u00b7 ALSO REQUESTED BY 3 OTHERS</div>
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">FOUND IN OPEN LIBRARY \u2014 ONE TAP TO IMPORT</div>
+                </div>
+                <div class="acts">
+                  <button class="btn btn-primary">Approve &amp; import</button>
+                  <button class="btn btn-secondary">Decline</button>
+                </div>
+              </div>
+              <div class="qrow" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                <div style="display: flex; gap: 14px; align-items: center;">
+                  <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
+                  <div style="flex: 1;">
+                    <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">The Boy in the Striped Pyjamas</div>
+                    <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">JOHN BOYNE \u00b7 ASKED BY <b>zeni_reads</b> \u00b7 4 DAYS AGO</div>
+                  </div>
+                  <span class="tag" style="background: #C41031; color: #EFECE3;">Declining</span>
+                </div>
+                <div style="border: 3px solid var(--color-text); background: var(--color-accent-100); padding: 14px;">
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">WHY ARE YOU DECLINING? THE READER SEES THIS WORD FOR WORD</div>
+                  <div class="seg" style="margin-bottom: 10px;">
+                    <label class="seg-opt"><input type="radio" name="dr" checked>Too old for the catalogue</label>
+                    <label class="seg-opt"><input type="radio" name="dr">Couldn't find it</label>
+                    <label class="seg-opt"><input type="radio" name="dr">Already on the site</label>
+                    <label class="seg-opt"><input type="radio" name="dr">Other</label>
+                  </div>
+                  <textarea class="input" style="min-height: 64px;">This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.</textarea>
+                  <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button class="btn btn-primary">Send decline</button>
+                    <button class="btn btn-secondary">Cancel</button>
+                  </div>
+                </div>
+              </div>
+              <div class="qrow" style="border-bottom: 0; align-items: center;">
+                <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
+                <div style="flex: 1;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Impossible Creatures</div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">KATHERINE RUNDELL \u00b7 ASKED BY <b>maya</b> \u00b7 IMPORTED 6 DAYS AGO</div>
+                </div>
+                <span class="tag" style="background: #c6f24e; color: #14110f;">Approved</span>
+                <div class="acts"><button class="btn btn-ghost">Undo</button><button class="btn btn-ghost">View book page</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 900px;">
+          <div class="note"><i>01</i><span>Decline reasons are canned options plus an editable message, because the reader sees the words verbatim. Free text alone means writing the same paragraph fourteen times; canned alone means a child gets a form letter.</span></div>
+          <div class="note"><i>02</i><span>\u201cAlso requested by 3 others\u201d is the real prioritisation signal \u2014 approve the ones several readers want first.</span></div>
+          <div class="note"><i>03</i><span>Approve does two jobs: imports the book from the API and notifies everyone who asked. If it only imports, the reader never learns their request worked.</span></div>
+          <div class="note"><i>04</i><span>These three statuses are exactly what the reader sees on their own requests screen \u2014 pending, approved, declined with the reason. One data model, two views.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW H</span>
+      <h2 style="margin: 0;">Added after the interactive build</h2>
+      <span class="mono" style="color: var(--color-neutral-700);">SAFEGUARDING · TRASH · THE FOUR DIALOGS</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 48px;">
+
+      <div>
+        <div class="plate"><span class="plate-id">G5</span><span class="plate-name">Safeguarding — its own queue</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / admin / safeguarding</span></div>
+          <div class="anav"><b>Book Hub Admin</b><span>Overview</span><span>Reviews</span><span>Accounts</span><span>All users</span><span class="on">Safeguarding</span><span>Trash</span></div>
+          <div style="padding: 22px 28px 30px;">
+            <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 18px 20px; margin-bottom: 22px;">
+              <h2 style="margin: 0 0 6px;">Safeguarding</h2>
+              <p style="font-size: 14px; margin: 0;">Reports where a reader said they were worried about someone's safety. Kept out of the ordinary queues so they never wait behind spam.</p>
+            </div>
+            <div style="border-top: 3px solid var(--color-text);">
+              <div class="qrow">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="tag" style="background: #C41031; color: #EFECE3;">Open</span>
+                    <span class="mono" style="color: var(--color-neutral-700);">FROM quiet_reader_11 · ABOUT A REVIEW ON “A LONG WAY DOWN” · 4 HOURS AGO</span>
+                  </div>
+                  <div style="border-left: 5px solid #C41031; padding-left: 12px;">
+                    <p style="font-size: 14px; margin: 0;">they said something about not wanting to be here anymore and it scared me</p>
+                  </div>
+                </div>
+                <div class="acts"><button class="btn btn-primary">Mark as actioned</button></div>
+              </div>
+              <div class="qrow" style="border-bottom: 0;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="tag" style="background: #C41031; color: #EFECE3;">Open</span>
+                    <span class="mono" style="color: var(--color-neutral-700);">FROM zeni_reads · ABOUT THE READER kofi_a · YESTERDAY</span>
+                  </div>
+                  <div style="border-left: 5px solid #C41031; padding-left: 12px;">
+                    <p style="font-size: 14px; margin: 0;">he keeps asking people in reviews how old they are and where they go to school</p>
+                  </div>
+                </div>
+                <div class="acts"><button class="btn btn-primary">Mark as actioned</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 900px;">
+          <div class="note"><i>01</i><span>The fifth report reason (“something that worries me about their safety”) routes here, never into the review queue. A disclosure must not sit behind fourteen spam reports.</span></div>
+          <div class="note"><i>02</i><span>It gets a red card at the top of G1, above the three pink queues — the only thing on the dashboard that outranks them.</span></div>
+          <div class="note"><i>03</i><span>“Mark as actioned” means you did something outside this app: told a safeguarding lead, contacted a school, escalated. It is not a moderation verdict, and the wording says so.</span></div>
+          <div class="note"><i>04</i><span>In the build these should also email you immediately. A queue you check on Fridays is not a safeguarding process.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G6</span><span class="plate-name">Trash — 14-day window</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / admin / trash</span></div>
+          <div class="anav"><b>Book Hub Admin</b><span>Overview</span><span>Reviews</span><span>Accounts</span><span>All users</span><span>Safeguarding</span><span class="on">Trash</span></div>
+          <div style="padding: 22px 28px 30px;">
+            <h2 style="margin: 0 0 6px;">Trash</h2>
+            <p style="font-size: 14px; margin-bottom: 20px;">Everything deleted, banned or declined, kept for 14 days. Invisible to readers, and anything can be put back.</p>
+            <div style="border-top: 3px solid var(--color-text);">
+              <div class="qrow" style="align-items: center;">
+                <span class="tag tag-neutral" style="flex: none;">Review</span>
+                <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">“this book is rubbish…” on Eragon</div><div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">BY DRAGONLAD_09 · DELETED 2 DAYS AGO</div></div>
+                <span class="tag" style="background: #FFD400; color: #14110f; flex: none;">12 days left</span>
+                <div class="acts"><button class="btn btn-primary">Put it back</button><button class="btn btn-secondary">Delete for good</button></div>
+              </div>
+              <div class="qrow" style="align-items: center;">
+                <span class="tag tag-neutral" style="flex: none;">Account</span>
+                <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">spam_trainers_uk</div><div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">0 REVIEWS · DELETED 5 DAYS AGO</div></div>
+                <span class="tag" style="background: #FFD400; color: #14110f; flex: none;">9 days left</span>
+                <div class="acts"><button class="btn btn-primary">Put it back</button><button class="btn btn-secondary">Delete for good</button></div>
+              </div>
+              <div class="qrow" style="align-items: center; border-bottom: 0;">
+                <span class="tag tag-neutral" style="flex: none;">Request</span>
+                <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Declined: The Boy in the Striped Pyjamas</div><div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">READER WAS TOLD WHY · DECLINED TODAY</div></div>
+                <span class="tag" style="background: #FFD400; color: #14110f; flex: none;">14 days left</span>
+                <div class="acts"><button class="btn btn-primary">Put it back</button><button class="btn btn-secondary">Delete for good</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 900px;">
+          <div class="note"><i>01</i><span>Deleted reviews, deleted accounts and declined requests all land here. “Put it back” on a declined request returns it to the queue and reopens your decline wording so you can adjust rather than retype.</span></div>
+          <div class="note"><i>02</i><span>This is why deletes are soft in the database. Fourteen days is long enough to catch a mistake and short enough that you are not storing removed content forever.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G7</span><span class="plate-name">The four dialogs</span></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1000px;">
+
+          <div class="board" style="width: auto;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">who reported it (modal)</span></div>
+            <div style="padding: 26px 22px; background: rgba(20,17,15,0.55);">
+              <div class="dialog" style="margin: 0 auto;">
+                <div class="card-kicker">Who reported it</div>
+                <div class="dialog-title">3 reports on this review</div>
+                <div style="border: 3px solid var(--color-divider); padding: 10px 12px;">
+                  <div style="display: flex; justify-content: space-between;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">zeni_reads</div><span class="mono" style="color: var(--color-neutral-700);">3 DAYS AGO</span></div>
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">RUDE OR UNKIND TO OTHER READERS</div>
+                  <p style="font-size: 13px; margin: 6px 0 0;">calling people idiots for liking a book</p>
+                </div>
+                <div style="border: 3px solid var(--color-divider); padding: 10px 12px;">
+                  <div style="display: flex; justify-content: space-between;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">ines_p</div><span class="mono" style="color: var(--color-neutral-700);">3 DAYS AGO</span></div>
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">NOTHING TO DO WITH THE BOOK</div>
+                </div>
+                <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6;">THREE REPORTS FROM ONE PERSON IS NOT THREE PEOPLE AGREEING — THAT IS WHY THE COUNT IS CLICKABLE.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="board" style="width: auto;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">ban · duration (modal)</span></div>
+            <div style="padding: 26px 22px; background: rgba(20,17,15,0.55);">
+              <div class="dialog" style="margin: 0 auto;">
+                <div class="card-kicker">Check before you act</div>
+                <div class="dialog-title">Ban dragonlad_09?</div>
+                <p class="dialog-body" style="margin: 0;">A ban stops them posting reviews, sharing lists and requesting books. It does not hide what they have already written.</p>
+                <div class="mono" style="color: var(--color-accent-700); font-weight: 700;">HOW LONG? PICK THE SMALLEST THING THAT WILL WORK</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="border: 3px solid var(--color-divider); padding: 9px 11px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Warning only</div><div class="mono" style="color: var(--color-neutral-700); margin-top: 2px;">FIRST OFFENCE — THE STEP MOST SITES SKIP</div></div>
+                  <div style="border: 3px solid var(--color-text); padding: 9px 11px;"><div style="display: flex; align-items: center; gap: 8px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">6 hours</div><span class="tag" style="background: #c6f24e; color: #14110f;">Start here</span></div><div class="mono" style="color: var(--color-neutral-700); margin-top: 2px;">A COOLING-OFF PERIOD</div></div>
+                  <div style="border: 3px solid var(--color-divider); padding: 9px 11px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">1 day · 1 week · 1 month</div><div class="mono" style="color: var(--color-neutral-700); margin-top: 2px;">A MONTH IS EFFECTIVELY A GOODBYE AT THIS AGE</div></div>
+                </div>
+                <div class="dialog-actions" style="justify-content: flex-start;">
+                  <button class="btn" style="background: #C41031; color: #EFECE3;">Ban for 6 hours</button>
+                  <button class="btn btn-secondary">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="board" style="width: auto;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">force rename (modal)</span></div>
+            <div style="padding: 26px 22px; background: rgba(20,17,15,0.55);">
+              <div class="dialog" style="margin: 0 auto;">
+                <div class="card-kicker">Force rename</div>
+                <div class="dialog-title">Rename bookhub_official</div>
+                <p class="dialog-body" style="margin: 0;">Pick the name they will be given. They are told it changed and why, and they can choose their own again — as long as it passes the filter.</p>
+                <div class="field"><label>New display name</label><input class="input" placeholder="e.g. reader_4821"></div>
+                <div class="mono" style="color: #C41031; font-weight: 700;">THAT NAME WOULD FAIL THE FILTER TOO</div>
+                <div class="dialog-actions" style="justify-content: flex-start;">
+                  <button class="btn btn-primary">Rename and notify</button>
+                  <button class="btn btn-secondary">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="board" style="width: auto;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">delete · double check (modal)</span></div>
+            <div style="padding: 26px 22px; background: rgba(20,17,15,0.55);">
+              <div class="dialog" style="margin: 0 auto;">
+                <div class="card-kicker">Check before you act</div>
+                <div class="dialog-title">Delete dragonlad_09?</div>
+                <p class="dialog-body" style="margin: 0;">This removes 9 reviews and 3 lists along with the account. It is a soft delete, so it sits in Trash for 14 days — but the reader loses access immediately.</p>
+                <div class="dialog-actions" style="justify-content: flex-start;">
+                  <button class="btn" style="background: #C41031; color: #EFECE3;">Yes, delete the account</button>
+                  <button class="btn btn-secondary">Cancel</button>
+                </div>
+                <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6;">EVERY DESTRUCTIVE ACTION HAS ONE OF THESE: DELETE REVIEW, DELETE ACCOUNT, BAN. THE CONFIRM IS RED-FILLED, CANCEL IS PLAIN.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 14px; max-width: 1000px;">
+          <div class="note"><i>01</i><span>All four are the same dialog shell — kicker, title, body, actions — so there is one component to build, not four.</span></div>
+          <div class="note"><i>02</i><span>A dialog taller than the screen must scroll and keep its buttons reachable. The ban dialog is the one that hits this on a laptop.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="blueprint" style="padding: 28px; background: var(--color-text); color: var(--color-bg); max-width: 900px; box-shadow: 8px 8px 0 var(--color-accent);">
+    <div class="mono" style="color: #c6f24e; font-weight: 700; margin-bottom: 10px;">BEFORE YOU BUILD THE ADMIN</div>
+    <ol style="font-size: 14px; margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 9px;">
+      <li><b>Roles, not routes.</b> Put an <span class="mono">is_admin</span> flag on the user and enforce it in row-level security. Hiding the URL protects nothing.</li>
+      <li><b>Soft delete.</b> Mark reviews and accounts as removed rather than destroying rows, so a mistake is recoverable and Undo is possible.</li>
+      <li><b>Log who did what.</b> One table: actor, action, target, timestamp, reason. You will want it the first time a parent emails you.</li>
+      <li><b>One admin is a single point of failure.</b> If you are away for a week, a reported review sits there. Decide now whether that is acceptable for v1 — it probably is, but know it.</li>
+      <li><b>Notify on decline.</b> The reader's requests screen and your decline reason are the same field. Wire the email or the in-app notice at the same time, or the reason is written for nobody.</li>
+    </ol>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

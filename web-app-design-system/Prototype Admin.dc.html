@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="pulp.css">
+<style>
+  body { margin: 0; }
+  .mono { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; }
+  .shell { min-height: 100vh; display: flex; flex-direction: column; }
+  .anav { display: flex; align-items: center; gap: 15px; padding: 13px 28px; border-bottom: 3px solid var(--color-text); font-size: 13px; white-space: nowrap; flex-wrap: wrap; }
+  .anav b { font-family: var(--font-display); font-size: 20px; text-transform: uppercase; margin-right: auto; }
+  .anav a { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 2px; border-bottom: 3px solid transparent; }
+  .anav a:hover { color: var(--color-accent-700); }
+  .anav a[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 28px 72px; width: 100%; }
+  .qrow { display: flex; gap: 14px; padding: 16px 0; border-bottom: 3px solid var(--color-divider); align-items: flex-start; }
+  .cover { background-color: var(--color-link); background-image: repeating-linear-gradient(135deg, rgba(239,236,227,0.24) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; color: #EFECE3; }
+  .nocover { background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; border: 3px dashed var(--color-neutral-600); }
+  .rowlink { cursor: pointer; }
+  .rowlink:hover { background: var(--color-accent-100); }
+  .chip { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 5px 11px; border: 2px solid var(--color-text); cursor: pointer; min-height: 34px; }
+  .tag2 { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border: 2px solid var(--color-text); }
+  a { color: var(--color-link); }
+  a:hover { color: var(--color-accent); }
+</style>
+</helmet>
+
+<div class="shell">
+  <div class="anav">
+    <b>Book Hub Admin</b>
+    <a onClick="{{ nav.home }}" aria-current="{{ cur.home }}">Overview</a>
+    <a onClick="{{ nav.catalogue }}" aria-current="{{ cur.catalogue }}">Catalogue</a>
+    <a onClick="{{ nav.requests }}" aria-current="{{ cur.requests }}">Requests</a>
+    <a onClick="{{ nav.reviews }}" aria-current="{{ cur.reviews }}">Reviews</a>
+    <a onClick="{{ nav.users }}" aria-current="{{ cur.users }}">Users</a>
+    <a onClick="{{ nav.safeguarding }}" aria-current="{{ cur.safeguarding }}">Safeguarding</a>
+    <a onClick="{{ nav.trash }}" aria-current="{{ cur.trash }}">Trash</a>
+    <span class="mono" style="color: var(--color-neutral-700);">OWNER</span>
+  </div>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div class="wrap">
+      <h1 style="font-size: 42px; margin: 0 0 18px;">What needs you</h1>
+
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #C41031; color: #EFECE3; box-shadow: 5px 5px 0 var(--color-text); padding: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px;" onClick="{{ nav.safeguarding }}">
+        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ safeguardingCount }}</div>
+        <div style="flex: 1;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Safeguarding reports</div>
+          <div class="mono" style="font-weight: 700; margin-top: 3px;">READERS WORRIED ABOUT SOMEONE'S SAFETY — READ THESE FIRST</div>
+        </div>
+        <span class="tag2" style="background: #EFECE3; color: #14110f;">Open queue</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px;">
+        <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ nav.requests }}">
+          <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ pendingRequests }}</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Book requests</div>
+          <div class="mono" style="font-weight: 700; margin-top: 3px;">WAITING ON YOU</div>
+        </div>
+        <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ nav.reviews }}">
+          <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ pendingReviews }}</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Reviews</div>
+          <div class="mono" style="font-weight: 700; margin-top: 3px;">REPORTED AND BLOCKED</div>
+        </div>
+        <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ nav.users }}">
+          <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ pendingAccounts }}</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Accounts</div>
+          <div class="mono" style="font-weight: 700; margin-top: 3px;">REPORTED AND REFUSED NAMES</div>
+        </div>
+        <div class="rowlink" style="border: 3px solid var(--color-text); background: #FFD400; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ nav.catalogue }}">
+          <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ missingCovers }}</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">No cover</div>
+          <div class="mono" style="font-weight: 700; margin-top: 3px;">A SHELF OF GREY BOXES SELLS NOTHING</div>
+        </div>
+      </div>
+
+      <div class="rowlink" style="border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 18px 20px; display: flex; align-items: center; gap: 18px; margin-bottom: 26px;" onClick="{{ nav.catalogue }}">
+        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1; color: var(--color-accent);">{{ catalogueCount }}</div>
+        <div style="flex: 1;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">Books in the catalogue</div>
+          <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">READERS ONLY EVER SEE THESE — NOTHING COMES STRAIGHT FROM THE API</div>
+        </div>
+        <button class="btn btn-primary" onClick="{{ nav.catalogue }}">Add a book</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px;">
+        <div>
+          <h4 style="margin: 0 0 10px;">Last seven days</h4>
+          <table class="table">
+            <tbody>
+              <tr><td>Books imported</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">12</td></tr>
+              <tr><td>Requests closed by an import</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">5</td></tr>
+              <tr><td>Reviews auto-blocked by the filter</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">9</td></tr>
+              <tr><td>Searches with no results</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">41</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 10px;">The number that matters</h4>
+          <p style="font-size: 14px;">“Searches with no results” tells you what to import next, and it beats the request queue as a signal — most readers search, find nothing, and never bother asking.</p>
+          <p style="font-size: 14px; margin: 0;">If refusals by the word filter spike, the list is too aggressive. If reports spike, it is too loose.</p>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isCatalogue }}" hint-placeholder-val="{{ false }}">
+    <div class="wrap">
+      <h1 style="font-size: 38px; margin: 0 0 6px;">Catalogue</h1>
+      <p style="font-size: 14px; margin-bottom: 22px;">Search the book API, import what you want, tag it and give it a cover. You never need a reader to ask first.</p>
+
+      <div style="border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 18px; margin-bottom: 24px;">
+        <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">STEP 1 — FIND IT IN THE API</div>
+        <div style="display: flex; gap: 10px;">
+          <input class="input" style="flex: 1; min-height: 46px;" placeholder="Try “dragon”, “rundell” or “skandar”" value="{{ apiQuery }}" onInput="{{ setApiQuery }}">
+          <button class="btn btn-primary" style="padding: 0 22px;">Search the API</button>
+        </div>
+        <sc-if value="{{ hasApiResults }}" hint-placeholder-val="{{ false }}">
+          <div style="border-top: 3px solid var(--color-divider); margin-top: 16px;">
+            <sc-for list="{{ apiResults }}" as="r" hint-placeholder-count="3">
+              <div class="qrow" style="align-items: center;">
+                <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
+                <div style="flex: 1;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ r.title }}</div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ r.meta }}</div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">API SUBJECTS: {{ r.subjectsUp }}</div>
+                </div>
+                <sc-if value="{{ r.matchesRequest }}" hint-placeholder-val="{{ false }}">
+                  <span class="tag2" style="background: #ff3d9a; color: #14110f; flex: none;">Someone asked for this</span>
+                </sc-if>
+                <sc-if value="{{ r.already }}" hint-placeholder-val="{{ false }}">
+                  <span class="tag2" style="background: #c6f24e; color: #14110f; flex: none;">Already in catalogue</span>
+                </sc-if>
+                <sc-if value="{{ r.importable }}" hint-placeholder-val="{{ true }}">
+                  <button class="btn btn-primary" style="flex: none;" onClick="{{ r.start }}">Import</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noApiResults }}" hint-placeholder-val="{{ false }}">
+          <div class="mono" style="color: var(--color-neutral-700); margin-top: 14px;">NOTHING IN THE API FOR THAT — CHECK THE SPELLING, OR IT MAY NOT BE INDEXED.</div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ importing }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px solid var(--color-text); box-shadow: 8px 8px 0 var(--color-accent); padding: 20px; margin-bottom: 26px;">
+          <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 14px;">STEP 2 — CHECK IT BEFORE IT GOES LIVE</div>
+
+          <sc-if value="{{ draft.matched }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 14px; background: #ff3d9a; color: #14110f; border: 3px solid var(--color-text); padding: 12px 14px; margin-bottom: 18px;">
+              <div style="flex: 1;">
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ draft.matchLine }}</div>
+                <div class="mono" style="font-weight: 700; margin-top: 3px;">IMPORTING THIS CAN CLOSE THEIR REQUEST AND TELL THEM IT IS HERE</div>
+              </div>
+              <label class="radio" style="flex: none; border: 3px solid #14110f; padding: 8px 12px; min-height: 44px;"><input type="checkbox" checked="{{ draft.fulfil }}" onChange="{{ toggleFulfil }}"><span class="dot"></span>Mark it fulfilled</label>
+            </div>
+          </sc-if>
+
+          <div style="display: grid; grid-template-columns: 200px 1fr; gap: 22px;">
+            <div>
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">COVER</div>
+              <sc-if value="{{ draft.hasCover }}" hint-placeholder-val="{{ false }}">
+                <div class="cover" style="height: 250px; border: 3px solid var(--color-text);"><span class="mono">{{ draft.coverSource }}</span></div>
+              </sc-if>
+              <sc-if value="{{ draft.noCover }}" hint-placeholder-val="{{ true }}">
+                <div class="nocover" style="height: 250px;"><span class="mono" style="color: var(--color-neutral-700);">NO COVER YET</span></div>
+              </sc-if>
+              <button class="btn btn-secondary btn-block" style="min-height: 44px;" onClick="{{ useApiCover }}">Use the API cover</button>
+              <button class="btn btn-secondary btn-block" style="min-height: 44px;" onClick="{{ uploadCover }}">Upload my own</button>
+              <sc-if value="{{ draft.hasCover }}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-ghost" style="min-height: 44px;" onClick="{{ clearCover }}">Remove</button>
+              </sc-if>
+              <div class="mono" style="color: var(--color-neutral-700); margin-top: 10px; line-height: 1.6;">STORE THE IMAGE YOURSELF — API COVER URLS ROT, AND A WALL OF BROKEN COVERS IS WORSE THAN NONE.</div>
+            </div>
+
+            <div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="field"><label>Title</label><input class="input" value="{{ draft.title }}" onInput="{{ setTitle }}"></div>
+                <div class="field"><label>Author</label><input class="input" value="{{ draft.author }}" onInput="{{ setAuthor }}"></div>
+              </div>
+
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 5px;">GENRES — MAPPED FROM THE API, CORRECT WHAT IS WRONG</div>
+              <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">{{ draft.mappedFrom }}</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;">
+                <sc-for list="{{ genreChips }}" as="g" hint-placeholder-count="11">
+                  <button class="chip" style="{{ g.style }}" onClick="{{ g.toggle }}">{{ g.label }}</button>
+                </sc-for>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 14px;">
+                <div>
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 6px;">READING LEVEL — YOUR CALL, NOT THE API'S</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <sc-for list="{{ levelChips }}" as="l" hint-placeholder-count="3">
+                      <button class="chip" style="{{ l.style }}" onClick="{{ l.pick }}">{{ l.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px; line-height: 1.6;">THE ONE FIELD NEVER TO TRUST THE API ON. THIS IS WHAT KEEPS ADULT TITLES OFF AN 11-YEAR-OLD'S SCREEN.</div>
+                </div>
+                <div>
+                  <div class="field" style="margin-bottom: 10px;"><label>Pages</label><input class="input" value="{{ draft.pages }}" onInput="{{ setPages }}"></div>
+                  <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6;">LENGTH BAND: {{ draft.band }} — WORKED OUT FROM THE PAGE COUNT, NOT TYPED</div>
+                  <label class="radio" style="margin-top: 12px; border: 3px solid var(--color-divider); padding: 9px 12px; min-height: 44px;"><input type="checkbox" checked="{{ draft.series }}" onChange="{{ toggleSeries }}"><span class="dot"></span>Part of a series</label>
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom: 14px;"><label>Summary</label><textarea class="input" style="min-height: 80px;" value="{{ draft.summary }}" onInput="{{ setSummary }}"></textarea></div>
+              <sc-if value="{{ draftError }}" hint-placeholder-val="{{ false }}">
+                <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 12px;">{{ draftError }}</div>
+              </sc-if>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onClick="{{ saveBook }}">Add to the catalogue</button>
+                <button class="btn btn-secondary" onClick="{{ cancelImport }}">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ justAdded }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; gap: 14px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 14px 16px; margin-bottom: 24px;">
+          <span style="font-family: var(--font-display); font-size: 26px; line-height: 1;">✓</span>
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ addedLine }}</div>
+            <div class="mono" style="font-weight: 700; margin-top: 3px;">{{ addedNote }}</div>
+          </div>
+          <button class="btn btn-secondary" style="border-color: #14110f; color: #14110f;" onClick="{{ dismissAdded }}">Dismiss</button>
+        </div>
+      </sc-if>
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <h2 style="margin: 0;">In the catalogue</h2>
+        <span class="mono" style="color: var(--color-neutral-700); flex: 1;">{{ catalogueCount }} BOOKS · EVERYTHING A READER CAN SEARCH</span>
+        <input class="input" style="width: 230px;" placeholder="Filter the catalogue" value="{{ catFilter }}" onInput="{{ setCatFilter }}">
+      </div>
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ catalogue }}" as="c" hint-placeholder-count="5">
+          <div class="qrow" style="align-items: center;">
+            <sc-if value="{{ c.hasCover }}" hint-placeholder-val="{{ true }}">
+              <div class="cover" style="width: 42px; height: 62px; flex: none;"></div>
+            </sc-if>
+            <sc-if value="{{ c.noCover }}" hint-placeholder-val="{{ false }}">
+              <div class="nocover" style="width: 42px; height: 62px; flex: none;"><span class="mono" style="color: var(--color-neutral-700);">!</span></div>
+            </sc-if>
+            <div style="flex: 1;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ c.title }}</div>
+              <div class="mono" style="color: var(--color-neutral-700); margin: 3px 0 6px;">{{ c.meta }}</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <sc-for list="{{ c.tags }}" as="t" hint-placeholder-count="3"><span class="tag2">{{ t }}</span></sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ c.noCover }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-primary" style="flex: none;" onClick="{{ c.addCover }}">Add a cover</button>
+            </sc-if>
+            <button class="btn btn-secondary" style="flex: none;" onClick="{{ c.remove }}">Remove</button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isRequests }}" hint-placeholder-val="{{ false }}">
+    <div class="wrap">
+      <h1 style="font-size: 38px; margin: 0 0 6px;">Book requests</h1>
+      <p style="font-size: 14px; margin-bottom: 22px;">“Find &amp; import” takes you to the catalogue with the title already searched. The request closes when the book lands, not before.</p>
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ requestList }}" as="q" hint-placeholder-count="3">
+          <div class="qrow" style="flex-direction: column; align-items: stretch; gap: 12px;">
+            <div style="display: flex; gap: 14px; align-items: center;">
+              <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
+              <div style="flex: 1;">
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">{{ q.title }}</div>
+                <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">{{ q.meta }}</div>
+                <sc-if value="{{ q.hasReason }}" hint-placeholder-val="{{ false }}">
+                  <p style="font-size: 13px; margin: 6px 0 0;">{{ q.reason }}</p>
+                </sc-if>
+              </div>
+              <span class="tag2" style="{{ q.statusStyle }}">{{ q.statusLabel }}</span>
+              <sc-if value="{{ q.pending }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; gap: 8px; flex: none;">
+                  <button class="btn btn-primary" onClick="{{ q.findIt }}">Find &amp; import</button>
+                  <button class="btn btn-secondary" onClick="{{ q.startDecline }}">Decline</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ q.decided }}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-ghost" style="flex: none;" onClick="{{ q.undo }}">Undo</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ q.isDeclining }}" hint-placeholder-val="{{ false }}">
+              <div style="border: 3px solid var(--color-text); background: var(--color-accent-100); padding: 14px;">
+                <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">WHY? THE READER SEES THIS WORD FOR WORD</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                  <sc-for list="{{ declineReasons }}" as="d" hint-placeholder-count="4">
+                    <button class="chip" style="{{ d.style }}" onClick="{{ d.pick }}">{{ d.label }}</button>
+                  </sc-for>
+                </div>
+                <textarea class="input" style="min-height: 70px;" value="{{ declineText }}" onInput="{{ setDeclineText }}"></textarea>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                  <button class="btn btn-primary" onClick="{{ sendDecline }}">Send decline</button>
+                  <button class="btn btn-secondary" onClick="{{ cancelDecline }}">Cancel</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isReviews }}" hint-placeholder-val="{{ false }}">
+    <div class="wrap">
+      <h1 style="font-size: 38px; margin: 0 0 16px;">Reviews</h1>
+      <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px;">
+        <input class="input" style="flex: 1; min-height: 46px;" placeholder="Search reviews, books or readers" value="{{ reviewSearch }}" onInput="{{ setReviewSearch }}">
+        <span class="mono" style="color: var(--color-neutral-700);">{{ reviewPageLabel }}</span>
+        <button class="btn btn-secondary" onClick="{{ prevReviews }}">←</button>
+        <button class="btn btn-secondary" onClick="{{ nextReviews }}">→</button>
+      </div>
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ reviewList }}" as="r" hint-placeholder-count="3">
+          <div class="qrow">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="tag2" style="{{ r.flagStyle }}">{{ r.flagLabel }}</span>
+                <sc-if value="{{ r.hasReporters }}" hint-placeholder-val="{{ false }}">
+                  <button class="btn btn-ghost" style="font-size: 12px;" onClick="{{ r.showReporters }}">Who reported it?</button>
+                </sc-if>
+                <span class="mono" style="color: var(--color-neutral-700);">ON “{{ r.book }}” · BY {{ r.who }} · {{ r.when }}</span>
+              </div>
+              <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
+                <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">{{ r.rating }}</div>
+                <p style="font-size: 14px; margin: 0;">{{ r.text }}</p>
+              </div>
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 8px;">{{ r.why }}</div>
+            </div>
+            <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+              <sc-if value="{{ r.pending }}" hint-placeholder-val="{{ true }}">
+                <button class="btn btn-primary" onClick="{{ r.allow }}">Allow</button>
+                <button class="btn btn-secondary" onClick="{{ r.del }}">Delete</button>
+                <button class="btn btn-secondary" onClick="{{ r.openUser }}">View reader</button>
+              </sc-if>
+              <sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-ghost" onClick="{{ r.undo }}">Undo</button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ false }}">
+    <div class="wrap">
+      <h1 style="font-size: 38px; margin: 0 0 6px;">Users</h1>
+      <p style="font-size: 14px; margin-bottom: 18px;">Every account, not just the reported ones. Open anyone to see their reviews and act on them.</p>
+      <input class="input" style="width: 100%; min-height: 46px; margin-bottom: 18px;" placeholder="Search display names" value="{{ userSearch }}" onInput="{{ setUserSearch }}">
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ userList }}" as="u" hint-placeholder-count="3">
+          <div class="qrow rowlink" style="align-items: center; padding: 12px 8px;" onClick="{{ u.open }}">
+            <div style="{{ u.avatarStyle }}">{{ u.initial }}</div>
+            <div style="flex: 1;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ u.name }}</div>
+              <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ u.meta }}</div>
+            </div>
+            <span class="tag2" style="{{ u.stateStyle }}">{{ u.stateLabel }}</span>
+            <button class="btn btn-secondary" style="flex: none;" onClick="{{ u.open }}">Open</button>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 18px;">
+        <button class="btn btn-secondary" onClick="{{ prevUsers }}">← Previous</button>
+        <span class="mono" style="color: var(--color-neutral-700); flex: 1;">{{ userPageLabel }}</span>
+        <button class="btn btn-secondary" onClick="{{ nextUsers }}">Next →</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isUser }}" hint-placeholder-val="{{ false }}">
+    <div class="wrap">
+      <button class="btn btn-ghost" style="margin-bottom: 16px;" onClick="{{ nav.users }}">← All users</button>
+      <div style="display: flex; align-items: flex-start; gap: 18px; margin-bottom: 10px;">
+        <div style="{{ user.avatarStyle }}">{{ user.initial }}</div>
+        <div style="flex: 1;">
+          <h1 style="font-size: 36px; margin: 0 0 4px;">{{ user.name }}</h1>
+          <div class="mono" style="color: var(--color-neutral-700);">{{ user.meta }}</div>
+          <div style="margin-top: 8px;"><span class="tag2" style="{{ user.stateStyle }}">{{ user.stateLabel }}</span></div>
+        </div>
+        <sc-if value="{{ user.actionable }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: 8px; flex: none;">
+            <sc-if value="{{ user.isBanned }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-primary" onClick="{{ user.unban }}">Lift the ban</button>
+            </sc-if>
+            <sc-if value="{{ user.nameFlag }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-secondary" onClick="{{ user.rename }}">Force rename</button>
+            </sc-if>
+            <button class="btn btn-secondary" onClick="{{ user.askBan }}">Ban account</button>
+            <button class="btn btn-secondary" onClick="{{ user.askDelete }}">Delete account</button>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ user.isBanned }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 12px 16px; margin: 12px 0;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Banned for {{ user.banUntil }}</div>
+          <p style="font-size: 13px; margin: 4px 0 0;">They cannot post reviews, share lists or request books until it lifts. Existing reviews stay visible unless you delete them individually.</p>
+        </div>
+      </sc-if>
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin: 18px 0 10px;">{{ user.why }}</div>
+      <h4 style="margin: 0 0 10px;">Their reviews</h4>
+      <sc-if value="{{ user.noReviews }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px dashed var(--color-divider); padding: 26px; text-align: center;"><div class="mono" style="color: var(--color-neutral-700);">NOTHING POSTED YET</div></div>
+      </sc-if>
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ user.reviews }}" as="r" hint-placeholder-count="2">
+          <div class="qrow">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="tag2" style="{{ r.stateStyle }}">{{ r.stateLabel }}</span>
+                <span class="mono" style="color: var(--color-neutral-700);">ON “{{ r.book }}” · {{ r.when }} · {{ r.rating }}</span>
+              </div>
+              <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
+                <p style="font-size: 14px; margin: 0;">{{ r.text }}</p>
+              </div>
+            </div>
+            <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+                <button class="btn btn-primary" onClick="{{ r.allow }}">Allow</button>
+                <button class="btn btn-secondary" onClick="{{ r.del }}">Delete</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.7;">REPORTED CONTENT STAYS VISIBLE TO READERS UNTIL YOU DECIDE — NOTHING IS HIDDEN AUTOMATICALLY. A REPORT IS NOT A VERDICT.</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSafeguarding }}" hint-placeholder-val="{{ false }}">
+    <div class="wrap">
+      <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 18px 20px; margin-bottom: 24px;">
+        <h1 style="font-size: 34px; margin: 0 0 6px;">Safeguarding</h1>
+        <p style="font-size: 14px; margin: 0;">Reports where a reader said they were worried about someone's safety. Kept out of the ordinary queues so they never wait behind spam. Read them first, every time.</p>
+      </div>
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ safeguardingList }}" as="x" hint-placeholder-count="2">
+          <div class="qrow">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="tag2" style="{{ x.stateStyle }}">{{ x.stateLabel }}</span>
+                <span class="mono" style="color: var(--color-neutral-700);">FROM {{ x.who }} · ABOUT {{ x.target }} · {{ x.when }}</span>
+              </div>
+              <div style="border-left: 5px solid #C41031; padding-left: 12px;">
+                <p style="font-size: 14px; margin: 0;">{{ x.text }}</p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+              <sc-if value="{{ x.open }}" hint-placeholder-val="{{ true }}">
+                <button class="btn btn-primary" onClick="{{ x.action }}">Mark as actioned</button>
+              </sc-if>
+              <sc-if value="{{ x.done }}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-ghost" onClick="{{ x.undo }}">Reopen</button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.7;">“MARK AS ACTIONED” MEANS YOU DID SOMETHING OUTSIDE THIS APP — TOLD A SAFEGUARDING LEAD, CONTACTED A SCHOOL, ESCALATED. IT IS NOT A MODERATION DECISION.</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isTrash }}" hint-placeholder-val="{{ false }}">
+    <div class="wrap">
+      <h1 style="font-size: 38px; margin: 0 0 6px;">Trash</h1>
+      <p style="font-size: 14px; margin-bottom: 22px;">Removed books, deleted reviews, deleted accounts and declined requests, kept for 14 days. Invisible to readers, and anything can be put back.</p>
+      <sc-if value="{{ trashEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 3px dashed var(--color-divider); padding: 30px; text-align: center;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">Trash is empty</div>
+          <p class="mono" style="color: var(--color-neutral-700); margin: 6px 0 0;">NOTHING DELETED IN THE LAST 14 DAYS</p>
+        </div>
+      </sc-if>
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ trashList }}" as="t" hint-placeholder-count="2">
+          <div class="qrow" style="align-items: center;">
+            <span class="tag2" style="flex: none;">{{ t.kind }}</span>
+            <div style="flex: 1;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ t.name }}</div>
+              <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ t.by }} · {{ t.when }}</div>
+            </div>
+            <span class="tag2" style="background: #FFD400; color: #14110f; flex: none;">{{ t.daysLeft }}</span>
+            <button class="btn btn-primary" style="flex: none;" onClick="{{ t.restore }}">Put it back</button>
+            <button class="btn btn-secondary" style="flex: none;" onClick="{{ t.purge }}">Delete for good</button>
+          </div>
+        </sc-for>
+      </div>
+      <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.7;">AFTER 14 DAYS ITEMS GO AUTOMATICALLY. THAT WINDOW IS WHY DELETES ARE SOFT IN THE DATABASE RATHER THAN DESTRUCTIVE.</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ reportersOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop">
+      <div class="dialog blueprint" style="width: min(520px, 100%);">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div class="card-kicker">Who reported it</div>
+        <div class="dialog-title">{{ reportersTitle }}</div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ reportersList }}" as="p" hint-placeholder-count="3">
+            <div style="border: 3px solid var(--color-divider); padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ p.who }}</div>
+                <span class="mono" style="color: var(--color-neutral-700);">{{ p.when }}</span>
+              </div>
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">{{ p.reason }}</div>
+              <p style="font-size: 13px; margin: 6px 0 0;">{{ p.note }}</p>
+            </div>
+          </sc-for>
+        </div>
+        <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6;">THREE REPORTS FROM ONE PERSON IS NOT THREE PEOPLE AGREEING — THAT IS WHY THE COUNT IS CLICKABLE.</div>
+        <div class="dialog-actions" style="justify-content: flex-start;">
+          <button class="btn btn-secondary" onClick="{{ closeReporters }}">Close</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ renameOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop">
+      <div class="dialog blueprint">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div class="card-kicker">Force rename</div>
+        <div class="dialog-title">Rename {{ renameTarget }}</div>
+        <p class="dialog-body" style="margin: 0;">Pick the name they will be given. They are told it changed and why, and they can choose their own again — as long as it passes the filter.</p>
+        <div class="field"><label>New display name</label><input class="input" style="min-height: 42px;" placeholder="e.g. reader_4821" value="{{ renameValue }}" onInput="{{ setRenameValue }}"></div>
+        <sc-if value="{{ renameError }}" hint-placeholder-val="{{ false }}">
+          <div class="mono" style="color: var(--color-problem-text); font-weight: 700;">{{ renameError }}</div>
+        </sc-if>
+        <div class="dialog-actions" style="justify-content: flex-start;">
+          <button class="btn btn-primary" onClick="{{ doRename }}">Rename and notify</button>
+          <button class="btn btn-secondary" onClick="{{ cancelRename }}">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop">
+      <div class="dialog blueprint" style="width: min(500px, 100%);">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div class="card-kicker">Check before you act</div>
+        <div class="dialog-title">{{ confirmTitle }}</div>
+        <p class="dialog-body" style="margin: 0;">{{ confirmBody }}</p>
+        <sc-if value="{{ confirmIsBan }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">HOW LONG? PICK THE SMALLEST THING THAT WILL WORK</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <sc-for list="{{ banOptions }}" as="b" hint-placeholder-count="5">
+                <label class="radio" style="align-items: flex-start; border: 3px solid var(--color-divider); padding: 10px 12px;">
+                  <input type="radio" name="ban" checked="{{ b.on }}" onChange="{{ b.pick }}"><span class="dot" style="margin-top: 2px;"></span>
+                  <span style="flex: 1;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ b.label }}</span>
+                      <sc-if value="{{ b.rec }}" hint-placeholder-val="{{ false }}">
+                        <span class="tag2" style="background: #c6f24e; color: #14110f;">Start here</span>
+                      </sc-if>
+                    </span>
+                    <span class="mono" style="display: block; color: var(--color-neutral-700); line-height: 1.6; margin-top: 3px;">{{ b.caption }}</span>
+                  </span>
+                </label>
+              </sc-for>
+            </div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 10px; line-height: 1.6;">YOU CAN ALWAYS EXTEND A BAN. YOU CANNOT UN-LOSE A READER WHO DECIDED THE SITE WAS UNFAIR.</div>
+          </div>
+        </sc-if>
+        <div class="dialog-actions" style="justify-content: flex-start;">
+          <button class="btn" style="background: #C41031; color: #EFECE3;" onClick="{{ doConfirm }}">{{ confirmCta }}</button>
+          <button class="btn btn-secondary" onClick="{{ cancelConfirm }}">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="margin-top: auto; border-top: 3px solid var(--color-text); padding: 12px 28px; display: flex; align-items: center; gap: 14px;">
+    <span class="mono" style="color: var(--color-neutral-700); flex: 1;">ADMIN-ONLY PROTOTYPE · OPENS ON THE OVERVIEW · NO READER VIEW IN THIS FILE</span>
+    <button class="btn btn-ghost" onClick="{{ resetAll }}">Reset prototype</button>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  allGenres = ['Fantasy', 'Adventure', 'Sci-Fi', 'Romance', 'Mystery/Thriller', 'Horror', 'Historical Fiction', 'Realistic/Contemporary Fiction', 'Comedy/Humour', 'Non-fiction', 'Other'];
+  levels = ['Middle Grade', 'Young Adult', 'Adult'];
+
+  // Written once, then it does the tagging for you. This is the whole trick.
+  subjectMap = {
+    'juvenile fiction': 'Middle Grade', 'young adult fiction': 'Young Adult',
+    'fantasy & magic': 'Fantasy', 'fantasy': 'Fantasy', 'dragons': 'Fantasy',
+    'action & adventure': 'Adventure', 'adventure stories': 'Adventure',
+    'mystery & detective': 'Mystery/Thriller', 'horror tales': 'Horror',
+    'humorous stories': 'Comedy/Humour', 'historical fiction': 'Historical Fiction',
+    'social themes': 'Realistic/Contemporary Fiction', 'science fiction': 'Sci-Fi'
+  };
+
+  apiLibrary = [
+    { id: 'skandar', title: 'Skandar and the Unicorn Thief', author: 'A.F. Steadman', pages: 448, series: true,
+      subjects: ['Juvenile fiction', 'Fantasy & magic', 'Action & adventure'],
+      summary: 'Skandar wants nothing more than to become a unicorn rider, but the islands guard their secrets closely.' },
+    { id: 'impossible', title: 'Impossible Creatures', author: 'Katherine Rundell', pages: 368, series: true,
+      subjects: ['Juvenile fiction', 'Fantasy & magic'],
+      summary: 'A boy and a flying girl cross an archipelago where the last mythical creatures are dying, and only they can work out why.' },
+    { id: 'wolfwilder', title: 'The Wolf Wilder', author: 'Katherine Rundell', pages: 248, series: false,
+      subjects: ['Juvenile fiction', 'Historical fiction', 'Action & adventure'],
+      summary: 'Feo teaches tame wolves to be wild again in the snow outside St Petersburg, until a soldier decides she is a problem.' },
+    { id: 'dragonrider', title: 'Dragon Rider', author: 'Cornelia Funke', pages: 523, series: true,
+      subjects: ['Juvenile fiction', 'Dragons', 'Fantasy'],
+      summary: 'A silver dragon, a brownie and an orphan boy set out to find the Rim of Heaven.' },
+    { id: 'dragonology', title: 'Dragonology', author: 'Ernest Drake', pages: 32, series: false,
+      subjects: ['Juvenile nonfiction', 'Dragons'],
+      summary: 'A Victorian field guide to dragons, presented as a genuine artefact with samples and flaps.' },
+    { id: 'girlofink', title: 'The Girl of Ink and Stars', author: 'Kiran Millwood Hargrave', pages: 227, series: false,
+      subjects: ['Juvenile fiction', 'Action & adventure', 'Historical fiction'],
+      summary: 'A mapmaker\u2019s daughter draws her way across a forbidden island to find a missing friend.' }
+  ];
+
+  banList = [
+    { label: 'Warning only', caption: 'NO BAN. SENDS THEM A NOTE SAYING WHAT WAS WRONG. RIGHT FOR A FIRST OFFENCE.', rec: false },
+    { label: '6 hours', caption: 'A COOLING-OFF PERIOD. INTERRUPTS AN ARGUMENT WITHOUT ENDING ANYONE\u2019S EVENING.', rec: true },
+    { label: '1 day', caption: 'A SECOND OFFENCE AFTER A WARNING, OR UNKINDNESS AIMED AT ANOTHER READER.', rec: false },
+    { label: '1 week', caption: 'REPEAT OFFENDER, OR SOMETHING DELIBERATELY NASTY.', rec: false },
+    { label: '1 month', caption: 'EFFECTIVELY A GOODBYE AT THIS AGE. FOR SPAM ACCOUNTS OR TARGETED BULLYING.', rec: false }
+  ];
+
+  alwaysBad = ['fuck', 'fck', 'bitch', 'wanker', 'twat', 'bollocks'];
+  wholeWords = ['shit', 'damn', 'crap', 'arse', 'ass', 'dick', 'cock', 'piss', 'prick', 'slag', 'whore', 'bastard'];
+  fold = (v) => (v || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[|!1l]/g, 'i').replace(/0/g, 'o').replace(/3/g, 'e').replace(/[4@]/g, 'a')
+    .replace(/[5$]/g, 's').replace(/7/g, 't').replace(/8/g, 'b').replace(/vv/g, 'w')
+    .replace(/[^a-z]/g, '').replace(/(.)\1+/g, '$1');
+  hasBanned = (t) => {
+    const joined = this.fold(t);
+    if (this.alwaysBad.some(w => joined.includes(this.fold(w)))) return true;
+    return String(t || '').split(/[^A-Za-z0-9@$!|]+/).map(x => this.fold(x)).filter(Boolean)
+      .some(tok => this.wholeWords.some(w => tok === this.fold(w)));
+  };
+
+  initial() {
+    return {
+      screen: 'home', apiQuery: '', searched: false, catFilter: '',
+      importing: null, draft: null, draftError: '', justAdded: null,
+      catalogue: [
+        { id: 'hobbit', title: 'The Hobbit', author: 'J.R.R. Tolkien', pages: 310, level: 'Middle Grade', genres: ['Fantasy', 'Adventure'], cover: 'api' },
+        { id: 'nevermoor', title: 'Nevermoor', author: 'Jessica Townsend', pages: 464, level: 'Middle Grade', genres: ['Fantasy', 'Mystery/Thriller'], cover: 'upload' },
+        { id: 'holes', title: 'Holes', author: 'Louis Sachar', pages: 233, level: 'Middle Grade', genres: ['Mystery/Thriller', 'Comedy/Humour'], cover: 'api' },
+        { id: 'skellig', title: 'Skellig', author: 'David Almond', pages: 182, level: 'Middle Grade', genres: ['Realistic/Contemporary Fiction'], cover: null },
+        { id: 'longway', title: 'A Long Way Down', author: 'Jason Reynolds', pages: 306, level: 'Young Adult', genres: ['Realistic/Contemporary Fiction'], cover: null }
+      ],
+      requests: [
+        { title: 'Skandar and the Unicorn Thief', author: 'A.F. Steadman', who: 'maya', when: '2 DAYS AGO', others: 3, status: 'pending', reason: '' },
+        { title: 'Impossible Creatures', author: 'Katherine Rundell', who: 'zeni_reads', when: '4 DAYS AGO', others: 0, status: 'pending', reason: '' },
+        { title: 'The Boy in the Striped Pyjamas', author: 'John Boyne', who: 'kofi_a', when: 'LAST WEEK', others: 0, status: 'declined', reason: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' }
+      ],
+      declining: null, declineReason: 'Too old for the catalogue', declineText: '',
+      reviews: [
+        { id: 'r1', book: 'Eragon', who: 'dragonlad_09', stars: 2, when: '3 DAYS AGO', flag: 'reported', reports: 3, why: 'RUDE TO OTHER READERS \u00d73', text: 'this book is rubbish and anyone who likes it is an idiot', status: 'pending' },
+        { id: 'r2', book: 'Holes', who: 'zeni_reads', stars: 5, when: 'YESTERDAY', flag: 'blocked', reports: 0, why: 'FILTER MATCHED \u201cSWEAR\u201d \u2014 LIKELY A FALSE POSITIVE', text: 'the bit at the end is so good it made me swear out loud', status: 'pending' },
+        { id: 'r3', book: 'Nevermoor', who: 'kofi_a', stars: 1, when: '2 DAYS AGO', flag: 'reported', reports: 1, why: 'NOTHING TO DO WITH THE BOOK \u00d71', text: 'buy cheap trainers at my shop, link in my profile', status: 'pending' },
+        { id: 'r4', book: 'Coraline', who: 'tomasb', stars: 5, when: '4 DAYS AGO', flag: 'reported', reports: 1, why: 'BAD LANGUAGE \u00d71', text: 'Genuinely frightening in about four places. Buttons.', status: 'pending' }
+      ],
+      accounts: [
+        { id: 'a1', name: 'dragonlad_09', colour: '#7B2DFF', ink: '#EFECE3', joined: '12 MAR', reviews: 9, lists: 3, meta: '4 REPORTS ACROSS 3 REVIEWS \u00b7 EMAIL VERIFIED', flag: 'reported', why: 'RUDE TO OTHER READERS', status: 'pending' },
+        { id: 'a2', name: 'bookhub_official', colour: '#FFD400', ink: '#14110F', joined: 'TODAY', reviews: 0, lists: 0, meta: 'EMAIL NOT VERIFIED', flag: 'name', why: 'IMPERSONATES THE SITE \u2014 THE FILTER CAUGHT IT AT SIGNUP', status: 'pending' },
+        { id: 'a3', name: 'xx_d4mn_xx', colour: '#C41031', ink: '#EFECE3', joined: 'YESTERDAY', reviews: 1, lists: 0, meta: 'EMAIL VERIFIED', flag: 'name', why: 'BANNED WORD BEHIND LEETSPEAK', status: 'pending' },
+        { id: 'a4', name: 'zeni_reads', colour: '#1B3BFF', ink: '#EFECE3', joined: '02 FEB', reviews: 14, lists: 2, meta: '1 REPORT \u00b7 EMAIL VERIFIED', flag: 'clean', why: 'NO ACTION NEEDED \u2014 SHOWN FOR CONTEXT', status: 'clean' },
+        { id: 'a5', name: 'kofi_a', colour: '#C6F24E', ink: '#14110F', joined: '19 JAN', reviews: 6, lists: 1, meta: '1 REPORT \u00b7 EMAIL VERIFIED', flag: 'reported', why: 'SPAM OR ADVERTISING', status: 'pending' },
+        { id: 'a6', name: 'tomasb', colour: '#FF3D9A', ink: '#14110F', joined: '08 JAN', reviews: 3, lists: 0, meta: 'EMAIL VERIFIED', flag: 'clean', why: 'NO ACTION NEEDED', status: 'clean' }
+      ],
+      safeguarding: [
+        { id: 's1', who: 'quiet_reader_11', target: 'a review on “A Long Way Down”', when: '4 HOURS AGO', text: 'they said something about not wanting to be here anymore and it scared me', status: 'open' },
+        { id: 's2', who: 'zeni_reads', target: 'the reader kofi_a', when: 'YESTERDAY', text: 'he keeps asking people in reviews how old they are and where they go to school', status: 'open' }
+      ],
+      trash: [
+        { id: 't1', kind: 'Review', name: '“this book is rubbish…” on Eragon', by: 'BY DRAGONLAD_09', when: 'DELETED 2 DAYS AGO', daysLeft: 12 },
+        { id: 't2', kind: 'Account', name: 'spam_trainers_uk', by: '0 REVIEWS', when: 'DELETED 5 DAYS AGO', daysLeft: 9 }
+      ],
+      userSearch: '', usersPage: 0, reviewSearch: '', reviewPage: 0,
+      openUser: null, reporters: null, renaming: null, renameValue: '', renameError: '',
+      confirm: null, banDuration: '6 hours'
+    };
+  }
+  state = this.initial();
+
+  bandOf = (p) => { const n = parseInt(p, 10) || 0; return n < 200 ? 'Under 200 pages' : n <= 400 ? '200–400 pages' : n <= 600 ? '400–600 pages' : '600+ pages'; };
+  mapSubjects = (subjects) => {
+    const out = []; let level = 'Middle Grade';
+    subjects.forEach(s => {
+      const hit = this.subjectMap[s.toLowerCase()];
+      if (hit && this.levels.includes(hit)) level = hit;
+      else if (hit && out.indexOf(hit) === -1) out.push(hit);
+      if (s.toLowerCase().indexOf('nonfiction') > -1 && out.indexOf('Non-fiction') === -1) out.push('Non-fiction');
+    });
+    return { genres: out, level };
+  };
+  chipStyle = (on) => on
+    ? { background: 'var(--color-link)', color: '#EFECE3', borderColor: 'var(--color-text)' }
+    : { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' };
+  toTrash = (kind, name, by) => this.setState(st => ({
+    trash: [{ id: 'x' + Date.now(), kind, name, by, when: 'DELETED JUST NOW', daysLeft: 14 }].concat(st.trash)
+  }));
+  startImport = (src, fulfilIndex) => {
+    const m = this.mapSubjects(src.subjects);
+    this.setState({
+      importing: src.id, draftError: '', justAdded: null, screen: 'catalogue',
+      draft: {
+        title: src.title, author: src.author, pages: String(src.pages), series: src.series,
+        summary: src.summary, genres: m.genres, level: m.level, cover: null,
+        subjects: src.subjects, fulfilIndex: typeof fulfilIndex === 'number' ? fulfilIndex : -1, fulfil: true
+      }
+    });
+  };
+
+  renderVals() {
+    const s = this.state, S = s.screen, d = s.draft;
+    const q = s.apiQuery.trim().toLowerCase();
+    const inCat = (t) => s.catalogue.some(c => c.title.toLowerCase() === t.toLowerCase());
+    const reqIndex = (t) => s.requests.findIndex(r => r.status === 'pending' && r.title.toLowerCase() === t.toLowerCase());
+    const hits = q ? this.apiLibrary.filter(x => (x.title + ' ' + x.author).toLowerCase().includes(q)) : [];
+    const acct = s.accounts.find(a => a.id === s.openUser) || s.accounts[0];
+    const filteredUsers = s.accounts.filter(a => !s.userSearch || a.name.toLowerCase().includes(s.userSearch.toLowerCase()));
+    const filteredReviews = s.reviews.filter(r => !s.reviewSearch || (r.book + ' ' + r.who + ' ' + r.text).toLowerCase().includes(s.reviewSearch.toLowerCase()));
+    const stateStyle = (st, flag) => st === 'pending' && flag === 'name'
+      ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+      : ({
+        pending: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+        banned: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
+        deleted: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
+        warned: { background: '#FFD400', color: '#14110f', borderColor: '#14110f' },
+        allowed: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+        renamed: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+        clean: { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' }
+      })[st];
+    const stateLabel = (st, flag) => st === 'pending' && flag === 'name'
+      ? 'Name refused'
+      : ({ pending: 'Reported', banned: 'Banned', deleted: 'Deleted', warned: 'Warned', allowed: 'Cleared', renamed: 'Renamed', clean: 'OK' })[st];
+
+    return {
+      isHome: S === 'home', isCatalogue: S === 'catalogue', isRequests: S === 'requests',
+      isReviews: S === 'reviews', isUsers: S === 'users', isUser: S === 'user',
+      isSafeguarding: S === 'safeguarding', isTrash: S === 'trash',
+      cur: {
+        home: S === 'home' ? 'page' : null, catalogue: S === 'catalogue' ? 'page' : null,
+        requests: S === 'requests' ? 'page' : null, reviews: S === 'reviews' ? 'page' : null,
+        users: S === 'users' || S === 'user' ? 'page' : null,
+        safeguarding: S === 'safeguarding' ? 'page' : null, trash: S === 'trash' ? 'page' : null
+      },
+      nav: {
+        home: () => this.setState({ screen: 'home' }), catalogue: () => this.setState({ screen: 'catalogue' }),
+        requests: () => this.setState({ screen: 'requests' }), reviews: () => this.setState({ screen: 'reviews' }),
+        users: () => this.setState({ screen: 'users' }), safeguarding: () => this.setState({ screen: 'safeguarding' }),
+        trash: () => this.setState({ screen: 'trash' })
+      },
+      resetAll: () => this.setState(this.initial()),
+
+      catalogueCount: s.catalogue.length,
+      missingCovers: s.catalogue.filter(c => !c.cover).length,
+      pendingRequests: s.requests.filter(r => r.status === 'pending').length,
+      pendingReviews: s.reviews.filter(r => r.status === 'pending').length,
+      pendingAccounts: s.accounts.filter(a => a.status === 'pending').length,
+      safeguardingCount: s.safeguarding.filter(x => x.status === 'open').length,
+
+      apiQuery: s.apiQuery,
+      setApiQuery: (e) => this.setState({ apiQuery: e.target.value, searched: true }),
+      hasApiResults: hits.length > 0,
+      noApiResults: s.searched && q.length > 1 && hits.length === 0,
+      apiResults: hits.map(x => {
+        const already = inCat(x.title), ri = reqIndex(x.title);
+        return {
+          title: x.title, meta: (x.author + ' \u00b7 ' + x.pages + ' pages').toUpperCase(),
+          subjectsUp: x.subjects.join(', ').toUpperCase(),
+          already, importable: !already, matchesRequest: ri > -1 && !already,
+          start: () => this.startImport(x, ri)
+        };
+      }),
+
+      importing: !!s.importing,
+      draft: d ? {
+        title: d.title, author: d.author, pages: d.pages, summary: d.summary, series: d.series,
+        band: this.bandOf(d.pages), hasCover: !!d.cover, noCover: !d.cover,
+        coverSource: d.cover === 'upload' ? 'YOUR UPLOAD \u00b7 STORED BY US' : 'FROM THE API \u00b7 COPIED TO OUR STORAGE',
+        mappedFrom: 'FROM: ' + d.subjects.join(', ').toUpperCase(),
+        matched: d.fulfilIndex > -1,
+        matchLine: d.fulfilIndex > -1 ? (s.requests[d.fulfilIndex].who + ' asked for this ' + s.requests[d.fulfilIndex].when.toLowerCase()) : '',
+        fulfil: d.fulfil
+      } : { title: '', author: '', pages: '', summary: '', band: '', mappedFrom: '', matchLine: '' },
+      draftError: s.draftError,
+      setTitle: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { title: e.target.value }) })),
+      setAuthor: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { author: e.target.value }) })),
+      setPages: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { pages: e.target.value.replace(/\D/g, '') }) })),
+      setSummary: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { summary: e.target.value }) })),
+      toggleSeries: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { series: !st.draft.series }) })),
+      toggleFulfil: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { fulfil: !st.draft.fulfil }) })),
+      useApiCover: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { cover: 'api' }) })),
+      uploadCover: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { cover: 'upload' }) })),
+      clearCover: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { cover: null }) })),
+      genreChips: this.allGenres.map(g => ({
+        label: g, style: this.chipStyle(!!d && d.genres.includes(g)),
+        toggle: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { genres: st.draft.genres.includes(g) ? st.draft.genres.filter(x => x !== g) : st.draft.genres.concat([g]) }) }))
+      })),
+      levelChips: this.levels.map(l => ({
+        label: l, style: this.chipStyle(!!d && d.level === l),
+        pick: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { level: l }) }))
+      })),
+      cancelImport: () => this.setState({ importing: null, draft: null, draftError: '' }),
+      saveBook: () => {
+        if (!d.title.trim()) return this.setState({ draftError: 'A BOOK NEEDS A TITLE' });
+        if (!d.genres.length) return this.setState({ draftError: 'GIVE IT AT LEAST ONE GENRE — RECOMMENDATIONS MATCH ON THESE' });
+        if (this.hasBanned(d.title + ' ' + d.summary)) return this.setState({ draftError: 'THAT TEXT WOULD FAIL THE READER-FACING FILTER' });
+        const closed = d.fulfilIndex > -1 && d.fulfil;
+        this.setState(st => ({
+          catalogue: st.catalogue.concat([{
+            id: 'c' + Date.now(), title: d.title.trim(), author: d.author.trim(),
+            pages: parseInt(d.pages, 10) || 0, level: d.level, genres: d.genres, cover: d.cover
+          }]),
+          requests: st.requests.map((r, i) => i === d.fulfilIndex && closed ? Object.assign({}, r, { status: 'approved', reason: '' }) : r),
+          importing: null, draft: null, draftError: '',
+          justAdded: { title: d.title.trim(), closed, cover: !!d.cover, who: closed ? st.requests[d.fulfilIndex].who : '' }
+        }));
+      },
+      justAdded: !!s.justAdded,
+      addedLine: s.justAdded ? ('“' + s.justAdded.title + '” is in the catalogue') : '',
+      addedNote: s.justAdded
+        ? ((s.justAdded.closed ? 'REQUEST CLOSED AND ' + s.justAdded.who.toUpperCase() + ' TOLD IT IS HERE' : 'NO REQUEST WAS WAITING — YOU ADDED IT YOURSELF')
+          + (s.justAdded.cover ? '' : ' \u00b7 STILL NEEDS A COVER'))
+        : '',
+      dismissAdded: () => this.setState({ justAdded: null }),
+
+      catFilter: s.catFilter,
+      setCatFilter: (e) => this.setState({ catFilter: e.target.value }),
+      catalogue: s.catalogue
+        .filter(c => !s.catFilter || (c.title + ' ' + c.author).toLowerCase().includes(s.catFilter.toLowerCase()))
+        .map(c => ({
+          title: c.title, meta: (c.author + ' \u00b7 ' + c.pages + ' pages \u00b7 ' + c.level).toUpperCase(),
+          tags: c.genres.concat([this.bandOf(c.pages)]),
+          hasCover: !!c.cover, noCover: !c.cover,
+          addCover: () => this.setState(st => ({ catalogue: st.catalogue.map(x => x.id === c.id ? Object.assign({}, x, { cover: 'upload' }) : x) })),
+          remove: () => {
+            this.toTrash('Book', c.title, 'REMOVED FROM THE CATALOGUE');
+            this.setState(st => ({ catalogue: st.catalogue.filter(x => x.id !== c.id) }));
+          }
+        })),
+
+      requestList: s.requests.map((r, i) => ({
+        title: r.title,
+        meta: ((r.author || 'author not given') + ' \u00b7 asked by ' + r.who + ' \u00b7 ' + r.when + (r.others ? ' \u00b7 also requested by ' + r.others + ' others' : '')).toUpperCase(),
+        reason: r.reason, hasReason: !!r.reason,
+        statusLabel: ({ pending: 'Pending', approved: 'In catalogue', declined: 'Declined' })[r.status],
+        statusStyle: ({
+          pending: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+          approved: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+          declined: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+        })[r.status],
+        pending: r.status === 'pending', decided: r.status !== 'pending',
+        isDeclining: s.declining === i,
+        findIt: () => {
+          const src = this.apiLibrary.find(x => x.title.toLowerCase() === r.title.toLowerCase());
+          if (src) return this.startImport(src, i);
+          this.setState({ screen: 'catalogue', apiQuery: r.title, searched: true });
+        },
+        startDecline: () => this.setState({ declining: i, declineReason: 'Too old for the catalogue', declineText: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' }),
+        undo: () => this.setState(st => ({
+          requests: st.requests.map((x, j) => j === i ? Object.assign({}, x, { status: 'pending' }) : x),
+          declining: r.status === 'declined' ? i : null,
+          declineReason: r.status === 'declined' ? 'Other' : st.declineReason,
+          declineText: r.status === 'declined' ? r.reason : st.declineText,
+          trash: st.trash.filter(t => t.name !== 'Declined: ' + r.title)
+        }))
+      })),
+      declineReasons: ['Too old for the catalogue', 'Couldn\u2019t find it', 'Already on the site', 'Other'].map(x => ({
+        label: x, style: this.chipStyle(s.declineReason === x),
+        pick: () => this.setState({
+          declineReason: x,
+          declineText: ({
+            'Too old for the catalogue': 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.',
+            'Couldn\u2019t find it': 'We could not find this one in the book database we use. Double-check the spelling and send it again.',
+            'Already on the site': 'Good news — this one is already here. Search for it and it should come up.',
+            'Other': ''
+          })[x]
+        })
+      })),
+      declineText: s.declineText,
+      setDeclineText: (e) => this.setState({ declineText: e.target.value }),
+      cancelDecline: () => this.setState({ declining: null }),
+      sendDecline: () => this.setState(st => {
+        const t = (st.requests[st.declining] || {}).title || '';
+        return {
+          requests: st.requests.map((x, j) => j === st.declining ? Object.assign({}, x, { status: 'declined', reason: st.declineText }) : x),
+          declining: null,
+          trash: [{ id: 'd' + Date.now(), kind: 'Request', name: 'Declined: ' + t, by: 'READER WAS TOLD WHY', when: 'DECLINED JUST NOW', daysLeft: 14 }].concat(st.trash)
+        };
+      }),
+
+      reviewSearch: s.reviewSearch,
+      setReviewSearch: (e) => this.setState({ reviewSearch: e.target.value, reviewPage: 0 }),
+      reviewPageLabel: 'PAGE ' + (s.reviewPage + 1) + ' OF ' + Math.max(1, Math.ceil(filteredReviews.length / 3)) + ' \u00b7 3 A PAGE',
+      prevReviews: () => this.setState(st => ({ reviewPage: Math.max(0, st.reviewPage - 1) })),
+      nextReviews: () => this.setState(st => ({ reviewPage: (st.reviewPage + 1) * 3 < filteredReviews.length ? st.reviewPage + 1 : st.reviewPage })),
+      reviewList: filteredReviews.slice(s.reviewPage * 3, s.reviewPage * 3 + 3).map(r => ({
+        book: r.book.toUpperCase(), who: r.who, when: r.when, why: r.why, text: r.text, rating: r.stars + '/5',
+        flagLabel: r.status === 'allowed' ? 'Allowed' : r.status === 'deleted' ? 'Deleted' : r.flag === 'blocked' ? 'Auto-blocked' : 'Reported \u00d7' + r.reports,
+        flagStyle: r.status === 'allowed' ? { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' }
+          : r.status === 'deleted' || r.flag === 'blocked' ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+          : { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+        pending: r.status === 'pending', done: r.status !== 'pending',
+        hasReporters: r.reports > 0 && r.status === 'pending',
+        showReporters: () => this.setState({
+          reporters: {
+            title: r.reports + (r.reports === 1 ? ' report on this review' : ' reports on this review'),
+            list: [
+              { who: 'zeni_reads', reason: 'Rude or unkind to other readers', when: '3 DAYS AGO', note: 'calling people idiots for liking a book' },
+              { who: 'ines_p', reason: 'Nothing to do with the book', when: '3 DAYS AGO', note: 'says nothing about the story' },
+              { who: 'tomasb', reason: 'Spam or advertising', when: 'YESTERDAY', note: '' }
+            ].slice(0, Math.max(1, r.reports))
+          }
+        }),
+        allow: () => this.setState(st => ({ reviews: st.reviews.map(x => x.id === r.id ? Object.assign({}, x, { status: 'allowed' }) : x) })),
+        del: () => this.setState({ confirm: { kind: 'review', id: r.id, name: r.book } }),
+        undo: () => this.setState(st => ({ reviews: st.reviews.map(x => x.id === r.id ? Object.assign({}, x, { status: 'pending' }) : x) })),
+        openUser: () => {
+          const a = s.accounts.find(x => x.name === r.who);
+          this.setState({ openUser: a ? a.id : null, screen: 'user' });
+        }
+      })),
+
+      userSearch: s.userSearch,
+      setUserSearch: (e) => this.setState({ userSearch: e.target.value, usersPage: 0 }),
+      userPageLabel: 'PAGE ' + (s.usersPage + 1) + ' OF ' + Math.max(1, Math.ceil(filteredUsers.length / 4)) + ' \u00b7 4 A PAGE',
+      prevUsers: () => this.setState(st => ({ usersPage: Math.max(0, st.usersPage - 1) })),
+      nextUsers: () => this.setState(st => ({ usersPage: (st.usersPage + 1) * 4 < filteredUsers.length ? st.usersPage + 1 : st.usersPage })),
+      userList: filteredUsers.slice(s.usersPage * 4, s.usersPage * 4 + 4).map(a => ({
+        name: a.name, initial: a.name.slice(0, 1).toUpperCase(),
+        meta: 'JOINED ' + a.joined + ' \u00b7 ' + a.reviews + (a.reviews === 1 ? ' REVIEW \u00b7 ' : ' REVIEWS \u00b7 ') + a.lists + (a.lists === 1 ? ' LIST' : ' LISTS'),
+        avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '40px', height: '40px', flex: 'none', border: '3px solid var(--color-text)', background: a.colour, color: a.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '17px' },
+        stateLabel: stateLabel(a.status, a.flag), stateStyle: stateStyle(a.status, a.flag),
+        open: () => this.setState({ openUser: a.id, screen: 'user' })
+      })),
+      user: (() => {
+        const rs = s.reviews.filter(r => r.who === acct.name);
+        return {
+          name: acct.name, initial: acct.name.slice(0, 1).toUpperCase(), why: acct.why,
+          meta: 'JOINED ' + acct.joined + ' \u00b7 ' + acct.reviews + ' REVIEWS \u00b7 ' + acct.lists + ' LISTS \u00b7 ' + acct.meta,
+          avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '64px', height: '64px', flex: 'none', border: '3px solid var(--color-text)', background: acct.colour, color: acct.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '28px' },
+          stateLabel: stateLabel(acct.status, acct.flag), stateStyle: stateStyle(acct.status, acct.flag),
+          isBanned: acct.status === 'banned', banUntil: acct.banUntil || '',
+          actionable: acct.status !== 'deleted',
+          nameFlag: acct.flag === 'name' && acct.status === 'pending',
+          noReviews: rs.length === 0,
+          reviews: rs.map(r => ({
+            book: r.book.toUpperCase(), when: r.when, rating: r.stars + '/5', text: r.text,
+            live: r.status === 'pending' && acct.status !== 'deleted',
+            stateLabel: r.status === 'allowed' ? 'Allowed' : r.status === 'deleted' ? 'Deleted' : 'Still live',
+            stateStyle: r.status === 'allowed' ? { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' }
+              : r.status === 'deleted' ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+              : { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+            allow: () => this.setState(st => ({ reviews: st.reviews.map(x => x.id === r.id ? Object.assign({}, x, { status: 'allowed' }) : x) })),
+            del: () => this.setState({ confirm: { kind: 'review', id: r.id, name: r.book } })
+          })),
+          rename: () => this.setState({ renaming: { id: acct.id, name: acct.name }, renameValue: '', renameError: '' }),
+          askBan: () => this.setState({ confirm: { kind: 'ban', id: acct.id, name: acct.name }, banDuration: '6 hours' }),
+          askDelete: () => this.setState({ confirm: { kind: 'account', id: acct.id, name: acct.name, counts: acct.reviews + ' reviews and ' + acct.lists + ' lists' } }),
+          unban: () => this.setState(st => ({ accounts: st.accounts.map(x => x.id === acct.id ? Object.assign({}, x, { status: 'pending', banUntil: '' }) : x) }))
+        };
+      })(),
+
+      safeguardingList: s.safeguarding.map(x => ({
+        who: x.who, target: x.target, when: x.when, text: x.text,
+        open: x.status === 'open', done: x.status !== 'open',
+        stateLabel: x.status === 'open' ? 'Open' : 'Actioned',
+        stateStyle: x.status === 'open'
+          ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+          : { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+        action: () => this.setState(st => ({ safeguarding: st.safeguarding.map(y => y.id === x.id ? Object.assign({}, y, { status: 'done' }) : y) })),
+        undo: () => this.setState(st => ({ safeguarding: st.safeguarding.map(y => y.id === x.id ? Object.assign({}, y, { status: 'open' }) : y) }))
+      })),
+
+      trashEmpty: s.trash.length === 0,
+      trashList: s.trash.map(t => ({
+        kind: t.kind, name: t.name, by: t.by, when: t.when,
+        daysLeft: t.daysLeft + (t.daysLeft === 1 ? ' day left' : ' days left'),
+        restore: () => this.setState(st => ({ trash: st.trash.filter(x => x.id !== t.id) })),
+        purge: () => this.setState(st => ({ trash: st.trash.filter(x => x.id !== t.id) }))
+      })),
+
+      reportersOpen: !!s.reporters,
+      reportersTitle: s.reporters ? s.reporters.title : '',
+      reportersList: s.reporters ? s.reporters.list : [],
+      closeReporters: () => this.setState({ reporters: null }),
+
+      renameOpen: !!s.renaming,
+      renameTarget: s.renaming ? s.renaming.name : '',
+      renameValue: s.renameValue, renameError: s.renameError,
+      setRenameValue: (e) => this.setState({ renameValue: e.target.value, renameError: '' }),
+      doRename: () => {
+        const v = (s.renameValue || '').trim();
+        if (v.length < 2) return this.setState({ renameError: 'AT LEAST 2 CHARACTERS' });
+        if (!/^[A-Za-z0-9_]+$/.test(v)) return this.setState({ renameError: 'LETTERS, NUMBERS AND UNDERSCORES ONLY' });
+        if (this.hasBanned(v)) return this.setState({ renameError: 'THAT NAME WOULD FAIL THE FILTER TOO' });
+        this.setState(st => ({
+          accounts: st.accounts.map(x => x.id === st.renaming.id ? Object.assign({}, x, { name: v, status: 'renamed' }) : x),
+          renaming: null, renameValue: ''
+        }));
+      },
+      cancelRename: () => this.setState({ renaming: null, renameValue: '', renameError: '' }),
+
+      confirmOpen: !!s.confirm,
+      confirmIsBan: !!s.confirm && s.confirm.kind === 'ban',
+      confirmTitle: s.confirm ? ({ ban: 'Ban ' + s.confirm.name + '?', account: 'Delete ' + s.confirm.name + '?', review: 'Delete this review?' })[s.confirm.kind] : '',
+      confirmBody: s.confirm ? ({
+        ban: 'A ban stops them posting reviews, sharing lists and requesting books. It does not hide what they have already written — delete those separately if they need to go.',
+        account: 'This removes ' + (s.confirm.counts || 'their content') + ' along with the account. It is a soft delete, so it sits in Trash for 14 days — but the reader loses access immediately.',
+        review: 'It disappears from the book page straight away. The author is not told which report caused it.'
+      })[s.confirm.kind] : '',
+      confirmCta: s.confirm ? ({ ban: (s.banDuration === 'Warning only' ? 'Send the warning' : 'Ban for ' + s.banDuration), account: 'Yes, delete the account', review: 'Yes, delete it' })[s.confirm.kind] : '',
+      banOptions: this.banList.map(o => ({
+        label: o.label, caption: o.caption, rec: o.rec, on: s.banDuration === o.label,
+        pick: () => this.setState({ banDuration: o.label })
+      })),
+      cancelConfirm: () => this.setState({ confirm: null }),
+      doConfirm: () => {
+        const c = s.confirm;
+        if (!c) return;
+        if (c.kind === 'ban') {
+          return this.setState(st => ({
+            accounts: st.accounts.map(x => x.id === c.id
+              ? Object.assign({}, x, st.banDuration === 'Warning only' ? { status: 'warned' } : { status: 'banned', banUntil: st.banDuration })
+              : x),
+            confirm: null
+          }));
+        }
+        if (c.kind === 'account') {
+          this.toTrash('Account', c.name, (c.counts || '').toUpperCase());
+          return this.setState(st => ({
+            accounts: st.accounts.map(x => x.id === c.id ? Object.assign({}, x, { status: 'deleted' }) : x),
+            reviews: st.reviews.map(x => x.who === c.name ? Object.assign({}, x, { status: 'deleted' }) : x),
+            confirm: null
+          }));
+        }
+        this.toTrash('Review', 'Review on “' + c.name + '”', 'REMOVED BY YOU');
+        return this.setState(st => ({
+          reviews: st.reviews.map(x => x.id === c.id ? Object.assign({}, x, { status: 'deleted' }) : x),
+          confirm: null
+        }));
+      }
+    };
+  }
+}
+
+</script>
+</body>
+</html>

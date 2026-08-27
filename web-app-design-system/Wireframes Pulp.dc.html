@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="pulp.css">
+<style>
+  body { margin: 0; background: #e9dcc6; }
+  .mono { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; }
+  .board { width: 880px; flex: none; background: var(--color-bg); border: 3px solid var(--color-text); box-shadow: 8px 8px 0 var(--color-text); }
+  .board-m { width: 375px; flex: none; background: var(--color-bg); border: 3px solid var(--color-text); box-shadow: 8px 8px 0 var(--color-text); }
+  .plate { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .plate-id { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; background: var(--color-text); color: var(--color-bg); padding: 4px 9px; }
+  .plate-name { font-family: var(--font-heading); font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+  .chrome { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 3px solid var(--color-text); }
+  .url { flex: 1; font-family: var(--font-mono); font-size: 10px; color: var(--color-neutral-700); background: var(--color-surface); border: 2px solid var(--color-text); padding: 4px 8px; }
+  .dot3 { width: 8px; height: 8px; border: 2px solid var(--color-text); }
+  .wnav { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 3px solid var(--color-text); font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .wnav b { font-family: var(--font-display); font-size: 18px; text-transform: uppercase; margin-right: auto; white-space: nowrap; }
+  .wnav span { color: var(--color-neutral-700); white-space: nowrap; }
+  .flow-badge { flex: none; white-space: nowrap; background: var(--color-accent); color: var(--color-bg); font-weight: 700; padding: 5px 10px; }
+  .wnav span.on { color: var(--color-text); font-weight: 700; border-bottom: 3px solid var(--color-accent); padding-bottom: 2px; }
+  .cover { background-color: var(--color-link); background-image: repeating-linear-gradient(135deg, rgba(255,243,226,0.24) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; color: #EFECE3; }
+  .mode-btn { font-family: var(--font-heading); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; padding: 9px 18px; cursor: pointer; border-width: 3px; border-style: solid; }
+  .grey { background: repeating-linear-gradient(90deg, var(--color-neutral-400) 0 60%, transparent 60% 100%); background-size: 6px 100%; height: 9px; }
+  .stars { letter-spacing: 2px; color: var(--color-accent-700); font-size: 13px; }
+  .radio input[type="checkbox"] + .dot { border-radius: 0; }
+  .seg-opt[data-state="read"]:has(input:checked) { background: #c6f24e; color: #14110f; }
+  .seg-opt[data-state="reading"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
+  .seg-opt[data-state="want"]:has(input:checked) { background: #1B3BFF; color: #EFECE3; }
+  .seg-opt[data-state="prog"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
+  .note { display: flex; gap: 8px; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.55; color: var(--color-neutral-700); }
+  .note i { color: var(--color-accent); font-weight: 700; font-style: normal; flex: none; }
+  .flow-arrow { flex: none; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 130px; text-align: center; }
+  .flow-arrow div { font-family: var(--font-mono); font-size: 9.5px; color: var(--color-neutral-700); letter-spacing: 0.08em; }
+  .flow-arrow span { font-size: 30px; color: var(--color-accent); line-height: 1; }
+  a { color: var(--color-link); }
+  a:hover { color: var(--color-accent); }
+</style>
+</helmet>
+
+<div style="{{ theme }}">
+<div style="background: var(--color-text); color: var(--color-bg); padding: 48px 44px;">
+  <div class="mono" style="color: #ff4d00; font-weight: 700; margin-bottom: 10px;">SHEET 02 OF 02 · WIREFRAMES IN THE PULP DIRECTION · V1 SCOPE</div>
+  <h1 style="font-size: 52px; margin: 0 0 10px;">Book Recommendation Hub — Screens</h1>
+  <p style="max-width: 620px; margin: 0; opacity: 0.85; font-size: 15px;">Twenty-eight screens in seven flows, plus the accent rules. Same structure and copy as the Industry sheet — only the style has changed. Pan and zoom to move around; each board has an ID you can quote back to me.</p>
+  <div style="display: flex; align-items: center; gap: 12px; margin-top: 26px; flex-wrap: wrap;">
+    <span class="mono" style="opacity: 0.7;">VIEW EVERY SCREEN IN:</span>
+    <button class="mode-btn" style="{{ lightBtn }}" onClick="{{ setLight }}">Light mode</button>
+    <button class="mode-btn" style="{{ darkBtn }}" onClick="{{ setDark }}">Dark mode</button>
+    <span class="mono" style="opacity: 0.55;">{{ modeLabel }}</span>
+  </div>
+</div>
+
+<div style="padding: 44px; display: flex; flex-direction: column; gap: 72px;">
+
+  <div>
+    <div class="plate"><span class="plate-id">RULES</span><span class="plate-name">Four accents, four jobs</span></div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 1180px;">
+      <div style="border: 3px solid var(--color-text); box-shadow: 6px 6px 0 var(--color-text); background: var(--color-bg);">
+        <div style="height: 72px; background: #ff4d00; border-bottom: 3px solid var(--color-text);"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: var(--color-neutral-700);">#FF4D00</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Orange = go</div>
+          <p style="font-size: 13px; margin: 0;">The one primary action per screen. Get Started, Continue, Search, Post review. Nothing else is ever orange.</p>
+        </div>
+      </div>
+      <div style="border: 3px solid var(--color-text); box-shadow: 6px 6px 0 var(--color-text); background: var(--color-bg);">
+        <div style="height: 72px; background: #1b3bff; border-bottom: 3px solid var(--color-text);"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: var(--color-neutral-700);">#1B3BFF</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Blue = links</div>
+          <p style="font-size: 13px; margin: 0;">Anything that navigates or selects: links, chosen filters, survey answers, cover fields, Want to Read.</p>
+        </div>
+      </div>
+      <div style="border: 3px solid var(--color-text); box-shadow: 6px 6px 0 var(--color-text); background: var(--color-bg);">
+        <div style="height: 72px; background: #c6f24e; border-bottom: 3px solid var(--color-text);"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: var(--color-neutral-700);">#C6F24E</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Lime = done</div>
+          <p style="font-size: 13px; margin: 0;">Read, finished, saved, sent, confirmed. Always ink text on it — never cream.</p>
+        </div>
+      </div>
+      <div style="border: 3px solid var(--color-text); box-shadow: 6px 6px 0 var(--color-text); background: var(--color-bg);">
+        <div style="height: 72px; background: #ff3d9a; border-bottom: 3px solid var(--color-text);"></div>
+        <div style="padding: 14px 16px 18px;">
+          <div class="mono" style="color: var(--color-neutral-700);">#FF3D9A</div>
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px; margin: 2px 0 6px;">Pink = live</div>
+          <p style="font-size: 13px; margin: 0;">Happening now, or yours: Currently Reading, your own review, your monogram, anything new.</p>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 14px; max-width: 940px;">
+      <div class="note"><i>01</i><span>Genre tags are ink outlines, never coloured. If genres took colours too, four accents would become decoration and the state colours would stop meaning anything.</span></div>
+      <div class="note"><i>02</i><span>Watch where each colour appears below: C1's shelf headers, B5's counts, E3's tabs and D2's sent state all read their colour from this table rather than choosing one.</span></div>
+      <div class="note"><i>03</i><span>Ground cream #EFECE3, ink #14110F, 3px outlines, hard offset shadows. Anton once per board, Space Grotesk for everything else, Space Mono for data.</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW A</span>
+      <h2 style="margin: 0;">Guest discovery — no account needed</h2>
+      <span class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">LANDING → SEARCH → BOOK DETAIL → GATE</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 0;">
+
+      <div>
+        <div class="plate"><span class="plate-id">A1</span><span class="plate-name">Landing page</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / </span></div>
+          <div class="wnav"><b>Book Hub</b><span class="on">Home</span><span>Search</span><span>Recommendations</span><span>Reviews</span><span>Tracker</span><span>My Lists</span><span>Log in</span><span style="display: inline-flex; border: 3px solid var(--color-text); flex: none;"><button style="{{ a1Light }}" onClick="{{ setLight }}">Light</button><button style="{{ a1Dark }}" onClick="{{ setDark }}">Dark</button></span></div>
+          <div style="padding: 28px 32px 32px;">
+            <div class="cover" style="height: 190px; margin-bottom: 24px;"><span class="mono">HERO — COLLAGE OF WELL-KNOWN COVERS</span></div>
+            <h1 style="font-size: 44px; margin: 0 0 8px;">Find Your Next Book!</h1>
+            <p style="font-size: 15px; max-width: 460px;">Tell us what you like and we'll line up books you'll actually want to read. Free, no adverts, takes a minute.</p>
+            <div style="display: flex; gap: 10px; margin: 18px 0 32px;">
+              <button class="btn btn-primary blueprint" style="padding: 10px 18px;">Get Started<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+              <button class="btn btn-secondary" style="padding: 10px 18px;">Browse books as a guest</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px; border-top: 1px solid var(--color-divider); padding-top: 24px;">
+              <div>
+                <h4 style="margin: 0 0 8px;">Why this exists</h4>
+                <div class="grey" style="width: 100%; margin-bottom: 6px;"></div>
+                <div class="grey" style="width: 92%; margin-bottom: 6px;"></div>
+                <div class="grey" style="width: 70%;"></div>
+                <div class="mono" style="margin-top: 8px; color: var(--color-accent-700);">FOUNDER STORY — 3 SENTENCES</div>
+              </div>
+              <div>
+                <h4 style="margin: 0 0 8px;">Why is reading important?</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="border: 1px solid var(--color-divider); padding: 10px;"><div style="font-family: var(--font-heading); font-size: 15px;">Vocabulary</div><div class="grey" style="width: 80%; margin-top: 6px;"></div></div>
+                  <div style="border: 1px solid var(--color-divider); padding: 10px;"><div style="font-family: var(--font-heading); font-size: 15px;">Knowledge</div><div class="grey" style="width: 80%; margin-top: 6px;"></div></div>
+                  <div style="border: 1px solid var(--color-divider); padding: 10px;"><div style="font-family: var(--font-heading); font-size: 15px;">Imagination</div><div class="grey" style="width: 80%; margin-top: 6px;"></div></div>
+                  <div style="border: 1px solid var(--color-divider); padding: 10px;"><div style="font-family: var(--font-heading); font-size: 15px;">Relaxation</div><div class="grey" style="width: 80%; margin-top: 6px;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 880px;">
+          <div class="note"><i>01</i><span>“Get Started” is the only solid button on the page. The guest-browse route sits beside it as a secondary — the brief wants both, but only one can be primary.</span></div>
+          <div class="note"><i>02</i><span>Nav is the full site menu even for guests. Recommendations / Tracker / My Lists are visible but gated — showing them is what makes signing up feel worth it.</span></div>
+          <div class="note"><i>03</i><span>The light/dark pair sits in the nav, not buried in Profile, so a guest can flip it too. It is the only control in the header that is not navigation — everything else there goes somewhere.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>CLICKS “BROWSE AS GUEST” OR SEARCH</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">A2</span><span class="plate-name">Search / browse results</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / search?q=dragons</span></div>
+          <div class="wnav"><b>Book Hub</b><span>Home</span><span class="on">Search</span><span>Recommendations</span><span>Reviews</span><span>Tracker</span><span>My Lists</span><span>Log in</span></div>
+          <div style="padding: 24px 32px 32px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+              <input class="input" value="dragons" style="flex: 1; min-height: 42px;">
+              <button class="btn btn-primary" style="padding: 0 20px;">Search</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 190px 1fr; gap: 28px;">
+              <div>
+                <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">FILTERS</div>
+                <div style="font-family: var(--font-heading); font-size: 14px; margin-bottom: 6px;">Genre</div>
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Fantasy</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Adventure</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Sci-Fi</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Romance</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Mystery/Thriller</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Horror</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Historical Fiction</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Realistic/Contemporary Fiction</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Comedy/Humour</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Non-fiction</label>
+                </div>
+                <div style="font-family: var(--font-heading); font-size: 14px; margin-bottom: 6px;">Length</div>
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Under 200 pages</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>200–400 pages</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>400–600 pages</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>600+ pages</label>
+                </div>
+                <div style="font-family: var(--font-heading); font-size: 14px; margin-bottom: 6px;">Reading level</div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Middle Grade</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Young Adult</label>
+                  <label class="radio"><input type="checkbox"><span class="dot"></span>Adult</label>
+                </div>
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">42 RESULTS FOR “DRAGONS”</span>
+                  <span class="mono" style="color: var(--color-accent-700);">SORT: MOST REVIEWED ▾</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--color-divider);">
+                  <div style="display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent);">
+                    <div class="cover" style="width: 64px; height: 94px; flex: none;"><span class="mono">COVER</span></div>
+                    <div style="flex: 1;">
+                      <div style="font-family: var(--font-heading); font-size: 18px;">Eragon</div>
+                      <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 6px;">CHRISTOPHER PAOLINI · 528PP</div>
+                      <div class="grey" style="width: 96%; margin-bottom: 5px;"></div>
+                      <div class="grey" style="width: 62%; margin-bottom: 8px;"></div>
+                      <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                        <span class="stars">★★★★☆</span>
+                        <span class="tag tag-accent">Fantasy</span><span class="tag tag-neutral">Young Adult</span><span class="tag tag-neutral">400–600 pages</span><span class="tag tag-outline">Part of a series</span>
+                      </div>
+                    </div>
+                    <div style="align-self: center; flex: none; text-align: right;">
+                      <div style="margin-bottom: 8px;"><span class="tag" style="background: #1B3BFF; color: #EFECE3;">Want to read</span></div>
+                      <button class="btn btn-secondary">Open</button>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent);">
+                    <div class="cover" style="width: 64px; height: 94px; flex: none;"><span class="mono">COVER</span></div>
+                    <div style="flex: 1;">
+                      <div style="font-family: var(--font-heading); font-size: 18px;">How to Train Your Dragon</div>
+                      <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 6px;">CRESSIDA COWELL · 214PP</div>
+                      <div class="grey" style="width: 90%; margin-bottom: 5px;"></div>
+                      <div class="grey" style="width: 54%; margin-bottom: 8px;"></div>
+                      <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                        <span class="stars">★★★★★</span>
+                        <span class="tag tag-accent">Comedy/Humour</span><span class="tag tag-neutral">Middle Grade</span><span class="tag tag-neutral">200–400 pages</span>
+                      </div>
+                    </div>
+                    <div style="align-self: center; flex: none; text-align: right;">
+                      <div style="margin-bottom: 8px;"><span class="tag" style="background: #ff3d9a; color: #14110f;">Reading</span></div>
+                      <button class="btn btn-secondary">Open</button>
+                    </div>
+                  </div>
+                  </div>
+                  <div style="display: flex; gap: 14px; padding: 14px 0;">
+                    <div class="cover" style="width: 64px; height: 94px; flex: none;"><span class="mono">COVER</span></div>
+                    <div style="flex: 1;">
+                      <div style="font-family: var(--font-heading); font-size: 18px;">Seraphina</div>
+                      <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 6px;">RACHEL HARTMAN · 465PP</div>
+                      <div class="grey" style="width: 88%; margin-bottom: 5px;"></div>
+                      <div class="grey" style="width: 58%;"></div>
+                    </div>
+                    <div style="align-self: center; flex: none; text-align: right;">
+                      <div style="margin-bottom: 8px;"><span class="tag" style="background: #c6f24e; color: #14110f;">Read</span></div>
+                      <button class="btn btn-secondary">Open</button>
+                    </div>
+                  </div>
+                </div>
+                <div style="border: 1px dashed var(--color-divider); padding: 14px; margin-top: 18px; display: flex; align-items: center; gap: 12px;">
+                  <div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">Couldn't find the book you wanted?</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">LINKS TO D3 — REQUEST A MISSING BOOK</div></div>
+                  <button class="btn btn-secondary">Request it</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 16px;">
+                  <button class="btn btn-secondary">← Previous</button>
+                  <span class="mono" style="flex: 1; color: var(--color-neutral-700);">PAGE 1 OF 9 · FIVE BOOKS A PAGE</span>
+                  <button class="btn btn-secondary">Next →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 880px;">
+          <div class="note"><i>01</i><span>Search results and browse are the same screen — browse is just search with no query. One template, half the build.</span></div>
+          <div class="note"><i>02</i><span>Filter names mirror the onboarding survey answers exactly, so tag-matching recommendations and manual filtering use one vocabulary.</span></div>
+          <div class="note"><i>03</i><span>Status badges on results mean a reader browsing can see at a glance what they have already read, are reading, or saved — lime, pink, blue, the same four rules as everywhere else. A guest sees none, and “Open” takes them to the book where the gate fires.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>TAPS A RESULT</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">A3</span><span class="plate-name">Book detail page</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / book / eragon-christopher-paolini</span></div>
+          <div class="wnav"><b>Book Hub</b><span>Home</span><span class="on">Search</span><span>Recommendations</span><span>Reviews</span><span>Tracker</span><span>My Lists</span><span>Log in</span></div>
+          <div style="padding: 24px 32px 32px;">
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 16px;">SEARCH “DRAGONS” / ERAGON</div>
+            <div style="display: grid; grid-template-columns: 210px 1fr; gap: 28px;">
+              <div>
+                <div class="cover blueprint" style="height: 310px;"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span class="mono">COVER FROM API</span></div>
+                <div class="mono" style="margin-top: 12px; color: var(--color-accent-700);">READING STATUS</div>
+                <div class="seg" style="margin-top: 6px; width: 100%; flex-direction: column;">
+                  <label class="seg-opt" data-state="read" style="justify-content: center; min-height: 40px; border-left: 0;"><input type="radio" name="a3">Read</label>
+                  <label class="seg-opt" data-state="reading" style="justify-content: center; min-height: 40px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="a3" checked>Currently Reading</label>
+                  <label class="seg-opt" data-state="want" style="justify-content: center; min-height: 40px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="a3">Want to Read</label>
+                </div>
+                <button class="btn btn-secondary btn-block" style="min-height: 40px;">＋ Add to a list</button>
+                <div style="margin-top: 16px;">
+                  <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 6px;">HOW FAR ARE YOU?</div>
+                  <div style="height: 12px; border: 3px solid var(--color-text); margin-bottom: 8px;"><div style="width: 50%; height: 100%; background: #ff3d9a;"></div></div>
+                  <div class="seg" style="width: 100%; flex-direction: column;">
+                    <label class="seg-opt" data-state="prog" style="justify-content: center; min-height: 40px; border-left: 0;"><input type="radio" name="prog">Just started</label>
+                    <label class="seg-opt" data-state="prog" style="justify-content: center; min-height: 40px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="prog" checked>Halfway</label>
+                    <label class="seg-opt" data-state="prog" style="justify-content: center; min-height: 40px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="prog">Nearly done</label>
+                  </div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px;">NO PAGE NUMBERS — WORKS FOR EBOOKS AND AUDIOBOOKS TOO</div>
+                </div>
+              </div>
+              <div>
+                <h1 style="font-size: 38px; margin: 0 0 4px;">Eragon</h1>
+                <div style="font-size: 15px; margin-bottom: 10px;">Christopher Paolini</div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+                  <span class="stars" style="font-size: 17px;">★★★★☆</span>
+                  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">4.1 AVERAGE · 218 REVIEWS</span>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px;">
+                  <span class="tag tag-accent">Fantasy</span><span class="tag tag-accent">Adventure</span><span class="tag tag-neutral">Young Adult</span><span class="tag tag-neutral">400–600pp</span><span class="tag tag-outline">Part of a series</span>
+                </div>
+                <h4 style="margin: 0 0 6px;">Summary</h4>
+                <div class="grey" style="width: 100%; margin-bottom: 6px;"></div>
+                <div class="grey" style="width: 98%; margin-bottom: 6px;"></div>
+                <div class="grey" style="width: 94%; margin-bottom: 6px;"></div>
+                <div class="grey" style="width: 61%; margin-bottom: 24px;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--color-divider); padding-top: 18px; margin-bottom: 14px;">
+                  <h4 style="margin: 0;">Reviews (218)</h4>
+                  <button class="btn btn-primary">Write a review</button>
+                </div>
+                <div class="card" style="margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;"><div class="card-title" style="font-size: 15px;">Amara K.</div><span class="mono" style="color: color-mix(in srgb, var(--color-text) 50%, transparent);">12 MAR</span></div>
+                  <span class="stars">★★★★★</span>
+                  <div class="grey" style="width: 100%; margin: 4px 0;"></div>
+                  <div class="grey" style="width: 72%;"></div>
+                </div>
+                <div class="card">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;"><div class="card-title" style="font-size: 15px;">Joel T.</div><span class="mono" style="color: color-mix(in srgb, var(--color-text) 50%, transparent);">04 MAR</span></div>
+                  <span class="stars">★★★☆☆</span>
+                  <div class="grey" style="width: 96%; margin: 4px 0;"></div>
+                  <div class="grey" style="width: 48%;"></div>
+                </div>
+                <button class="btn btn-ghost" style="margin-top: 10px;">Show all 218 reviews</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 880px;">
+          <div class="note"><i>01</i><span>One readable URL per title — this is the SEO page in the brief. Title, cover, summary, tags and reviews must be in the server-rendered HTML, not loaded in by script afterwards.</span></div>
+          <div class="note"><i>02</i><span>Status control is stacked here so all three options are one tap, 40px tall. It is the same component as in A2 and C2.</span></div>
+          <div class="note"><i>03</i><span>Reviews live on this page rather than a separate screen. The nav's “Reviews” entry points to the reader's own reviews, not a global feed.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>GUEST TAPS A LOCKED ACTION</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">A4</span><span class="plate-name">Guest gate</span></div>
+        <div class="board" style="width: 520px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / book / eragon… (modal)</span></div>
+          <div style="padding: 40px 32px; background: color-mix(in srgb, var(--color-neutral-900) 22%, transparent);">
+            <div class="dialog blueprint" style="background: var(--color-bg); margin: 0 auto;">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="card-kicker">Free account</div>
+              <div class="dialog-title">Sign up to save what you read</div>
+              <p class="dialog-body" style="margin: 0;">Marking books as Read, Currently Reading or Want to Read needs an account. It takes about a minute — then we'll also recommend books that match what you like.</p>
+              <div class="dialog-actions" style="justify-content: flex-start;">
+                <button class="btn btn-primary">Get Started</button>
+                <button class="btn btn-secondary">I already have an account</button>
+              </div>
+              <button class="btn btn-ghost" style="align-self: flex-start;">Keep browsing without an account</button>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 520px;">
+          <div class="note"><i>01</i><span>Same modal for every gated action; only the first line changes to name the action they tried.</span></div>
+          <div class="note"><i>02</i><span>After signup, return them to the book they were looking at and apply the action they attempted. Losing their place is the single most common mistake here.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW B</span>
+      <h2 style="margin: 0;">Signup and onboarding</h2>
+      <span class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">CHOOSE → ACCOUNT → NAME → SURVEY → VERIFY → HOME</span>
+    </div>
+    <div style="display: flex; align-items: flex-start;">
+
+      <div>
+        <div class="plate"><span class="plate-id">B1</span><span class="plate-name">Sign up or log in</span></div>
+        <div class="board" style="width: 460px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / start</span></div>
+          <div style="padding: 40px 34px 44px;">
+            <h1 style="font-size: 32px; margin: 0 0 6px;">Welcome to Book Hub</h1>
+            <p style="font-size: 14px; margin-bottom: 26px;">New here, or coming back?</p>
+            <div class="blueprint" style="padding: 18px; margin-bottom: 14px;">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div style="font-family: var(--font-heading); font-size: 20px;">I'm new</div>
+              <p style="font-size: 13px; margin: 4px 0 14px;">Make a free account and answer three quick questions so we can recommend books.</p>
+              <button class="btn btn-primary btn-block" style="min-height: 46px; margin: 0;">Sign up</button>
+              <div class="mono" style="color: var(--color-accent-700); margin-top: 8px;">→ B2 CREATE ACCOUNT</div>
+            </div>
+            <div style="border: 1px solid var(--color-divider); padding: 18px;">
+              <div style="font-family: var(--font-heading); font-size: 20px;">I've been here before</div>
+              <p style="font-size: 13px; margin: 4px 0 14px;">Log in to pick your reading back up.</p>
+              <button class="btn btn-secondary btn-block" style="min-height: 46px; margin: 0;">Log in</button>
+              <div class="mono" style="color: var(--color-accent-700); margin-top: 8px;">→ D4 LOG IN</div>
+            </div>
+            <button class="btn btn-ghost" style="margin-top: 18px;">Keep browsing without an account</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 460px;">
+          <div class="note"><i>01</i><span>Reached from “Get Started” on the landing page (A1 / E1) and from the guest gate (A4).</span></div>
+          <div class="note"><i>02</i><span>Sign up is the primary — most people arriving here are new. Log in is a full-width secondary, not a small text link, because returning users must not have to hunt.</span></div>
+          <div class="note"><i>03</i><span>If you would rather not add a screen, this can be two tabs on top of B2. Keep it separate only while the two paths feel equally likely.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>“SIGN UP”</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">B2</span><span class="plate-name">Create account</span></div>
+        <div class="board" style="width: 520px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / signup</span></div>
+          <div style="padding: 36px 40px 40px;">
+            <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">STEP 1 OF 4</div>
+            <h1 style="font-size: 34px; margin: 0 0 6px;">Make your account</h1>
+            <p style="font-size: 14px; margin-bottom: 22px;">Email and a password — that's it. Then two quick questions and you're reading.</p>
+            <div class="field" style="margin-bottom: 14px;"><label>Email address</label><input class="input" style="min-height: 42px;" placeholder="you@school.uk"></div>
+            <div class="field" style="margin-bottom: 6px;"><label>Password</label><input class="input" type="password" style="min-height: 42px;" placeholder="At least 8 characters"></div>
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 20px;">INLINE VALIDATION MESSAGE SITS HERE</div>
+            <button class="btn btn-primary btn-block blueprint" style="min-height: 44px;">Continue<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+            <div style="display: flex; justify-content: space-between; margin-top: 18px;">
+              <button class="btn btn-ghost">I already have an account</button>
+              <button class="btn btn-ghost">Forgot password</button>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 520px;">
+          <div class="note"><i>01</i><span>Log in, signup and password reset are three versions of this one layout — build the shell once.</span></div>
+          <div class="note"><i>02</i><span>“Step 1 of 4” is load-bearing: it tells a 12-year-old how much is left, and that it is short.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>ACCOUNT CREATED</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">B3</span><span class="plate-name">Name &amp; colour</span></div>
+        <div class="board" style="width: 460px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / setup</span></div>
+          <div style="padding: 32px 34px 36px;">
+            <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">STEP 2 OF 4</div>
+            <h1 style="font-size: 32px; margin: 0 0 6px;">What should we call you?</h1>
+            <p style="font-size: 14px; margin-bottom: 22px;">This is the name shown on your reviews and any lists you share. It doesn't have to be your real name.</p>
+            <div class="field" style="margin-bottom: 6px;"><label>Display name</label><input class="input" style="min-height: 42px;" placeholder="e.g. Maya, or bookdragon03"></div>
+            <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6; margin-bottom: 18px;">WE NEVER SHOW YOUR EMAIL ADDRESS TO ANYONE UNLESS REQUIRED BY LAW. THIS DISPLAY NAME IS THE ONLY NAME OTHERS SEE — IT APPEARS ON YOUR REVIEWS AND ON YOUR PROFILE.</div>
+            <div style="border: 3px dashed var(--color-divider); padding: 14px; margin-bottom: 24px;">
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 12px;">AVAILABILITY STATES — ALL SEVEN</div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">1 · IDLE — NOTHING TYPED YET</div>
+                  <div style="display: inline-flex; align-items: center; gap: 9px; border: 3px dashed var(--color-divider); padding: 6px 12px; color: var(--color-neutral-700);"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">No chip shown</span></div>
+                </div>
+                <div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">2 · CHECKING — 700MS DEBOUNCE AFTER TYPING STOPS</div>
+                  <div style="display: inline-flex; align-items: center; gap: 9px; border: 3px solid var(--color-text); padding: 6px 12px;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">···</span><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">Checking if that's free…</span></div>
+                </div>
+                <div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">3 · AVAILABLE — LIME, THE “DONE” COLOUR</div>
+                  <div style="display: inline-flex; align-items: center; gap: 9px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); padding: 6px 12px;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">✓</span><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">That one's free</span></div>
+                </div>
+                <div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">4 · TAKEN — RED, PLUS THREE SUGGESTIONS</div>
+                  <div style="display: inline-flex; align-items: center; gap: 9px; background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 6px 12px;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">✕</span><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">Taken already — try one of these</span></div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                    <button class="btn btn-secondary" style="font-size: 13px; padding: 7px 12px;">maya_26</button>
+                    <button class="btn btn-secondary" style="font-size: 13px; padding: 7px 12px;">maya42</button>
+                    <button class="btn btn-secondary" style="font-size: 13px; padding: 7px 12px;">maya_reads</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">5 · INVALID CHARACTERS · 6 · RESERVED WORD · 7 · BANNED WORD</div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+                    <div style="display: inline-flex; align-items: center; gap: 9px; background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 6px 12px;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">!</span><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">Letters, numbers and underscores only</span></div>
+                    <div style="display: inline-flex; align-items: center; gap: 9px; background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 6px 12px;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">!</span><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">That one's reserved — pick something else</span></div>
+                    <div style="display: inline-flex; align-items: center; gap: 9px; background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 6px 12px;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">!</span><span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">That name isn't allowed here</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="border-top: 1px solid var(--color-divider); padding-top: 20px;">
+              <div style="font-family: var(--font-heading); font-size: 19px;">Monogram colour</div>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 14px;">PICK ONE OF SEVEN · CHANGEABLE LATER FROM D1</div>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <div class="blueprint" style="width: 78px; height: 78px; flex: none; display: grid; place-items: center; background: #1b3bff;">
+                  <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+                  <span style="font-family: var(--font-display); font-size: 40px; color: #EFECE3;">M</span>
+                </div>
+                <div style="flex: 1;">
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                    <div style="min-height: 40px; border: 3px solid var(--color-text); background: #C41031;"></div>
+                    <div style="min-height: 40px; border: 3px solid var(--color-text); background: #ff4d00;"></div>
+                    <div style="min-height: 40px; border: 3px solid var(--color-text); background: #ffd400;"></div>
+                    <div style="min-height: 40px; border: 3px solid var(--color-text); background: #c6f24e;"></div>
+                    <div style="min-height: 40px; border: 3px solid var(--color-text); background: #1b3bff; display: grid; place-items: center; color: #EFECE3; font-size: 15px; font-weight: 700;">✓</div>
+                    <div style="min-height: 40px; border: 3px solid var(--color-text); background: #7b2dff;"></div>
+                    <div style="min-height: 40px; border: 3px solid var(--color-text); background: #ff3d9a;"></div>
+                  </div>
+                  <div class="mono" style="color: var(--color-neutral-700); margin-top: 10px;">RED · ORANGE · YELLOW · LIME · BLUE (DEFAULT) · PURPLE · PINK</div>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block blueprint" style="min-height: 46px; margin-top: 28px;">Continue<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 460px;">
+          <div class="note"><i>01</i><span>Display name, not real name — with an 11–16 audience the safer default is a handle, and the placeholder should suggest one.</span></div>
+          <div class="note"><i>04</i><span>Availability implies display names are unique. That is a database constraint plus a debounced lookup — check on the server, not just in the client, or two people racing will both be told “free”.</span></div>
+          <div class="note"><i>05</i><span>Red #C41031 is the fifth accent, and its only job is “problem”. It lives in pulp.css as <b>--color-problem</b> — darker than the monogram red, because a fill carrying 14px bold text needs 4.5:1 and the brighter red only reached 4.0:1. Never use it decoratively.</span></div>
+          <div class="note"><i>06</i><span>Suggestions matter more than the error. A taken name with no way forward is where a 12-year-old gives up; three tappable alternatives keep them moving.</span></div>
+          <div class="note"><i>07</i><span>Banned words (profanity and slurs) get their own state, deliberately vague: “that name isn't allowed here”, never repeating the word back or naming what tripped it. Explaining the filter teaches people how to beat it.</span></div>
+          <div class="note"><i>08</i><span>The word list must live on the SERVER, from a maintained library plus your own additions — never in the browser bundle, where it is both bypassable and a public file of slurs. Normalise first (l33tspeak, repeated letters, stripped punctuation) or “d4mn_” walks straight through.</span></div>
+          <div class="note"><i>09</i><span>The same filter belongs on review text (D2), custom list titles (C2) and missing-book requests (D3) — every field a stranger can read. A filter on names alone is security theatre.</span></div>
+          <div class="note"><i>02</i><span>No photo upload in v1 — a coloured monogram instead. That removes file validation, cropping, storage and image moderation from the build, which is a lot of work avoided for a 78px square.</span></div>
+          <div class="note"><i>03</i><span>Seven flat spot colours, not a tinted ramp — four of them are the theme's own accents (orange, lime, blue, pink) so a monogram never looks foreign next to the UI. The light three take ink letters, the dark four take cream.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>NAME SAVED</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">B4</span><span class="plate-name">Onboarding survey</span></div>
+        <div class="board" style="width: 640px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / onboarding</span></div>
+          <div style="padding: 36px 40px 40px;">
+            <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">STEP 3 OF 4</div>
+            <h1 style="font-size: 34px; margin: 0 0 6px;">What do you like to read?</h1>
+            <p style="font-size: 14px; margin-bottom: 26px;">Pick anything that sounds like you. You can change these answers any time.</p>
+
+            <div style="font-family: var(--font-heading); font-size: 19px; margin-bottom: 4px;">Favourite genres</div>
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 12px;">CHOOSE ONE OR MORE</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 28px;">
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox" checked><span class="dot"></span>Fantasy</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Romance</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox" checked><span class="dot"></span>Mystery/Thriller</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Adventure</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Science Fiction</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Horror</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Historical Fiction</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Realistic Fiction</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Comedy/Humour</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Non-fiction</label>
+              <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox"><span class="dot"></span>Other</label>
+            </div>
+
+            <div style="font-family: var(--font-heading); font-size: 19px; margin-bottom: 4px;">Which age range suits you?</div>
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 12px;">PICK ONE</div>
+            <div class="seg" style="margin-bottom: 28px;">
+              <label class="seg-opt" style="min-height: 44px;"><input type="radio" name="type" checked>Middle Grade</label>
+              <label class="seg-opt" style="min-height: 44px;"><input type="radio" name="type">Young Adult</label>
+              <label class="seg-opt" style="min-height: 44px;"><input type="radio" name="type">Adult</label>
+            </div>
+
+            <div style="font-family: var(--font-heading); font-size: 19px; margin-bottom: 4px;">How long do you like your books?</div>
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 12px;">PICK ONE</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 30px;">
+              <label class="radio" style="min-height: 40px;"><input type="radio" name="len"><span class="dot"></span>Short — under 200 pages</label>
+              <label class="radio" style="min-height: 40px;"><input type="radio" name="len" checked><span class="dot"></span>Medium — 200 to 400 pages</label>
+              <label class="radio" style="min-height: 40px;"><input type="radio" name="len"><span class="dot"></span>Long — 400 to 600 pages</label>
+              <label class="radio" style="min-height: 40px;"><input type="radio" name="len"><span class="dot"></span>Very long — 600 pages and up</label>
+              <label class="radio" style="min-height: 40px;"><input type="radio" name="len"><span class="dot"></span>I don't mind</label>
+            </div>
+            <button class="btn btn-primary btn-block blueprint" style="min-height: 46px; font-size: 16px;">Find My Perfect Book!<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 640px;">
+          <div class="note"><i>01</i><span>One scrolling page, not three paged steps — three questions do not justify a wizard, and a visible end reduces drop-off.</span></div>
+          <div class="note"><i>02</i><span>Genre labels double as the book tags. Whatever you name them here is what the matching logic compares against.</span></div>
+          <div class="note"><i>03</i><span>This exact form is reused on D1 as “edit my answers”, with the button relabelled “Save and refresh recommendations”.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>“FIND MY PERFECT BOOK!”</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">B5</span><span class="plate-name">Verify email</span></div>
+        <div class="board" style="width: 460px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / verify</span></div>
+          <div style="padding: 30px 32px 34px;">
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">STEP 4 OF 4</div>
+            <h1 style="font-size: 36px; margin: 0 0 8px;">One last thing</h1>
+            <p style="font-size: 14px; margin-bottom: 4px;">We've emailed <b>maya@school.uk</b>. Tap the link in it, or type the 6-digit code below — either works.</p>
+            <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 20px;">THE CODE EXPIRES IN 10 MINUTES</div>
+            <div class="field" style="margin-bottom: 18px;">
+              <label>Verification code</label>
+              <input class="input" style="min-height: 56px; font-family: var(--font-mono); font-size: 26px; font-weight: 700; letter-spacing: 0.35em; text-align: center;" placeholder="000000">
+            </div>
+            <button class="btn btn-primary btn-block" style="min-height: 48px;">Verify my email</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+              <button class="btn btn-ghost">Send it again</button>
+              <button class="btn btn-ghost">Wrong address?</button>
+            </div>
+            <div style="border-top: 3px solid var(--color-divider); margin-top: 18px; padding-top: 16px;">
+              <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">CAN'T FIND IT? CHECK SPAM — SCHOOL EMAIL FILTERS ARE STRICT.</div>
+              <button class="btn btn-secondary">Skip — take me to my books</button>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 460px;">
+          <div class="note"><i>01</i><span>Verification sits last, after the survey — by this point they have invested three screens, so asking them to leave for their inbox costs far fewer accounts than asking it second.</span></div>
+          <div class="note"><i>02</i><span>Code and link both work. The link is Supabase's default but opens a new tab and drops them out of onboarding; the code keeps them in the flow. Send both and let them choose.</span></div>
+          <div class="note"><i>03</i><span>Skipping is allowed — soft gate. They can browse and track immediately; writing reviews and sharing lists stay locked until the address is confirmed.</span></div>
+          <div class="note"><i>04</i><span>Unverified accounts carry the pink banner below on every screen until they finish.</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; background: #ff3d9a; color: #14110f; border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 11px 16px; margin-top: 18px; max-width: 880px;">
+          <div style="flex: 1;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Your email isn't verified yet.</span> <span class="mono" style="font-weight: 700;">REVIEWS AND SHARED LISTS UNLOCK ONCE IT IS.</span></div>
+          <button class="btn btn-secondary" style="border-color: #14110f; color: #14110f;">Enter my code</button>
+        </div>
+        <div class="plate" style="margin-top: 22px;"><span class="plate-id">B5b</span><span class="plate-name">Verify gate — unverified user tries to post</span></div>
+        <div class="board" style="width: 460px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / book / eragon… (modal)</span></div>
+          <div style="padding: 34px 28px; background: rgba(20,17,15,0.55);">
+            <div class="dialog" style="margin: 0 auto;">
+              <div class="card-kicker">Almost there</div>
+              <div class="dialog-title">Verify your email to post a review</div>
+              <p class="dialog-body" style="margin: 0;">Anything public — reviews and shared lists — needs a confirmed email address. Your shelves and recommendations work either way.</p>
+              <div class="dialog-actions" style="justify-content: flex-start;">
+                <button class="btn btn-primary">Enter my code</button>
+                <button class="btn btn-secondary">Not now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 460px;">
+          <div class="note"><i>01</i><span>A separate prompt from A4's signup gate — the ask is different, so the wording and the buttons are different. Reusing the signup modal here would confuse a user who already has an account.</span></div>
+          <div class="note"><i>02</i><span>“Not now” must exist. If the banner promises browsing still works, a dead-end modal contradicts it.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>VERIFIED, OR SKIPPED</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">B6</span><span class="plate-name">Home dashboard</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / home</span></div>
+          <div class="wnav"><b>Book Hub</b><span class="on">Home</span><span>Search</span><span>Recommendations</span><span>Reviews</span><span>Tracker</span><span>My Lists</span><span>Profile</span><span style="display: inline-grid; place-items: center; width: 30px; height: 30px; flex: none; border: 3px solid var(--color-text); background: #1B3BFF; color: #EFECE3; font-family: var(--font-heading); font-weight: 700; font-size: 14px;">M</span></div>
+          <div style="padding: 26px 32px 32px;">
+            <h1 style="font-size: 34px; margin: 0 0 4px;">Welcome back, Maya</h1>
+            <p class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">BASED ON: FANTASY · MYSTERY/THRILLER · MIDDLE GRADE · 200–400PP · <span style="text-decoration: underline;">EDIT</span></p>
+            <div style="display: inline-flex; align-items: center; gap: 9px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); padding: 6px 14px; margin-bottom: 24px;">
+              <span style="font-family: var(--font-display); font-size: 22px; line-height: 1;">✓</span>
+              <span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">12 books finished</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+              <h4 style="margin: 0;">Picked for you</h4>
+              <button class="btn btn-ghost">See all recommendations</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 30px;">
+              <div class="card" style="padding: 0; border: 0; gap: 6px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 15px;">Nevermoor</div><span class="stars">★★★★☆</span></div>
+              <div class="card" style="padding: 0; border: 0; gap: 6px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 15px;">Skellig</div><span class="stars">★★★★☆</span></div>
+              <div class="card" style="padding: 0; border: 0; gap: 6px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 15px;">The Girl of Ink</div><span class="stars">★★★☆☆</span></div>
+              <div class="card" style="padding: 0; border: 0; gap: 6px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 15px;">Amari</div><span class="stars">★★★★★</span></div>
+              <div class="card" style="padding: 0; border: 0; gap: 6px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 15px;">Rooftoppers</div><span class="stars">★★★★☆</span></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;">
+                  <h4 style="margin: 0;">Currently reading</h4>
+                  <button class="btn btn-ghost">Open tracker</button>
+                </div>
+                <div style="border: 1px solid var(--color-divider);">
+                  <div style="display: flex; gap: 12px; padding: 12px; align-items: center; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent);">
+                    <div class="cover" style="width: 36px; height: 52px; flex: none;"></div>
+                    <div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">Nevermoor</div>
+                      <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;"><div style="flex: 1; max-width: 140px; height: 10px; border: 2px solid var(--color-text);"><div style="width: 50%; height: 100%; background: #ff3d9a;"></div></div><span class="mono" style="color: var(--color-neutral-700);">ABOUT HALFWAY</span></div>
+                    </div>
+                    <button class="btn btn-secondary">Mark as read</button>
+                  </div>
+                  <div style="display: flex; gap: 12px; padding: 12px; align-items: center;">
+                    <div class="cover" style="width: 36px; height: 52px; flex: none;"></div>
+                    <div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">Holes</div>
+                      <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;"><div style="flex: 1; max-width: 140px; height: 10px; border: 2px solid var(--color-text);"><div style="width: 15%; height: 100%; background: #ff3d9a;"></div></div><span class="mono" style="color: var(--color-neutral-700);">JUST STARTED</span></div>
+                    </div>
+                    <button class="btn btn-secondary">Mark as read</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 style="margin: 0 0 10px;">Your shelves</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div class="card" style="gap: 2px; background: #c6f24e;"><div style="font-family: var(--font-display); font-size: 30px; line-height: 1;">12</div><div class="mono" style="font-weight: 700;">READ</div></div>
+                  <div class="card" style="gap: 2px; background: #ff3d9a;"><div style="font-family: var(--font-display); font-size: 30px; line-height: 1;">2</div><div class="mono" style="font-weight: 700;">CURRENTLY READING</div></div>
+                  <div class="card" style="gap: 2px; background: #1b3bff; color: var(--color-bg);"><div style="font-family: var(--font-display); font-size: 30px; line-height: 1;">8</div><div class="mono" style="font-weight: 700;">WANT TO READ</div></div>
+                  <div class="card" style="gap: 2px;"><div style="font-family: var(--font-display); font-size: 30px; line-height: 1;">3</div><div class="mono" style="font-weight: 700; color: var(--color-neutral-700);">MY LISTS</div></div>
+                </div>
+                <button class="btn btn-secondary btn-block">Write a review</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 880px;">
+          <div class="note"><i>01</i><span>Recommendations come first because that is the promise the survey just made. The “based on” line makes the simple tag-matching feel intentional rather than mysterious.</span></div>
+          <div class="note"><i>02</i><span>Home is a launchpad, not a destination: three sections, each with one link out. Resist adding more.</span></div>
+          <div class="note"><i>03</i><span>Counts are the lightest possible progress feedback — no charts or streaks in v1. The lime “12 books finished” block is the one number worth celebrating, since the brief's goal is reading more.</span></div>
+          <div class="note"><i>04</i><span>Progress is a three-step self-report (just started / halfway / nearly done), set on A3. No page numbers — nothing can know the page unless the reader types it, and they won't keep it up to date.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW C</span>
+      <h2 style="margin: 0;">Tracking and lists</h2>
+      <span class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">TRACKER → MY LISTS → LIST DETAIL → SHARED PUBLIC VIEW</span>
+    </div>
+    <div style="display: flex; align-items: flex-start;">
+
+      <div>
+        <div class="plate"><span class="plate-id">C1</span><span class="plate-name">Reading tracker</span></div>
+        <div class="board">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / tracker</span></div>
+          <div class="wnav"><b>Book Hub</b><span>Home</span><span>Search</span><span>Recommendations</span><span>Reviews</span><span class="on">Tracker</span><span>My Lists</span><span>Profile</span></div>
+          <div style="padding: 26px 32px 32px;">
+            <h1 style="font-size: 34px; margin: 0 0 18px;">Reading tracker</h1>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #ff3d9a; border: 3px solid var(--color-text); padding: 7px 12px; margin-bottom: 12px;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Currently Reading</div><span class="mono" style="font-weight: 700;">2</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div class="card blueprint" style="flex-direction: row; gap: 10px; align-items: center;"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">Nevermoor</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">MOVE ▾</div></div></div>
+                  <div class="card" style="flex-direction: row; gap: 10px; align-items: center;"><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">Holes</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">MOVE ▾</div></div></div>
+                </div>
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #1b3bff; color: var(--color-bg); border: 3px solid var(--color-text); padding: 7px 12px; margin-bottom: 12px;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Want to Read</div><span class="mono" style="font-weight: 700;">8</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div class="card" style="flex-direction: row; gap: 10px; align-items: center;"><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">Skellig</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">MOVE ▾</div></div></div>
+                  <div class="card" style="flex-direction: row; gap: 10px; align-items: center;"><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">Amari</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">MOVE ▾</div></div></div>
+                  <div class="card" style="flex-direction: row; gap: 10px; align-items: center;"><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">Rooftoppers</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">MOVE ▾</div></div></div>
+                </div>
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #c6f24e; border: 3px solid var(--color-text); padding: 7px 12px; margin-bottom: 12px;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Read</div><span class="mono" style="font-weight: 700;">12</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div class="card" style="flex-direction: row; gap: 10px; align-items: center;"><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">The Hobbit</div><div class="mono" style="color: var(--color-accent-700);">★★★★☆ REVIEWED</div></div></div>
+                  <div class="card" style="flex-direction: row; gap: 10px; align-items: center;"><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">Coraline</div><div class="mono" style="color: var(--color-accent-700);">＋ WRITE A REVIEW</div></div></div>
+                  <div class="card" style="flex-direction: row; gap: 10px; align-items: center;"><div class="cover" style="width: 34px; height: 50px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 15px;">Wonder</div><div class="mono" style="color: var(--color-accent-700);">＋ WRITE A REVIEW</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 880px;">
+          <div class="note"><i>01</i><span>Three fixed columns, ordered by what a reader checks most often — not alphabetically.</span></div>
+          <div class="note"><i>02</i><span>“Move ▾” is a plain dropdown. Drag-and-drop is tempting but it breaks on touch and is not in v1 scope.</span></div>
+          <div class="note"><i>03</i><span>Finishing a book is the natural moment to ask for a review, so the prompt lives in the Read column.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>“MY LISTS”</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">C2</span><span class="plate-name">My lists + list detail</span></div>
+        <div class="board" style="width: 700px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / lists / favourite-fiction-reads</span></div>
+          <div class="wnav"><b>Book Hub</b><span>Home</span><span>Search</span><span>Recommendations</span><span>Reviews</span><span>Tracker</span><span class="on">My Lists</span><span>Profile</span></div>
+          <div style="display: grid; grid-template-columns: 210px 1fr;">
+            <div style="border-right: 1px solid var(--color-divider); padding: 20px 16px;">
+              <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">MY LISTS (3)</div>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="padding: 9px 10px; background: var(--color-accent-100); font-size: 13px;">Favourite Fiction Reads<div class="mono" style="color: var(--color-accent-700);">PUBLIC · 9 BOOKS</div></div>
+                <div style="padding: 9px 10px; font-size: 13px;">Scary but not too scary<div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">PRIVATE · 4 BOOKS</div></div>
+                <div style="padding: 9px 10px; font-size: 13px;">Summer holiday pile<div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">PRIVATE · 6 BOOKS</div></div>
+              </div>
+              <button class="btn btn-secondary btn-block" style="min-height: 40px;">＋ New list</button>
+            </div>
+            <div style="padding: 22px 24px 28px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                <div>
+                  <h2 style="margin: 0 0 4px;">Favourite Fiction Reads</h2>
+                  <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">9 BOOKS · UPDATED 2 DAYS AGO</div>
+                </div>
+                <button class="btn btn-ghost">Rename</button>
+                <button class="btn btn-ghost" style="color: #C41031;">Delete list</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; border: 1px solid var(--color-divider); padding: 10px 12px; margin: 18px 0;">
+                <div style="flex: 1;">
+                  <div style="font-family: var(--font-heading); font-size: 15px;">Who can see this list?</div>
+                  <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">PUBLIC — SHOWS ON YOUR PROFILE. PRIVATE — LINK ONLY.</div>
+                </div>
+                <div class="seg">
+                  <label class="seg-opt" style="min-height: 40px;"><input type="radio" name="vis" checked>Public</label>
+                  <label class="seg-opt" style="min-height: 40px;"><input type="radio" name="vis">Private</label>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <input class="input" value="bookhub.example/l/9fk2p" style="flex: 1;">
+                <button class="btn btn-primary">Copy link</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; border: 3px dashed var(--color-divider); padding: 10px 12px; margin-bottom: 18px;">
+                <div class="mono" style="flex: 1; color: var(--color-neutral-700);">SHARING IS LOCKED UNTIL THE EMAIL IS VERIFIED — SEE B5</div>
+                <button class="btn btn-secondary">Enter my code</button>
+              </div>
+              <div style="border-top: 1px solid var(--color-divider);">
+                <div style="display: flex; gap: 12px; padding: 12px 0; align-items: center; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent);">
+                  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 45%, transparent);">1 ⇅</span>
+                  <div class="cover" style="width: 34px; height: 50px; flex: none;"></div>
+                  <div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">The Hobbit</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">ALSO IN: READ</div></div>
+                  <button class="btn btn-ghost">Remove</button>
+                </div>
+                <div style="display: flex; gap: 12px; padding: 12px 0; align-items: center; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent);">
+                  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 45%, transparent);">2 ⇅</span>
+                  <div class="cover" style="width: 34px; height: 50px; flex: none;"></div>
+                  <div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">Nevermoor</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">ALSO IN: CURRENTLY READING</div></div>
+                  <button class="btn btn-ghost">Remove</button>
+                </div>
+                <div style="display: flex; gap: 12px; padding: 12px 0; align-items: center;">
+                  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 45%, transparent);">3 ⇅</span>
+                  <div class="cover" style="width: 34px; height: 50px; flex: none;"></div>
+                  <div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">Coraline</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">NOT IN A SHELF</div></div>
+                  <button class="btn btn-ghost">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 700px;">
+          <div class="note"><i>01</i><span>List index and list contents share one screen — a separate index page would be almost empty.</span></div>
+          <div class="note"><i>02</i><span>“Also in: Read” makes the brief's tricky rule visible: custom lists are independent of the three shelves.</span></div>
+          <div class="note"><i>03</i><span>The share link exists for private lists too. Public only adds “appears on your profile”, so say that in the toggle rather than in help text.</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow"><div>LINK OPENED BY ANYONE</div><span>→</span></div>
+
+      <div>
+        <div class="plate"><span class="plate-id">C3</span><span class="plate-name">Shared list — read only</span></div>
+        <div class="board" style="width: 560px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / l / 9fk2p</span></div>
+          <div class="wnav"><b>Book Hub</b><span>Search</span><span>Log in</span><span class="on">Get Started</span></div>
+          <div style="padding: 26px 28px 30px;">
+            <div class="mono" style="color: var(--color-accent-700); margin-bottom: 8px;">A READING LIST SHARED BY MAYA</div>
+            <h1 style="font-size: 32px; margin: 0 0 4px;">Favourite Fiction Reads</h1>
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 20px;">9 BOOKS · VIEW ONLY</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+              <div style="display: flex; flex-direction: column; gap: 5px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 14px;">The Hobbit</div></div>
+              <div style="display: flex; flex-direction: column; gap: 5px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 14px;">Nevermoor</div></div>
+              <div style="display: flex; flex-direction: column; gap: 5px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 14px;">Coraline</div></div>
+              <div style="display: flex; flex-direction: column; gap: 5px;"><div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div><div style="font-family: var(--font-heading); font-size: 14px;">Holes</div></div>
+            </div>
+            <div class="blueprint" style="padding: 16px; background: var(--color-accent-100);">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div style="font-family: var(--font-heading); font-size: 18px; margin-bottom: 4px;">Want a list like this?</div>
+              <p style="font-size: 13px; margin-bottom: 12px;">Make a free account and start tracking what you read.</p>
+              <button class="btn btn-primary">Get Started</button>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 560px;">
+          <div class="note"><i>01</i><span>Trimmed nav — a guest arriving on a shared link has one job. No edit controls anywhere on the page.</span></div>
+          <div class="note"><i>02</i><span>This is the app's only viral surface. The signup card at the bottom is the whole reason to build sharing.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW D</span>
+      <h2 style="margin: 0;">Account, reviews and gaps</h2>
+      <span class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">PROFILE · REQUEST A BOOK · WRITE A REVIEW · PASSWORD RESET</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 40px;">
+
+      <div>
+        <div class="plate"><span class="plate-id">D1</span><span class="plate-name">Profile + edit survey</span></div>
+        <div class="board" style="width: 640px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / profile</span></div>
+          <div class="wnav"><b>Book Hub</b><span>Home</span><span>Search</span><span>Recommendations</span><span>Reviews</span><span>Tracker</span><span>My Lists</span><span class="on">Profile</span></div>
+          <div style="padding: 26px 28px 30px;">
+            <h1 style="font-size: 32px; margin: 0 0 22px;">Maya's profile</h1>
+            <div class="card" style="margin-bottom: 18px;">
+              <div class="card-kicker">Reading preferences</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px;">
+                <span class="tag tag-accent">Fantasy</span><span class="tag tag-accent">Mystery/Thriller</span><span class="tag tag-neutral">Middle Grade</span><span class="tag tag-neutral">200–400pp</span>
+              </div>
+              <button class="btn btn-secondary" style="align-self: flex-start;">Edit my answers</button>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">REOPENS B4 · SAVING REFRESHES RECOMMENDATIONS</div>
+            </div>
+            <div class="card" style="margin-bottom: 18px;">
+              <div class="card-kicker">Public lists</div>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">SHOWN TO ANYONE WHO VISITS THIS PROFILE</div>
+              <div style="display: flex; gap: 10px; margin-top: 6px;">
+                <div style="flex: 1; border: 1px solid var(--color-divider); padding: 10px;"><div style="font-family: var(--font-heading); font-size: 15px;">Favourite Fiction Reads</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">9 BOOKS</div></div>
+                <div style="flex: 1; border: 1px dashed var(--color-divider); padding: 10px; display: grid; place-items: center;"><span class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">2 PRIVATE LISTS HIDDEN</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-kicker">Account</div>
+              <div style="font-size: 14px;">maya@school.uk</div>
+              <div style="display: flex; gap: 8px; margin-top: 4px;"><button class="btn btn-secondary">Name &amp; colour</button><button class="btn btn-secondary">Change password</button><button class="btn btn-ghost">Log out</button></div>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">NAME &amp; COLOUR REOPENS B3 · CHANGE PASSWORD GOES TO D5</div>
+            </div>
+            <div style="border: 3px solid #C41031; padding: 14px; margin-top: 8px;">
+              <div class="mono" style="color: #C41031; font-weight: 700; margin-bottom: 6px;">DELETE MY ACCOUNT</div>
+              <p style="font-size: 13px; margin-bottom: 10px;">Everything goes — shelves, lists, reviews and requests. Only the site owner can recover it, and only for 14 days.</p>
+              <button class="btn" style="background: #C41031; color: #EFECE3;">Delete my account</button>
+              <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px;">CONFIRMATION ON G3 · LANDS IN THE ADMIN'S TRASH FOR 14 DAYS</div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 640px;">
+          <div class="note"><i>01</i><span>Preferences sit at the top because editing them is the reason people come here — the brief calls for editable survey answers.</span></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 40px;">
+        <div>
+          <div class="plate"><span class="plate-id">D2</span><span class="plate-name">Write a review</span></div>
+          <div class="board" style="width: 460px;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / book / eragon / review</span></div>
+            <div style="padding: 24px 26px 28px;">
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 6px;">REVIEWING</div>
+              <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+                <div class="cover" style="width: 40px; height: 58px; flex: none;"></div>
+                <div><div style="font-family: var(--font-heading); font-size: 19px;">Eragon</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">CHRISTOPHER PAOLINI</div></div>
+              </div>
+              <div class="field" style="margin-bottom: 16px;">
+                <label>Your rating</label>
+                <div style="font-size: 30px; letter-spacing: 6px; color: var(--color-accent);">★★★★☆</div>
+                <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">TAP TARGETS 44PX — SPACE THE STARS OUT</div>
+              </div>
+              <div class="field" style="margin-bottom: 18px;">
+                <label>What did you think?</label>
+                <textarea class="input" placeholder="What did you like? Who would enjoy it?"></textarea>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary">Post review</button>
+                <button class="btn btn-secondary">Cancel</button>
+              </div>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-top: 10px;">POSTED REVIEWS ARE PUBLIC · YOU CAN EDIT YOURS LATER</div>
+              <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 12px 14px; margin-top: 18px;">
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px; margin-bottom: 4px;">Blocked state</div>
+                <p style="font-size: 13px; margin: 0;">“This one can't be posted. Reviews are public and plenty of younger readers use this site. Have another go without the offensive language — your words are still below, nothing was deleted.”</p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; border: 3px dashed var(--color-divider); padding: 10px 12px; margin-top: 10px;">
+                <div class="mono" style="flex: 1; color: var(--color-neutral-700);">ON EVERY REVIEW BY SOMEONE ELSE: “REPORT THIS REVIEW” → LIME CONFIRMATION</div>
+              </div>
+            </div>
+          </div>
+          <div class="note" style="margin-top: 12px; max-width: 460px;"><i>01</i><span>Say “public” before they type, not after.</span></div>
+          <div class="note" style="max-width: 460px;"><i>02</i><span>Blocked text is never deleted — they must be able to see and fix what they wrote. Wiping the box loses a genuine review over one word.</span></div>
+          <div class="note" style="max-width: 460px;"><i>03</i><span>The same server-side filter as B3's display names, run on submit. Filters miss things, so every review by someone else carries a Report link — that is your moderation queue in v1, an owner inbox.</span></div>
+        </div>
+
+        <div>
+          <div class="plate"><span class="plate-id">D3</span><span class="plate-name">Request a missing book</span></div>
+          <div class="board" style="width: 460px;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / request</span></div>
+            <div style="padding: 24px 26px 28px;">
+              <h2 style="margin: 0 0 6px;">Ask us to add a book</h2>
+              <p style="font-size: 14px; margin-bottom: 18px;">Tell us what's missing and we'll look it up by hand.</p>
+              <div class="field" style="margin-bottom: 12px;"><label>Book title</label><input class="input" style="min-height: 42px;"></div>
+              <div class="field" style="margin-bottom: 12px;"><label>Author (if you know it)</label><input class="input" style="min-height: 42px;"></div>
+              <div class="field" style="margin-bottom: 18px;"><label>Anything else?</label><textarea class="input" style="min-height: 70px;"></textarea></div>
+              <button class="btn btn-primary btn-block" style="min-height: 44px;">Send request</button>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-top: 10px;">V1: EMAILS THE SITE OWNER · NO QUEUE UI</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="plate"><span class="plate-id">D4</span><span class="plate-name">Log in</span></div>
+          <div class="board" id="D4-board" style="width: 460px;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / login</span></div>
+            <div style="padding: 30px 32px 34px;">
+              <h2 style="margin: 0 0 6px;">Welcome back</h2>
+              <p style="font-size: 14px; margin-bottom: 20px;">Log in to get to your recommendations and shelves.</p>
+              <div class="field" style="margin-bottom: 12px;"><label>Email</label><input class="input" style="min-height: 42px;" placeholder="you@school.uk"></div>
+              <div class="field" style="margin-bottom: 6px;"><label>Password</label><input class="input" type="password" style="min-height: 42px;"></div>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 18px;">“EMAIL OR PASSWORD DIDN'T MATCH” SITS HERE</div>
+              <button class="btn btn-primary btn-block blueprint" style="min-height: 46px;">Log in<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+                <button class="btn btn-ghost">Forgot password</button>
+                <span class="mono" style="color: var(--color-accent-700);">→ D5</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--color-divider); margin-top: 14px; padding-top: 16px;">
+                <span style="font-size: 14px; flex: 1;">No account yet?</span>
+                <button class="btn btn-secondary">Sign up</button>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 460px;">
+            <div class="note"><i>01</i><span>Reached from B1 (“Log in”) and from the guest gate (A4). Send people back to whatever they were doing before, not to Home.</span></div>
+            <div class="note"><i>02</i><span>One generic error for a wrong email and a wrong password — naming which one was wrong tells an attacker that the email exists.</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="plate"><span class="plate-id">D5</span><span class="plate-name">Password reset</span></div>
+          <div class="board" style="width: 460px;">
+            <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / reset</span></div>
+            <div style="padding: 30px 32px 34px;">
+              <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">PASSWORD RESET</div>
+              <h2 style="margin: 0 0 6px;">Forgotten your password?</h2>
+              <p style="font-size: 14px; margin-bottom: 20px;">Enter your email and we'll send a link to set a new one.</p>
+              <div class="field" style="margin-bottom: 18px;"><label>Email</label><input class="input" style="min-height: 42px;" placeholder="you@school.uk"></div>
+              <button class="btn btn-primary btn-block" style="min-height: 46px;">Send reset link</button>
+              <button class="btn btn-ghost" style="margin-top: 12px;">Back to log in</button>
+              <div style="border: 1px dashed var(--color-divider); padding: 14px; margin-top: 22px;">
+                <div style="font-family: var(--font-heading); font-size: 16px;">Sent state</div>
+                <p style="font-size: 13px; margin: 4px 0 0;">“Check your email — we've sent a link to set a new password. It works once and expires in an hour.”</p>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 460px;">
+            <div class="note"><i>01</i><span>Confirm the same way whether or not the email is registered, for the same reason as D4's generic error.</span></div>
+            <div class="note"><i>02</i><span>Also reached from D1 → “Change password”.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW E</span>
+      <h2 style="margin: 0;">Mobile — 375px</h2>
+      <span class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">THE THREE SCREENS THAT CHANGE MOST</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 40px;">
+
+      <div>
+        <div class="plate"><span class="plate-id">E1</span><span class="plate-name">Landing</span></div>
+        <div class="board-m">
+          <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--color-divider);">
+            <b style="font-family: var(--font-heading); font-size: 16px; flex: 1;">Book Hub</b><span class="mono">☰ MENU</span>
+          </div>
+          <div style="padding: 18px 16px 24px;">
+            <div class="cover" style="height: 130px; margin-bottom: 18px;"><span class="mono">HERO COLLAGE</span></div>
+            <h1 style="font-size: 32px; margin: 0 0 6px;">Find Your Next Book!</h1>
+            <p style="font-size: 14px;">Tell us what you like and we'll line up books you'll actually want to read.</p>
+            <button class="btn btn-primary btn-block blueprint" style="min-height: 46px; font-size: 15px;">Get Started<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+            <button class="btn btn-secondary btn-block" style="min-height: 46px;">Browse as a guest</button>
+            <div style="border-top: 1px solid var(--color-divider); margin-top: 22px; padding-top: 16px;">
+              <h4 style="margin: 0 0 6px;">Why this exists</h4>
+              <div class="grey" style="width: 100%; margin-bottom: 5px;"></div>
+              <div class="grey" style="width: 88%; margin-bottom: 5px;"></div>
+              <div class="grey" style="width: 64%;"></div>
+            </div>
+            <div style="margin-top: 20px;">
+              <h4 style="margin: 0 0 8px;">Why is reading important?</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="border: 1px solid var(--color-divider); padding: 9px;"><div style="font-family: var(--font-heading); font-size: 14px;">Vocabulary</div></div>
+                <div style="border: 1px solid var(--color-divider); padding: 9px;"><div style="font-family: var(--font-heading); font-size: 14px;">Knowledge</div></div>
+                <div style="border: 1px solid var(--color-divider); padding: 9px;"><div style="font-family: var(--font-heading); font-size: 14px;">Imagination</div></div>
+                <div style="border: 1px solid var(--color-divider); padding: 9px;"><div style="font-family: var(--font-heading); font-size: 14px;">Relaxation</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="margin-top: 12px; max-width: 375px;"><i>01</i><span>Hero shrinks, headline stays big. Both CTAs go full-width and stack — primary first.</span></div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">E2</span><span class="plate-name">Book detail</span></div>
+        <div class="board-m">
+          <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--color-divider);">
+            <span class="mono" style="flex: 1;">← BACK TO RESULTS</span><span class="mono">☰</span>
+          </div>
+          <div style="padding: 18px 16px 24px;">
+            <div style="display: flex; gap: 14px; margin-bottom: 16px;">
+              <div class="cover" style="width: 96px; height: 142px; flex: none;"><span class="mono">COVER</span></div>
+              <div>
+                <div style="font-family: var(--font-heading); font-size: 24px; line-height: 1.1;">Eragon</div>
+                <div style="font-size: 13px; margin: 2px 0 6px;">Christopher Paolini</div>
+                <span class="stars">★★★★☆</span>
+                <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">4.1 · 218 REVIEWS</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px;">
+              <span class="tag tag-accent">Fantasy</span><span class="tag tag-neutral">Young Adult</span><span class="tag tag-neutral">400–600pp</span>
+            </div>
+            <div class="seg" style="flex-direction: column; width: 100%; margin-bottom: 16px;">
+              <label class="seg-opt" data-state="read" style="justify-content: center; min-height: 46px; border-left: 0;"><input type="radio" name="e2">Read</label>
+              <label class="seg-opt" data-state="reading" style="justify-content: center; min-height: 46px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="e2" checked>Currently Reading</label>
+              <label class="seg-opt" data-state="want" style="justify-content: center; min-height: 46px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="e2">Want to Read</label>
+            </div>
+            <h4 style="margin: 0 0 6px;">Summary</h4>
+            <div class="grey" style="width: 100%; margin-bottom: 5px;"></div>
+            <div class="grey" style="width: 96%; margin-bottom: 5px;"></div>
+            <div class="grey" style="width: 58%; margin-bottom: 20px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--color-divider); padding-top: 14px;">
+              <h4 style="margin: 0;">Reviews</h4><span class="mono" style="color: var(--color-accent-700);">WRITE ONE</span>
+            </div>
+            <div class="card" style="margin-top: 10px;">
+              <div class="card-title" style="font-size: 14px;">Amara K.</div><span class="stars">★★★★★</span>
+              <div class="grey" style="width: 100%; margin: 4px 0;"></div><div class="grey" style="width: 66%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="margin-top: 12px; max-width: 375px;"><i>01</i><span>Cover and title share the first row so the status control is visible without scrolling — it is the main action on this page.</span></div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">E3</span><span class="plate-name">Tracker</span></div>
+        <div class="board-m">
+          <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--color-divider);">
+            <b style="font-family: var(--font-heading); font-size: 16px; flex: 1;">Reading tracker</b><span class="mono">☰</span>
+          </div>
+            <div style="display: flex; border-bottom: 3px solid var(--color-text);">
+            <div style="flex: 1; text-align: center; padding: 12px 4px; font-size: 12px; font-weight: 700; background: #ff3d9a; border-right: 3px solid var(--color-text);">Reading 2</div>
+            <div style="flex: 1; text-align: center; padding: 12px 4px; font-size: 12px; font-weight: 500; color: var(--color-neutral-700); border-right: 3px solid var(--color-text);">Want 8</div>
+            <div style="flex: 1; text-align: center; padding: 12px 4px; font-size: 12px; font-weight: 500; color: var(--color-neutral-700);">Read 12</div>
+          </div>
+          <div style="padding: 16px;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div class="card" style="flex-direction: row; gap: 12px; align-items: center; min-height: 74px;"><div class="cover" style="width: 40px; height: 58px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">Nevermoor</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">JESSICA TOWNSEND</div></div><span class="mono" style="color: var(--color-accent-700);">MOVE ▾</span></div>
+              <div class="card" style="flex-direction: row; gap: 12px; align-items: center; min-height: 74px;"><div class="cover" style="width: 40px; height: 58px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 16px;">Holes</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">LOUIS SACHAR</div></div><span class="mono" style="color: var(--color-accent-700);">MOVE ▾</span></div>
+            </div>
+            <div style="border: 1px dashed var(--color-divider); padding: 22px 16px; text-align: center; margin-top: 16px;">
+              <div style="font-family: var(--font-heading); font-size: 17px;">Only two on the go?</div>
+              <p style="font-size: 13px; margin: 4px 0 12px;" class="text-muted">Add something from your Want to Read pile.</p>
+              <button class="btn btn-secondary" style="min-height: 44px;">See Want to Read</button>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="margin-top: 12px; max-width: 375px;"><i>01</i><span>Three columns become three tabs. Counts stay in the tab labels so the shelf sizes are still visible.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW F</span>
+      <h2 style="margin: 0;">Dark variant</h2>
+      <span class="mono" style="color: var(--color-neutral-700);">SAME STRUCTURE · INK GROUND · CREAM OUTLINES</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 44px;">
+
+      <div>
+        <div class="plate"><span class="plate-id">F1</span><span class="plate-name">Home dashboard — dark, desktop</span></div>
+        <div class="board" style="background: #14110f; border-color: #EFECE3; color: #EFECE3; box-shadow: 8px 8px 0 #6b5b48;">
+          <div class="chrome" style="border-bottom-color: #EFECE3;"><span class="dot3" style="border-color: #EFECE3;"></span><span class="dot3" style="border-color: #EFECE3;"></span><span class="dot3" style="border-color: #EFECE3;"></span><span class="url" style="background: #241f1b; border-color: #EFECE3; color: #9c8b76;">bookhub.example / home</span></div>
+          <div class="wnav" style="border-bottom-color: #EFECE3;">
+            <b>Book Hub</b>
+            <span class="on" style="color: #EFECE3; border-bottom-color: #ff4d00;">Home</span>
+            <span style="color: #9c8b76;">Search</span><span style="color: #9c8b76;">Recommendations</span><span style="color: #9c8b76;">Reviews</span><span style="color: #9c8b76;">Tracker</span><span style="color: #9c8b76;">My Lists</span><span style="color: #9c8b76;">Profile</span>
+          </div>
+          <div style="padding: 26px 32px 32px;">
+            <h1 style="font-size: 46px; margin: 0 0 6px;">Welcome back, <span style="color: #ff3d9a;">Maya</span></h1>
+            <div class="mono" style="color: #9c8b76; margin-bottom: 24px;">BASED ON: FANTASY · MYSTERY/THRILLER · MIDDLE GRADE · 200–400 PAGES · <span style="color: #c6f24e; font-weight: 700;">EDIT</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+              <h4 style="margin: 0;">Picked for you</h4>
+              <span class="mono" style="color: #c6f24e; font-weight: 700;">SEE ALL</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 30px;">
+              <div style="border: 3px solid #EFECE3;"><div class="cover" style="aspect-ratio: 2/3; border-bottom: 3px solid #EFECE3;"><span class="mono">COVER</span></div><div style="padding: 8px 10px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Nevermoor</div><span class="mono" style="color: #9c8b76;">4.6</span></div></div>
+              <div style="border: 3px solid #EFECE3;"><div class="cover" style="aspect-ratio: 2/3; border-bottom: 3px solid #EFECE3;"><span class="mono">COVER</span></div><div style="padding: 8px 10px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Skellig</div><span class="mono" style="color: #9c8b76;">4.2</span></div></div>
+              <div style="border: 3px solid #EFECE3;"><div class="cover" style="aspect-ratio: 2/3; border-bottom: 3px solid #EFECE3;"><span class="mono">COVER</span></div><div style="padding: 8px 10px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Girl of Ink</div><span class="mono" style="color: #9c8b76;">4.0</span></div></div>
+              <div style="border: 3px solid #EFECE3;"><div class="cover" style="aspect-ratio: 2/3; border-bottom: 3px solid #EFECE3;"><span class="mono">COVER</span></div><div style="padding: 8px 10px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Amari</div><span class="mono" style="color: #9c8b76;">4.7</span></div></div>
+              <div style="border: 3px solid #EFECE3;"><div class="cover" style="aspect-ratio: 2/3; border-bottom: 3px solid #EFECE3;"><span class="mono">COVER</span></div><div style="padding: 8px 10px;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Rooftoppers</div><span class="mono" style="color: #9c8b76;">4.4</span></div></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px;">
+              <div>
+                <h4 style="margin: 0 0 10px;">Currently reading</h4>
+                <div style="border: 3px solid #EFECE3;">
+                  <div style="display: flex; gap: 12px; padding: 12px; align-items: center; border-bottom: 3px solid #EFECE3;">
+                    <div class="cover" style="width: 36px; height: 52px; flex: none;"></div>
+                    <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Nevermoor</div><div class="mono" style="color: #9c8b76;">JESSICA TOWNSEND</div></div>
+                    <span class="tag" style="background: #ff3d9a; color: #14110f; border-color: #EFECE3;">Reading</span>
+                  </div>
+                  <div style="display: flex; gap: 12px; padding: 12px; align-items: center;">
+                    <div class="cover" style="width: 36px; height: 52px; flex: none;"></div>
+                    <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Holes</div><div class="mono" style="color: #9c8b76;">LOUIS SACHAR</div></div>
+                    <span class="tag" style="background: #ff3d9a; color: #14110f; border-color: #EFECE3;">Reading</span>
+                  </div>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 14px; border-color: #EFECE3; box-shadow: 4px 4px 0 #EFECE3;">Write a review</button>
+              </div>
+              <div>
+                <h4 style="margin: 0 0 10px;">Your shelves</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="border: 3px solid #EFECE3; background: #c6f24e; color: #14110f; padding: 10px 12px;"><div style="font-family: var(--font-display); font-size: 28px; line-height: 1;">12</div><div class="mono" style="font-weight: 700;">READ</div></div>
+                  <div style="border: 3px solid #EFECE3; background: #ff3d9a; color: #14110f; padding: 10px 12px;"><div style="font-family: var(--font-display); font-size: 28px; line-height: 1;">2</div><div class="mono" style="font-weight: 700;">READING</div></div>
+                  <div style="border: 3px solid #EFECE3; background: #1b3bff; padding: 10px 12px;"><div style="font-family: var(--font-display); font-size: 28px; line-height: 1;">8</div><div class="mono" style="font-weight: 700;">WANT</div></div>
+                  <div style="border: 3px solid #EFECE3; padding: 10px 12px;"><div style="font-family: var(--font-display); font-size: 28px; line-height: 1;">3</div><div class="mono" style="font-weight: 700; color: #9c8b76;">LISTS</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 880px;">
+          <div class="note"><i>01</i><span>Structurally identical to B6 — same grid, same order, same copy. Only ground and outline swap, which is what makes this a variant rather than a second design.</span></div>
+          <div class="note"><i>02</i><span>Lime and pink keep ink text on the dark ground; blue takes cream. The four rules survive the flip unchanged, which is the point of writing them down.</span></div>
+          <div class="note"><i>03</i><span>Body copy drops to warm grey #9C8B76 — full-strength cream on ink vibrates at paragraph size.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">F2</span><span class="plate-name">Tracker — dark, mobile</span></div>
+        <div class="board-m" style="background: #14110f; border-color: #EFECE3; color: #EFECE3; box-shadow: 8px 8px 0 #6b5b48;">
+          <div style="display: flex; align-items: center; padding: 13px 16px; border-bottom: 3px solid #EFECE3;">
+            <b style="font-family: var(--font-display); font-size: 18px; text-transform: uppercase; flex: 1;">Reading tracker</b><span class="mono" style="font-weight: 700;">MENU</span>
+          </div>
+          <div style="display: flex; border-bottom: 3px solid #EFECE3;">
+            <div style="flex: 1; text-align: center; padding: 12px 4px; font-size: 12px; font-weight: 700; background: #ff3d9a; color: #14110f; border-right: 3px solid #EFECE3;">Reading 2</div>
+            <div style="flex: 1; text-align: center; padding: 12px 4px; font-size: 12px; color: #9c8b76; border-right: 3px solid #EFECE3;">Want 8</div>
+            <div style="flex: 1; text-align: center; padding: 12px 4px; font-size: 12px; color: #9c8b76;">Read 12</div>
+          </div>
+          <div style="padding: 16px;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="border: 3px solid #EFECE3; padding: 10px; display: flex; gap: 12px; align-items: center; min-height: 74px;"><div class="cover" style="width: 40px; height: 58px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Nevermoor</div><div class="mono" style="color: #9c8b76;">JESSICA TOWNSEND</div></div><span class="mono" style="color: #c6f24e; font-weight: 700;">MOVE ▾</span></div>
+              <div style="border: 3px solid #EFECE3; padding: 10px; display: flex; gap: 12px; align-items: center; min-height: 74px;"><div class="cover" style="width: 40px; height: 58px; flex: none;"></div><div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Holes</div><div class="mono" style="color: #9c8b76;">LOUIS SACHAR</div></div><span class="mono" style="color: #c6f24e; font-weight: 700;">MOVE ▾</span></div>
+            </div>
+            <div style="border: 3px dashed #6b5b48; padding: 22px 16px; text-align: center; margin-top: 16px;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Only two on the go?</div>
+              <p style="font-size: 13px; margin: 4px 0 14px; color: #9c8b76;">Add something from your Want to Read pile.</p>
+              <button class="btn btn-primary" style="min-height: 44px; border-color: #EFECE3; box-shadow: 4px 4px 0 #EFECE3;">See Want to Read</button>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 375px;">
+          <div class="note"><i>01</i><span>Same three tabs as E3, with pink marking the live shelf instead of an underline — on a dark ground a 3px rule reads as a border, not a selection.</span></div>
+          <div class="note"><i>02</i><span>Orange on ink dims noticeably, so it keeps a cream outline and cream shadow to hold its edge. That is the one accent the dark variant has to compensate for.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;">
+      <span class="mono flow-badge">FLOW G</span>
+      <h2 style="margin: 0;">Added after the interactive build</h2>
+      <span class="mono" style="color: var(--color-neutral-700);">404 · REPORTING · BANNED · DELETES · NEW PASSWORD</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 44px; flex-wrap: wrap;">
+
+      <div>
+        <div class="plate"><span class="plate-id">G1</span><span class="plate-name">Not found</span></div>
+        <div class="board" style="width: 620px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / l / 9fk2p</span></div>
+          <div style="padding: 48px 32px 54px;">
+            <div style="font-family: var(--font-display); font-size: 120px; line-height: 0.82; color: var(--color-accent); text-transform: uppercase;">404</div>
+            <h1 style="font-size: 40px; margin: 14px 0 12px;">This page has gone missing</h1>
+            <p style="font-size: 15px; max-width: 420px;">The list or profile you were looking for has been deleted by whoever made it, so the link no longer points anywhere. Nothing has gone wrong at your end.</p>
+            <div style="display: flex; gap: 12px; margin-top: 22px;">
+              <button class="btn btn-primary" style="padding: 13px 22px;">Back to safety</button>
+              <button class="btn btn-secondary" style="padding: 13px 22px;">Find something to read</button>
+            </div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 30px; line-height: 1.7;">ALSO SHOWN FOR: A DELETED ACCOUNT, A LIST SET BACK TO PRIVATE, A BOOK REMOVED FROM THE CATALOGUE.</div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 620px;">
+          <div class="note"><i>01</i><span>The number is the only place Anton appears at this size outside a hero — a 404 should feel like part of the product, not a server error.</span></div>
+          <div class="note"><i>02</i><span>“Nothing has gone wrong at your end” matters for this audience: a broken link makes a 12-year-old assume they did something wrong.</span></div>
+          <div class="note"><i>03</i><span>Two ways out, and neither is “go back” — the previous page is often the dead link itself.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G2</span><span class="plate-name">Report · five reasons</span></div>
+        <div class="board" style="width: 520px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / book / eragon… (modal)</span></div>
+          <div style="padding: 26px 24px; background: rgba(20,17,15,0.55);">
+            <div class="dialog" style="margin: 0 auto;">
+              <div class="card-kicker">Report</div>
+              <div class="dialog-title">Report dragonlad_09</div>
+              <p class="dialog-body" style="margin: 0;">What is the problem with this reader? Only the site owner sees this — they will not know who reported them.</p>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label class="radio" style="border: 3px solid var(--color-divider); padding: 10px 12px; min-height: 44px;"><input type="radio" name="rp"><span class="dot"></span>Rude or unkind to other readers</label>
+                <label class="radio" style="border: 3px solid var(--color-divider); padding: 10px 12px; min-height: 44px;"><input type="radio" name="rp"><span class="dot"></span>Bad language or slurs</label>
+                <label class="radio" style="border: 3px solid var(--color-divider); padding: 10px 12px; min-height: 44px;"><input type="radio" name="rp"><span class="dot"></span>Nothing to do with the book</label>
+                <label class="radio" style="border: 3px solid var(--color-divider); padding: 10px 12px; min-height: 44px;"><input type="radio" name="rp"><span class="dot"></span>Spam or advertising</label>
+                <label class="radio" style="border: 3px solid var(--color-text); padding: 10px 12px; min-height: 44px;"><input type="radio" name="rp" checked><span class="dot"></span>Something that worries me about their safety</label>
+              </div>
+              <div class="field"><label>Anything else? (optional)</label><textarea class="input" style="min-height: 60px;" placeholder="Tell us in your own words"></textarea></div>
+              <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 12px 14px;">
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px; margin-bottom: 4px;">If someone is in danger, tell an adult you trust</div>
+                <p style="font-size: 13px; margin: 0;">We read every report, but we are a book site — we cannot help in an emergency.</p>
+              </div>
+              <div class="dialog-actions" style="justify-content: flex-start;"><button class="btn btn-primary">Send report</button><button class="btn btn-secondary">Cancel</button></div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 520px;">
+          <div class="note"><i>01</i><span>Same dialog reports a review or a reader — only the title changes. Both say it is anonymous, which is what makes a 12-year-old willing to use it.</span></div>
+          <div class="note"><i>02</i><span>Reason five reveals the red safeguarding panel and routes to the admin's own queue (G5 on the admin sheet), never into the review pile.</span></div>
+          <div class="note"><i>03</i><span>Either a reason or free text is enough to send. Forcing a category on someone who is upset loses the report.</span></div>
+          <div class="note"><i>04</i><span>Guests cannot report — an accountless report button is a spam vector. Three reports on one thing is the limit.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G3</span><span class="plate-name">Banned · report limit · delete</span></div>
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+          <div class="board" style="width: 480px;">
+            <div style="padding: 22px 20px; background: rgba(20,17,15,0.55);">
+              <div class="dialog" style="margin: 0 auto; border-color: #C41031;">
+                <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 12px 14px;">
+                  <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Your account is banned</div>
+                  <div class="mono" style="font-weight: 700; margin-top: 4px;">BANNED FOR 6 HOURS · STARTED 14/08 AT 16:20</div>
+                </div>
+                <p class="dialog-body" style="margin: 0;">While the ban lasts you can still read everything. You cannot post reviews, share lists or ask for new books.</p>
+                <p class="dialog-body" style="margin: 0;">If you think this is a mistake, reply to the email we sent you and a real person will read it.</p>
+                <div class="dialog-actions" style="justify-content: flex-start;"><button class="btn btn-primary">I understand</button><button class="btn btn-secondary">Keep browsing</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="board" style="width: 480px;">
+            <div style="padding: 22px 20px; background: rgba(20,17,15,0.55);">
+              <div class="dialog" style="margin: 0 auto;">
+                <div style="display: inline-flex; align-items: center; gap: 10px; background: #FFD400; color: #14110f; border: 3px solid var(--color-text); padding: 6px 12px; align-self: flex-start;">
+                  <span style="font-family: var(--font-display); font-size: 18px; line-height: 1;">!</span>
+                  <span class="mono" style="font-weight: 700;">ALREADY REPORTED THREE TIMES</span>
+                </div>
+                <div class="dialog-title">You've reported this as much as you can</div>
+                <p class="dialog-body" style="margin: 0;">Three reports on the same thing is the limit — sending more does not make it go faster, and it stops one person burying someone else.</p>
+                <div class="dialog-actions" style="justify-content: flex-start;"><button class="btn btn-primary">Fair enough</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="board" style="width: 480px;">
+            <div style="padding: 22px 20px; background: rgba(20,17,15,0.55);">
+              <div class="dialog" style="margin: 0 auto;">
+                <div class="card-kicker">Check before you act</div>
+                <div class="dialog-title">Delete your account?</div>
+                <p class="dialog-body" style="margin: 0;">Everything goes: your shelves, your lists, your reviews and your requests. This cannot be undone by you — only the site owner can recover it, and only for 14 days.</p>
+                <div class="dialog-actions" style="justify-content: flex-start;"><button class="btn" style="background: #C41031; color: #EFECE3;">Yes, delete everything</button><button class="btn btn-secondary">Cancel</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 12px; max-width: 480px;">
+          <div class="note"><i>01</i><span>The ban notice states the length and the start time on a 24-hour clock. “Banned” with no end date reads as permanent and loses the reader for good.</span></div>
+          <div class="note"><i>02</i><span>The limit dialog explains why the limit exists rather than just refusing. A rule with a reason gets accepted.</span></div>
+          <div class="note"><i>03</i><span>Three self-service deletes need this treatment: my review, my list, my account. Each names exactly what disappears.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="plate"><span class="plate-id">G4</span><span class="plate-name">Set a new password</span></div>
+        <div class="board" style="width: 440px;">
+          <div class="chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="url">bookhub.example / reset / a41f…</span></div>
+          <div style="padding: 30px 30px 34px;">
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">PASSWORD RESET · STEP 2 OF 2</div>
+            <h1 style="font-size: 32px; margin: 0 0 6px;">Set a new password</h1>
+            <p style="font-size: 14px; margin-bottom: 20px;">You came here from the link in your email. Pick something you have not used before.</p>
+            <div class="field" style="margin-bottom: 12px;"><label>New password</label><input class="input" type="password" style="min-height: 42px;" placeholder="At least 8 characters"></div>
+            <div class="field" style="margin-bottom: 6px;"><label>Type it again</label><input class="input" type="password" style="min-height: 42px;"></div>
+            <div class="mono" style="color: #C41031; font-weight: 700; margin-bottom: 16px;">THE TWO PASSWORDS DON'T MATCH</div>
+            <button class="btn btn-primary btn-block" style="min-height: 46px;">Save and log in</button>
+          </div>
+        </div>
+        <div class="note" style="margin-top: 12px; max-width: 440px;"><i>01</i><span>D5 sends the email; this is where the link lands. Without it the reset flow dead-ends at “check your inbox”.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="blueprint" style="padding: 28px; background: var(--color-text); color: var(--color-bg); max-width: 900px; box-shadow: 8px 8px 0 var(--color-accent);">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div class="mono" style="color: #c6f24e; font-weight: 700; margin-bottom: 10px;">THINGS TO DECIDE BEFORE ANYONE WRITES CODE</div>
+    <ol style="font-size: 14px; margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+      <li><b>Server-rendered book pages.</b> A3 is your search-traffic page. If the title, summary and reviews arrive by script after load, search engines often see an empty page. Decide the rendering approach before you pick a framework, not after.</li>
+      <li><b>Survey answers are your data model.</b> The genre list in B4, the filters in A2 and the tags on A3 must be one shared list in code. If they drift apart, tag-matching recommendations quietly stop working.</li>
+      <li><b>Moderation.</b> D2 posts public text written by 11–16 year olds. Even a manual “report” link and an owner inbox is enough for v1 — but choose deliberately.</li>
+      <li><b>Cold start.</b> If the survey matches nothing, B6 has no recommendations. Plan the fallback now: most-reviewed books in the chosen genres.</li>
+      <li><b>Cache the API.</b> Google Books and Open Library rate-limit. Store the books people actually look at rather than calling the API on every page view.</li>
+    </ol>
+  </div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { dark: false };
+
+  renderVals() {
+    const dark = this.state.dark;
+    const theme = dark
+      ? {
+          '--color-bg': '#14110f',
+          '--color-surface': '#241f1b',
+          '--color-text': '#EFECE3',
+          '--color-divider': '#EFECE3',
+          '--color-link': '#4E63FF',
+          '--color-neutral-400': '#4a3f33',
+          '--color-neutral-600': '#8a7c64',
+          '--color-neutral-700': '#9c8b76',
+          '--color-accent-100': '#3a2418',
+          '--color-accent-700': '#ff8a57',
+          '--color-accent-800': '#ffc2a3',
+          background: '#0a0908',
+          color: '#EFECE3'
+        }
+      : { background: '#e9dcc6', color: '#14110f' };
+    // Both buttons are always solid-filled, never a transparent outline — on the
+    // header band the ground flips with the mode, so an outline-only button would
+    // vanish in one of the two states.
+    const ink = '#14110f', cream = dark ? '#EFECE3' : '#fff3e2', orange = '#ff4d00';
+    const edge = dark ? ink : cream;            // the band's own contrast colour
+    const active = { background: orange, color: cream, borderColor: edge, boxShadow: '4px 4px 0 ' + edge };
+    const idle = dark
+      ? { background: ink, color: cream, borderColor: ink }
+      : { background: cream, color: ink, borderColor: cream };
+
+    const seg = { fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.04em', padding: '3px 9px', border: 0, cursor: 'pointer', background: 'transparent', color: 'var(--color-text)' };
+    const segOn = Object.assign({}, seg, { background: orange, color: cream });
+    const segOff = Object.assign({}, seg, { borderLeft: '3px solid var(--color-text)' });
+
+    return {
+      theme,
+      lightBtn: dark ? idle : active,
+      darkBtn: dark ? active : idle,
+      a1Light: dark ? seg : segOn,
+      a1Dark: dark ? Object.assign({}, segOn, { borderLeft: '3px solid var(--color-text)' }) : segOff,
+      modeLabel: dark ? 'ALL 28 BOARDS ON INK' : 'ALL 28 BOARDS ON CREAM',
+      setLight: () => this.setState({ dark: false }),
+      setDark: () => this.setState({ dark: true })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

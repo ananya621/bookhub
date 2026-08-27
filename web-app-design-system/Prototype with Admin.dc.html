@@ -1,0 +1,2654 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="pulp.css">
+<style>
+  body { margin: 0; }
+  .mono { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; }
+  .radio input[type="checkbox"] + .dot { border-radius: 0; }
+  .cover { background-color: var(--color-link); background-image: repeating-linear-gradient(135deg, rgba(255,243,226,0.24) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; color: var(--color-bg); }
+  .stars { letter-spacing: 2px; color: var(--color-accent-700); }
+  .wnav { display: flex; align-items: center; gap: 18px; padding: 14px 28px; border-bottom: 3px solid var(--color-text); font-size: 14px; white-space: nowrap; }
+  .wnav b { font-family: var(--font-display); font-size: 22px; text-transform: uppercase; margin-right: auto; cursor: pointer; }
+  .wnav a { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 3px; border-bottom: 3px solid transparent; }
+  .wnav a:hover { color: var(--color-accent-700); }
+  .wnav a[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 28px 72px; }
+  .rowlink { cursor: pointer; }
+  .rowlink:hover { background: var(--color-accent-100); }
+  .starbtn { background: none; border: 0; cursor: pointer; font-size: 30px; line-height: 1; padding: 4px 6px; color: var(--color-neutral-400); }
+  .starbtn:hover { color: var(--color-accent-400); }
+  .starbtn.on { color: var(--color-accent); }
+  .shell { flex: 1; display: flex; flex-direction: column; }
+  .mode-seg { display: inline-flex; border: 3px solid var(--color-text); flex: none; }
+  .anav { display: flex; align-items: center; gap: 16px; padding: 13px 28px; border-bottom: 3px solid var(--color-text); font-size: 13px; white-space: nowrap; }
+  .anav b { font-family: var(--font-display); font-size: 19px; text-transform: uppercase; margin-right: auto; }
+  .anav a { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 2px; border-bottom: 3px solid transparent; }
+  .anav a:hover { color: var(--color-accent-700); }
+  .anav a[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
+  .qrow { display: flex; gap: 14px; padding: 16px 0; border-bottom: 3px solid var(--color-divider); align-items: flex-start; }
+  .seg-opt[data-state="read"]:has(input:checked) { background: #c6f24e; color: #14110f; }
+  .seg-opt[data-state="reading"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
+  .seg-opt[data-state="prog"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
+  .seg-opt[data-state="want"]:has(input:checked) { background: #1B3BFF; color: #EFECE3; }
+  .mode-seg button { font-family: var(--font-heading); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 5px 11px; border: 0; cursor: pointer; }
+  a { color: var(--color-link); }
+  a:hover { color: var(--color-accent); }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; display: flex; flex-direction: column;">
+<div class="shell" style="{{ theme }}">
+
+<sc-if value="{{ chrome }}" hint-placeholder-val="{{ true }}">
+  <div class="wnav">
+    <b onClick="{{ nav.home }}">Book Hub</b>
+    <a onClick="{{ nav.home }}" aria-current="{{ cur.home }}">Home</a>
+    <a onClick="{{ nav.search }}" aria-current="{{ cur.search }}">Search</a>
+    <a onClick="{{ nav.recs }}" aria-current="{{ cur.recs }}">Recommendations</a>
+    <a onClick="{{ nav.tracker }}" aria-current="{{ cur.tracker }}">Tracker</a>
+    <a onClick="{{ nav.lists }}" aria-current="{{ cur.lists }}">My Lists</a>
+    <a onClick="{{ nav.profile }}" aria-current="{{ cur.profile }}">Profile</a>
+    <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}">
+      <span style="display: inline-grid; place-items: center; width: 32px; height: 32px; flex: none; border: 3px solid var(--color-text); font-family: var(--font-heading); font-weight: 700; font-size: 15px; background: {{ avatarColor }}; color: {{ avatarInk }};">{{ initials }}</span>
+    </sc-if>
+    <sc-if value="{{ guest }}" hint-placeholder-val="{{ true }}">
+      <button class="btn btn-primary" onClick="{{ nav.start }}">Get Started</button>
+    </sc-if>
+    <span class="mode-seg"><button style="{{ lightBtn }}" onClick="{{ setLight }}">Light</button><button style="{{ darkBtn }}" onClick="{{ setDark }}">Dark</button></span>
+    <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}">
+      <button class="btn btn-secondary" style="flex: none; background: #7B2DFF; color: #EFECE3;" onClick="{{ admin.home }}">Admin</button>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ unverified }}" hint-placeholder-val="{{ false }}">
+  <div style="display: flex; align-items: center; gap: 14px; background: #ff3d9a; color: #14110f; border-bottom: 3px solid var(--color-text); padding: 10px 28px;">
+    <div style="flex: 1;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">Your email isn't verified yet.</span> <span class="mono" style="font-weight: 700;">YOU CAN BROWSE AND TRACK BOOKS — REVIEWS AND SHARED LISTS UNLOCK ONCE IT IS.</span></div>
+    <button class="btn btn-secondary" style="border-color: #14110f; color: #14110f;" onClick="{{ nav.verify }}">Enter my code</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ adminChrome }}" hint-placeholder-val="{{ false }}">
+  <div class="anav">
+    <b>Book Hub Admin</b>
+    <a onClick="{{ admin.home }}" aria-current="{{ adminCur.home }}">Overview</a>
+    <a onClick="{{ admin.reviews }}" aria-current="{{ adminCur.reviews }}">Reviews</a>
+    <a onClick="{{ admin.accounts }}" aria-current="{{ adminCur.accounts }}">Accounts</a>
+    <a onClick="{{ admin.users }}" aria-current="{{ adminCur.users }}">All users</a>
+    <a onClick="{{ admin.catalogue }}" aria-current="{{ adminCur.catalogue }}">Catalogue</a>
+    <a onClick="{{ admin.safeguarding }}" aria-current="{{ adminCur.safeguarding }}">Safeguarding</a>
+    <a onClick="{{ admin.trash }}" aria-current="{{ adminCur.trash }}">Trash</a>
+    <a onClick="{{ admin.requests }}" aria-current="{{ adminCur.requests }}">Requests</a>
+    <button class="btn btn-secondary" onClick="{{ admin.exit }}">Back to site</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminUsers }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 6px;">All users</h1>
+    <p style="font-size: 14px; margin-bottom: 20px;">Every account, not just the reported ones. Open anyone to see their reviews and act on them.</p>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <input class="input" style="flex: 1; min-height: 44px;" placeholder="Search display names" value="{{ adminSearch }}" onInput="{{ setAdminSearch }}">
+    </div>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ allUsers }}" as="u" hint-placeholder-count="5">
+        <div class="qrow rowlink" style="align-items: center; padding: 12px 8px;" onClick="{{ u.open }}">
+          <div style="{{ u.avatarStyle }}">{{ u.initial }}</div>
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ u.name }}</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ u.meta }}</div>
+          </div>
+          <span class="tag" style="{{ u.stateStyle }}">{{ u.stateLabel }}</span>
+          <button class="btn btn-secondary" style="flex: none;" onClick="{{ u.open }}">Open</button>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 18px;">
+      <button class="btn btn-secondary" onClick="{{ usersPrev }}">← Previous</button>
+      <span class="mono" style="color: var(--color-neutral-700);">{{ usersPageLabel }}</span>
+      <button class="btn btn-secondary" onClick="{{ usersNext }}">Next →</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminUser }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <button class="btn btn-ghost" style="margin-bottom: 16px;" onClick="{{ admin.users }}">← All users</button>
+    <div style="display: flex; align-items: flex-start; gap: 18px; margin-bottom: 8px;">
+      <div style="{{ user.avatarStyle }}">{{ user.initial }}</div>
+      <div style="flex: 1;">
+        <h1 style="font-size: 36px; margin: 0 0 4px;">{{ user.name }}</h1>
+        <div class="mono" style="color: var(--color-neutral-700);">{{ user.meta }}</div>
+        <div style="margin-top: 8px;"><span class="tag" style="{{ user.stateStyle }}">{{ user.stateLabel }}</span></div>
+      </div>
+      <sc-if value="{{ user.actionable }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: 8px; flex: none;">
+          <sc-if value="{{ user.isBanned }}" hint-placeholder-val="{{ false }}">
+            <button class="btn btn-primary" onClick="{{ user.unban }}">Lift the ban</button>
+          </sc-if>
+          <button class="btn btn-secondary" onClick="{{ user.askBan }}">Ban account</button>
+          <button class="btn btn-secondary" onClick="{{ user.askDelete }}">Delete account</button>
+        </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ user.isBanned }}" hint-placeholder-val="{{ false }}">
+      <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 12px 16px; margin: 12px 0 6px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Banned for {{ user.banUntil }}</div>
+        <p style="font-size: 13px; margin: 4px 0 0;">They cannot post reviews, share lists or request books until it lifts. Their existing reviews stay visible unless you delete them individually.</p>
+      </div>
+    </sc-if>
+    <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin: 18px 0 10px;">{{ user.why }}</div>
+    <h4 style="margin: 0 0 10px;">Their reviews</h4>
+    <sc-if value="{{ user.noReviews }}" hint-placeholder-val="{{ false }}">
+      <div style="border: 3px dashed var(--color-divider); padding: 26px; text-align: center;">
+        <div class="mono" style="color: var(--color-neutral-700);">NOTHING POSTED YET</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ user.hasReviews }}" hint-placeholder-val="{{ true }}">
+      <div style="border-top: 3px solid var(--color-text);">
+        <sc-for list="{{ user.reviews }}" as="r" hint-placeholder-count="2">
+          <div class="qrow">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="tag" style="{{ r.stateStyle }}">{{ r.stateLabel }}</span>
+                <span class="mono" style="color: var(--color-neutral-700);">ON “{{ r.book }}” · {{ r.when }} · {{ r.rating }}</span>
+              </div>
+              <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
+                <p style="font-size: 14px; margin: 0;">{{ r.text }}</p>
+              </div>
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 8px;">{{ r.why }}</div>
+            </div>
+            <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+                <button class="btn btn-primary" onClick="{{ r.allow }}">Allow</button>
+                <button class="btn btn-secondary" onClick="{{ r.del }}">Delete</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.6;">REPORTED CONTENT STAYS VISIBLE TO READERS UNTIL YOU DECIDE — NOTHING IS HIDDEN AUTOMATICALLY.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isNotFound }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width: 620px; margin: 0 auto; padding: 72px 24px;">
+    <div style="font-family: var(--font-display); font-size: 140px; line-height: 0.82; color: var(--color-accent); text-transform: uppercase;">404</div>
+    <h1 style="font-size: 44px; margin: 14px 0 12px;">This page has gone missing</h1>
+    <p style="font-size: 16px; max-width: 460px;">The list or profile you were looking for has been deleted by whoever made it, so the link no longer points anywhere. Nothing has gone wrong at your end.</p>
+    <div style="display: flex; gap: 12px; margin-top: 24px;">
+      <button class="btn btn-primary blueprint" style="padding: 13px 24px; font-size: 16px;" onClick="{{ goHomeFrom404 }}">Back to safety<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+      <button class="btn btn-secondary" style="padding: 13px 24px; font-size: 16px;" onClick="{{ nav.search }}">Find something to read</button>
+    </div>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 34px; line-height: 1.7;">THIS PAGE ALSO SHOWS FOR A DELETED ACCOUNT, A LIST SET BACK TO PRIVATE, OR A BOOK REMOVED FROM THE CATALOGUE.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isNewPassword }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width: 420px; margin: 0 auto; padding: 64px 24px;">
+    <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">PASSWORD RESET · STEP 2 OF 2</div>
+    <h1 style="font-size: 34px; margin: 0 0 6px;">Set a new password</h1>
+    <p style="font-size: 14px; margin-bottom: 22px;">You came here from the link in your email. Pick something you have not used before.</p>
+    <div class="field" style="margin-bottom: 14px;"><label>New password</label><input class="input" type="password" style="min-height: 42px;" placeholder="At least 8 characters" value="{{ newPassword }}" onInput="{{ setNewPassword }}"></div>
+    <div class="field" style="margin-bottom: 6px;"><label>Type it again</label><input class="input" type="password" style="min-height: 42px;" value="{{ newPassword2 }}" onInput="{{ setNewPassword2 }}"></div>
+    <sc-if value="{{ pwError }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-problem-text); font-weight: 700;">{{ pwError }}</div>
+    </sc-if>
+    <button class="btn btn-primary btn-block" style="min-height: 46px; margin-top: 18px;" onClick="{{ savePassword }}">Save and log in</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminSafeguarding }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 18px 20px; margin-bottom: 24px;">
+      <h1 style="font-size: 34px; margin: 0 0 6px;">Safeguarding</h1>
+      <p style="font-size: 14px; margin: 0;">These are reports where a reader said they were worried about someone's safety. They are kept out of the ordinary queues so they never wait behind spam. Read them first, every time.</p>
+    </div>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ safeguardingList }}" as="x" hint-placeholder-count="2">
+        <div class="qrow">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+              <span class="tag" style="{{ x.stateStyle }}">{{ x.stateLabel }}</span>
+              <span class="mono" style="color: var(--color-neutral-700);">FROM {{ x.who }} · ABOUT {{ x.target }} · {{ x.when }}</span>
+            </div>
+            <div style="border-left: 5px solid #C41031; padding-left: 12px;">
+              <p style="font-size: 14px; margin: 0;">{{ x.text }}</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+            <sc-if value="{{ x.open }}" hint-placeholder-val="{{ true }}">
+              <button class="btn btn-primary" onClick="{{ x.action }}">Mark as actioned</button>
+            </sc-if>
+            <sc-if value="{{ x.done }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-ghost" onClick="{{ x.undo }}">Reopen</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.7;">“MARK AS ACTIONED” MEANS YOU HAVE DONE SOMETHING OUTSIDE THIS APP — TOLD A SAFEGUARDING LEAD, CONTACTED A SCHOOL, OR ESCALATED. IT IS NOT A MODERATION DECISION.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminTrash }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 6px;">Trash</h1>
+    <p style="font-size: 14px; margin-bottom: 22px;">Everything you deleted or banned, kept for 14 days. Nothing here is visible to readers, and anything can be put back.</p>
+    <sc-if value="{{ trashEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border: 3px dashed var(--color-divider); padding: 30px; text-align: center;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">Trash is empty</div>
+        <p class="mono" style="color: var(--color-neutral-700); margin: 6px 0 0;">NOTHING DELETED IN THE LAST 14 DAYS</p>
+      </div>
+    </sc-if>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ trashList }}" as="t" hint-placeholder-count="2">
+        <div class="qrow" style="align-items: center;">
+          <span class="tag tag-neutral" style="flex: none;">{{ t.kind }}</span>
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ t.name }}</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ t.by }} · {{ t.when }}</div>
+          </div>
+          <span class="tag" style="flex: none; background: #FFD400; color: #14110f;">{{ t.daysLeft }}</span>
+          <div style="display: flex; gap: 8px; flex: none;">
+            <button class="btn btn-primary" onClick="{{ t.restore }}">Put it back</button>
+            <button class="btn btn-secondary" onClick="{{ t.purge }}">Delete for good</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.7;">AFTER 14 DAYS ITEMS ARE REMOVED AUTOMATICALLY. THAT WINDOW IS WHY DELETES ARE SOFT IN THE DATABASE RATHER THAN DESTRUCTIVE.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminCatalogue }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 6px;">Catalogue</h1>
+    <p style="font-size: 14px; margin-bottom: 22px;">Search the book API, import what you want, tag it and give it a cover. You never need a reader to ask first.</p>
+
+    <div style="border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 18px; margin-bottom: 24px;">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">STEP 1 — FIND IT IN THE API</div>
+      <div style="display: flex; gap: 10px;">
+        <input class="input" style="flex: 1; min-height: 46px;" placeholder="Try “dragon”, “rundell”, “skandar” or “nevermoor”" value="{{ apiQuery }}" onInput="{{ setApiQuery }}">
+        <button class="btn btn-primary" style="padding: 0 22px;">Search the API</button>
+      </div>
+      <sc-if value="{{ hasApiResults }}" hint-placeholder-val="{{ false }}">
+        <div style="border-top: 3px solid var(--color-divider); margin-top: 16px;">
+          <sc-for list="{{ apiResults }}" as="r" hint-placeholder-count="3">
+            <div class="qrow" style="align-items: center;">
+              <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
+              <div style="flex: 1;">
+                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ r.title }}</div>
+                <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ r.meta }}</div>
+                <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">API SUBJECTS: {{ r.subjectsUp }}</div>
+              </div>
+              <sc-if value="{{ r.matchesRequest }}" hint-placeholder-val="{{ false }}">
+                <span class="tag" style="background: #ff3d9a; color: #14110f; flex: none;">Someone asked for this</span>
+              </sc-if>
+              <sc-if value="{{ r.already }}" hint-placeholder-val="{{ false }}">
+                <span class="tag" style="background: #c6f24e; color: #14110f; flex: none;">✓ Already in catalogue</span>
+              </sc-if>
+              <sc-if value="{{ r.importable }}" hint-placeholder-val="{{ true }}">
+                <button class="btn btn-primary" style="flex: none;" onClick="{{ r.start }}">Import</button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noApiResults }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-neutral-700); margin-top: 14px;">NOTHING IN THE API FOR THAT — CHECK THE SPELLING, OR IT MAY NOT BE INDEXED.</div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ importing }}" hint-placeholder-val="{{ false }}">
+      <div style="border: 3px solid var(--color-text); box-shadow: 8px 8px 0 var(--color-accent); padding: 20px; margin-bottom: 26px;">
+        <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 14px;">STEP 2 — CHECK IT BEFORE IT GOES LIVE</div>
+        <sc-if value="{{ draft.matched }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 14px; background: #ff3d9a; color: #14110f; border: 3px solid var(--color-text); padding: 12px 14px; margin-bottom: 18px;">
+            <div style="flex: 1;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ draft.matchLine }}</div>
+              <div class="mono" style="font-weight: 700; margin-top: 3px;">IMPORTING THIS CAN CLOSE THEIR REQUEST AND TELL THEM IT IS HERE</div>
+            </div>
+            <label class="radio" style="flex: none; border: 3px solid #14110f; padding: 8px 12px; min-height: 44px;"><input type="checkbox" checked="{{ draft.fulfil }}" onChange="{{ toggleFulfil }}"><span class="dot"></span>Mark it fulfilled</label>
+          </div>
+        </sc-if>
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 22px;">
+          <div>
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">COVER</div>
+            <sc-if value="{{ draft.hasCover }}" hint-placeholder-val="{{ false }}">
+              <div class="cover" style="height: 240px; border: 3px solid var(--color-text);"><span class="mono">{{ draft.coverSource }}</span></div>
+            </sc-if>
+            <sc-if value="{{ draft.noCover }}" hint-placeholder-val="{{ true }}">
+              <div style="height: 240px; display: grid; place-items: center; border: 3px dashed var(--color-neutral-600); background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px);"><span class="mono" style="color: var(--color-neutral-700);">NO COVER YET</span></div>
+            </sc-if>
+            <button class="btn btn-secondary btn-block" style="min-height: 44px;" onClick="{{ useApiCover }}">Use the API cover</button>
+            <button class="btn btn-secondary btn-block" style="min-height: 44px;" onClick="{{ uploadCover }}">Upload my own</button>
+            <sc-if value="{{ draft.hasCover }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-ghost" style="min-height: 44px;" onClick="{{ clearCover }}">Remove</button>
+            </sc-if>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 10px; line-height: 1.6;">STORE THE IMAGE YOURSELF — API COVER URLS ROT, AND A WALL OF BROKEN COVERS IS WORSE THAN NONE.</div>
+          </div>
+          <div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div class="field"><label>Title</label><input class="input" value="{{ draft.title }}" onInput="{{ setTitle }}"></div>
+              <div class="field"><label>Author</label><input class="input" value="{{ draft.author }}" onInput="{{ setAuthor }}"></div>
+            </div>
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 5px;">GENRES — MAPPED FROM THE API, CORRECT WHAT IS WRONG</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">{{ draft.mappedFrom }}</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;">
+              <sc-for list="{{ draftGenreChips }}" as="g" hint-placeholder-count="11">
+                <button class="tag" style="{{ g.style }}" onClick="{{ g.toggle }}">{{ g.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 14px;">
+              <div>
+                <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 6px;">READING LEVEL — YOUR CALL, NOT THE API'S</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  <sc-for list="{{ draftLevelChips }}" as="l" hint-placeholder-count="3">
+                    <button class="tag" style="{{ l.style }}" onClick="{{ l.pick }}">{{ l.label }}</button>
+                  </sc-for>
+                </div>
+                <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px; line-height: 1.6;">THE ONE FIELD NEVER TO TRUST THE API ON. THIS IS WHAT KEEPS ADULT TITLES OFF AN 11-YEAR-OLD'S SCREEN.</div>
+              </div>
+              <div>
+                <div class="field" style="margin-bottom: 10px;"><label>Pages</label><input class="input" value="{{ draft.pages }}" onInput="{{ setPages }}"></div>
+                <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6;">LENGTH BAND: {{ draft.band }} — WORKED OUT FROM THE PAGE COUNT, NOT TYPED</div>
+                <label class="radio" style="margin-top: 12px; border: 3px solid var(--color-divider); padding: 9px 12px; min-height: 44px;"><input type="checkbox" checked="{{ draft.series }}" onChange="{{ toggleSeries }}"><span class="dot"></span>Part of a series</label>
+              </div>
+            </div>
+            <div class="field" style="margin-bottom: 14px;"><label>Summary</label><textarea class="input" style="min-height: 80px;" value="{{ draft.summary }}" onInput="{{ setSummary }}"></textarea></div>
+            <sc-if value="{{ draftError }}" hint-placeholder-val="{{ false }}">
+              <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 12px;">{{ draftError }}</div>
+            </sc-if>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" onClick="{{ saveBook }}">Add to the catalogue</button>
+              <button class="btn btn-secondary" onClick="{{ cancelImport }}">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ justAdded }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: center; gap: 14px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 14px 16px; margin-bottom: 24px;">
+        <span style="font-family: var(--font-display); font-size: 26px; line-height: 1;">✓</span>
+        <div style="flex: 1;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ addedLine }}</div>
+          <div class="mono" style="font-weight: 700; margin-top: 3px;">{{ addedNote }}</div>
+        </div>
+        <button class="btn btn-secondary" style="border-color: #14110f; color: #14110f;" onClick="{{ dismissAdded }}">Dismiss</button>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+      <h2 style="margin: 0;">In the catalogue</h2>
+      <span class="mono" style="color: var(--color-neutral-700); flex: 1;">{{ catalogueCount }} BOOKS · {{ missingCovers }} WITHOUT A COVER</span>
+      <input class="input" style="width: 230px;" placeholder="Filter the catalogue" value="{{ catFilter }}" onInput="{{ setCatFilter }}">
+    </div>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ catalogueList }}" as="c" hint-placeholder-count="5">
+        <div class="qrow" style="align-items: center;">
+          <sc-if value="{{ c.hasCover }}" hint-placeholder-val="{{ true }}">
+            <div class="cover" style="width: 42px; height: 62px; flex: none;"></div>
+          </sc-if>
+          <sc-if value="{{ c.noCover }}" hint-placeholder-val="{{ false }}">
+            <div style="width: 42px; height: 62px; flex: none; display: grid; place-items: center; border: 3px dashed var(--color-neutral-600); background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px);"><span class="mono" style="color: var(--color-neutral-700);">!</span></div>
+          </sc-if>
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ c.title }}</div>
+            <div class="mono" style="color: var(--color-neutral-700); margin: 3px 0 6px;">{{ c.meta }}</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <sc-for list="{{ c.tags }}" as="t" hint-placeholder-count="3"><span class="tag tag-neutral">{{ t }}</span></sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ c.noCover }}" hint-placeholder-val="{{ false }}">
+            <button class="btn btn-primary" style="flex: none;" onClick="{{ c.addCover }}">Add a cover</button>
+          </sc-if>
+          <button class="btn btn-secondary" style="flex: none;" onClick="{{ c.remove }}">Remove</button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminHome }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <h1 style="font-size: 40px; margin: 0 0 20px;">What needs you</h1>
+    <div class="rowlink" style="border: 3px solid var(--color-text); background: #C41031; color: #EFECE3; box-shadow: 5px 5px 0 var(--color-text); padding: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px;" onClick="{{ admin.safeguarding }}">
+      <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ safeguardingCount }}</div>
+      <div style="flex: 1;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Safeguarding reports</div>
+        <div class="mono" style="font-weight: 700; margin-top: 3px;">READERS WORRIED ABOUT SOMEONE'S SAFETY — READ THESE FIRST</div>
+      </div>
+      <span class="tag" style="background: #EFECE3; color: #14110f; flex: none;">Open queue</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px;">
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 16px;" onClick="{{ admin.reviews }}">
+        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ pendingReviews }}</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Reviews to look at</div>
+        <div class="mono" style="font-weight: 700; margin-top: 4px;">REPORTED AND AUTO-BLOCKED</div>
+      </div>
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 16px;" onClick="{{ admin.accounts }}">
+        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ pendingAccounts }}</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Accounts to look at</div>
+        <div class="mono" style="font-weight: 700; margin-top: 4px;">REPORTED AND REFUSED NAMES</div>
+      </div>
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 16px;" onClick="{{ admin.requests }}">
+        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ pendingRequests }}</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Book requests</div>
+        <div class="mono" style="font-weight: 700; margin-top: 4px;">WAITING ON A DECISION</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; border: 3px dashed var(--color-divider); padding: 14px 16px; margin-bottom: 26px;">
+      <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Reported content stays live until you decide</div><div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">NOTHING IS HIDDEN AUTOMATICALLY — A REPORT IS NOT A VERDICT</div></div>
+      <button class="btn btn-secondary" onClick="{{ admin.users }}">Browse all users</button>
+      <button class="btn btn-secondary" onClick="{{ admin.catalogue }}">Add a book</button>
+      <button class="btn btn-secondary" onClick="{{ banSelf }}">Ban my own account</button>
+    </div>
+    <sc-if value="{{ allClear }}" hint-placeholder-val="{{ false }}">
+      <div style="border: 3px solid var(--color-text); background: #c6f24e; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 18px 20px; margin-bottom: 26px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">Every queue is empty</div>
+        <p style="font-size: 13px; margin: 4px 0 0;">Nothing is waiting on you. Undo is still available on anything you cleared this session.</p>
+      </div>
+    </sc-if>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px;">
+      <div>
+        <h4 style="margin: 0 0 10px;">Last seven days</h4>
+        <table class="table">
+          <tbody>
+            <tr><td>Reviews posted</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">128</td></tr>
+            <tr><td>Reviews auto-blocked by the filter</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">9</td></tr>
+            <tr><td>New accounts</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">41</td></tr>
+            <tr><td>Display names refused</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">6</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h4 style="margin: 0 0 10px;">Watch the ratio</h4>
+        <p style="font-size: 14px;">If refusals spike, the word list is too aggressive and you are turning away real readers. If reports spike, it is too loose. Neither number means much alone.</p>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminReviews }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 18px;">Reviews</h1>
+    <div style="display: flex; gap: 10px; margin-bottom: 18px;">
+      <input class="input" style="flex: 1; min-height: 44px;" placeholder="Search reviews, books or readers" value="{{ reviewSearch }}" onInput="{{ setReviewSearch }}">
+    </div>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ queueReviews }}" as="r" hint-placeholder-count="4">
+        <div class="qrow">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+              <span class="tag" style="{{ r.flagStyle }}">{{ r.flagLabel }}</span>
+              <sc-if value="{{ r.hasReporters }}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-ghost" style="font-size: 12px;" onClick="{{ r.showReporters }}">Who reported it?</button>
+              </sc-if>
+              <span class="mono" style="color: var(--color-neutral-700);">ON “{{ r.book }}” · BY {{ r.who }} · {{ r.when }}</span>
+            </div>
+            <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
+              <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 4px;">{{ r.rating }}</div>
+              <p style="font-size: 14px; margin: 0;">{{ r.text }}</p>
+            </div>
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 8px;">{{ r.why }}</div>
+          </div>
+          <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+            <sc-if value="{{ r.pending }}" hint-placeholder-val="{{ true }}">
+              <button class="btn btn-primary" onClick="{{ r.allow }}">Allow</button>
+              <button class="btn btn-secondary" onClick="{{ r.del }}">Delete</button>
+              <button class="btn btn-secondary" onClick="{{ r.openUser }}">View reader</button>
+            </sc-if>
+            <sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-ghost" onClick="{{ r.undo }}">Undo</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminAccounts }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 18px;">Accounts</h1>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ queueAccounts }}" as="a" hint-placeholder-count="3">
+        <div class="qrow" style="align-items: center;">
+          <div style="{{ a.avatarStyle }}">{{ a.initial }}</div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">{{ a.name }}</div>
+              <span class="tag" style="{{ a.flagStyle }}">{{ a.flagLabel }}</span>
+            </div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">{{ a.meta }}</div>
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">{{ a.why }}</div>
+          </div>
+          <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+            <sc-if value="{{ a.pending }}" hint-placeholder-val="{{ true }}">
+              <button class="btn btn-primary" onClick="{{ a.allow }}">Allow</button>
+              <sc-if value="{{ a.isName }}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-secondary" onClick="{{ a.rename }}">Force rename</button>
+              </sc-if>
+              <button class="btn btn-secondary" onClick="{{ a.del }}">Delete</button>
+              <button class="btn btn-secondary" onClick="{{ a.openUser }}">Open profile</button>
+            </sc-if>
+            <sc-if value="{{ a.done }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-ghost" onClick="{{ a.undo }}">Undo</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.6;">DELETING AN ACCOUNT TAKES ITS REVIEWS AND LISTS WITH IT. IN THE BUILD THIS ASKS YOU TO TYPE THE DISPLAY NAME FIRST, AND SOFT-DELETES SO IT IS RECOVERABLE.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdminRequests }}" hint-placeholder-val="{{ false }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 18px;">Book requests</h1>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ queueRequests }}" as="q" hint-placeholder-count="3">
+        <div class="qrow" style="flex-direction: column; align-items: stretch; gap: 12px;">
+          <div style="display: flex; gap: 14px; align-items: center;">
+            <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
+            <div style="flex: 1;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">{{ q.title }}</div>
+              <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">{{ q.author }}</div>
+              <sc-if value="{{ q.hasReason }}" hint-placeholder-val="{{ false }}">
+                <p style="font-size: 13px; margin: 6px 0 0;">{{ q.reason }}</p>
+              </sc-if>
+            </div>
+            <span class="tag" style="{{ q.statusStyle }}">{{ q.statusLabel }}</span>
+            <sc-if value="{{ q.pending }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 8px; flex: none;">
+                <button class="btn btn-primary" onClick="{{ q.approve }}">Approve &amp; import</button>
+                <button class="btn btn-secondary" onClick="{{ q.startDecline }}">Decline</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ q.decided }}" hint-placeholder-val="{{ false }}">
+              <button class="btn btn-ghost" style="flex: none;" onClick="{{ q.undo }}">Undo</button>
+            </sc-if>
+          </div>
+          <sc-if value="{{ q.isDeclining }}" hint-placeholder-val="{{ false }}">
+            <div style="border: 3px solid var(--color-text); background: var(--color-accent-100); padding: 14px;">
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">WHY ARE YOU DECLINING? THE READER SEES THIS WORD FOR WORD</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <sc-for list="{{ declineReasons }}" as="d" hint-placeholder-count="4">
+                  <label class="radio" style="flex: none; border: 3px solid var(--color-divider); padding: 8px 12px; min-height: 42px; background: var(--color-bg);"><input type="radio" name="dr" checked="{{ d.on }}" onChange="{{ d.pick }}"><span class="dot"></span>{{ d.label }}</label>
+                </sc-for>
+              </div>
+              <textarea class="input" style="min-height: 70px;" value="{{ declineText }}" onInput="{{ setDeclineText }}"></textarea>
+              <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn btn-primary" onClick="{{ sendDecline }}">Send decline</button>
+                <button class="btn btn-secondary" onClick="{{ q.cancelDecline }}">Cancel</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.6;">APPROVING OR DECLINING HERE UPDATES THE READER'S OWN “BOOKS YOU'VE ASKED FOR” SCREEN — ONE DATA MODEL, TWO VIEWS. GO TO PROFILE → SEE MY REQUESTS TO CHECK.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+  <div class="wrap">
+    <div class="cover" style="height: 220px; margin-bottom: 28px;"><span class="mono">HERO — COLLAGE OF WELL-KNOWN COVERS</span></div>
+    <h1 style="font-size: 52px; margin: 0 0 10px;">Find Your Next Book!</h1>
+    <p style="font-size: 16px; max-width: 500px;">Tell us what you like and we'll line up books you'll actually want to read. Free, no adverts, takes a minute.</p>
+    <div style="display: flex; gap: 12px; margin: 22px 0 40px;">
+      <button class="btn btn-primary blueprint" style="padding: 12px 22px; font-size: 16px;" onClick="{{ nav.start }}">Get Started<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+      <button class="btn btn-secondary" style="padding: 12px 22px; font-size: 16px;" onClick="{{ nav.search }}">Browse books as a guest</button>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 36px; border-top: 1px solid var(--color-divider); padding-top: 28px;">
+      <div>
+        <h3 style="margin: 0 0 8px;">Why this exists</h3>
+        <p style="font-size: 14px;">I got tired of walking into a bookshop and standing there for twenty minutes with no idea what to pick up next. So I built the thing I wanted: somewhere that asks what you like and then just tells you.</p>
+        <p style="font-size: 14px;">No algorithms you can't see, no adverts, no cost. Just books, reviews from other readers, and a place to keep track of what you've finished.</p>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 12px;">Why is reading important?</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="card"><div class="card-title">Vocabulary</div><p class="card-body">You pick up words without trying, and they stay.</p></div>
+          <div class="card"><div class="card-title">Knowledge</div><p class="card-body">Stories smuggle in history, science and places you've never been.</p></div>
+          <div class="card"><div class="card-title">Imagination</div><p class="card-body">Nobody draws the pictures for you.</p></div>
+          <div class="card"><div class="card-title">Relaxation</div><p class="card-body">Twenty quiet minutes that aren't a screen.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isStart }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 460px; margin: 0 auto; padding: 64px 24px;">
+    <h1 style="font-size: 34px; margin: 0 0 6px;">Welcome to Book Hub</h1>
+    <p style="font-size: 14px; margin-bottom: 26px;">New here, or coming back?</p>
+    <div class="blueprint" style="padding: 20px; margin-bottom: 16px;">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="font-family: var(--font-heading); font-size: 21px;">I'm new</div>
+      <p style="font-size: 13px; margin: 4px 0 16px;">Make a free account and answer three quick questions so we can recommend books.</p>
+      <button class="btn btn-primary btn-block" style="min-height: 46px; margin: 0;" onClick="{{ nav.signup }}">Sign up</button>
+    </div>
+    <div style="border: 1px solid var(--color-divider); padding: 20px;">
+      <div style="font-family: var(--font-heading); font-size: 21px;">I've been here before</div>
+      <p style="font-size: 13px; margin: 4px 0 16px;">Log in to pick your reading back up.</p>
+      <button class="btn btn-secondary btn-block" style="min-height: 46px; margin: 0;" onClick="{{ nav.login }}">Log in</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top: 20px;" onClick="{{ nav.landing }}">Keep browsing without an account</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSignup }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 440px; margin: 0 auto; padding: 56px 24px;">
+    <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">STEP 1 OF 4</div>
+    <h1 style="font-size: 34px; margin: 0 0 6px;">Make your account</h1>
+    <p style="font-size: 14px; margin-bottom: 24px;">Email and a password — that's it. Then two quick questions and you're reading.</p>
+    <div class="field" style="margin-bottom: 14px;"><label>Email address</label><input class="input" style="min-height: 42px;" placeholder="you@school.uk" value="{{ email }}" onInput="{{ setEmail }}"></div>
+    <div class="field" style="margin-bottom: 6px;"><label>Password</label><input class="input" type="password" style="min-height: 42px;" placeholder="At least 8 characters" value="{{ pw }}" onInput="{{ setPw }}"></div>
+    <sc-if value="{{ signupError }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); margin-bottom: 14px;">{{ signupError }}</div>
+    </sc-if>
+    <button class="btn btn-primary btn-block blueprint" style="min-height: 46px; margin-top: 14px;" onClick="{{ submitSignup }}">Continue<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+    <div style="display: flex; justify-content: space-between; margin-top: 18px;">
+      <button class="btn btn-ghost" onClick="{{ nav.login }}">I already have an account</button>
+      <button class="btn btn-ghost" onClick="{{ nav.reset }}">Forgot password</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isVerify }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 440px; margin: 0 auto; padding: 56px 24px;">
+    <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">STEP 4 OF 4</div>
+    <h1 style="font-size: 34px; margin: 0 0 6px;">One last thing</h1>
+    <p style="font-size: 14px; margin-bottom: 4px;">We've emailed <b>{{ accountEmail }}</b>. Tap the link in it, or type the 6-digit code below — either works.</p>
+    <p class="mono" style="color: var(--color-neutral-700); margin-bottom: 24px;">THE CODE EXPIRES IN 10 MINUTES</p>
+    <div class="field" style="margin-bottom: 6px;">
+      <label>Verification code</label>
+      <input class="input" style="min-height: 56px; font-family: var(--font-mono); font-size: 26px; font-weight: 700; letter-spacing: 0.35em; text-align: center;" placeholder="000000" value="{{ verifyCode }}" onInput="{{ setVerifyCode }}">
+    </div>
+    <sc-if value="{{ verifyError }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); font-weight: 700;">{{ verifyError }}</div>
+    </sc-if>
+    <button class="btn btn-primary btn-block blueprint" style="min-height: 48px; margin-top: 18px;" onClick="{{ submitVerify }}">Verify my email<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+      <sc-if value="{{ notResent }}" hint-placeholder-val="{{ true }}">
+        <button class="btn btn-ghost" onClick="{{ resend }}">Send it again</button>
+      </sc-if>
+      <sc-if value="{{ resent }}" hint-placeholder-val="{{ false }}">
+        <span style="display: inline-flex; align-items: center; gap: 8px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); padding: 5px 11px;"><span style="font-family: var(--font-display); font-size: 17px; line-height: 1;">✓</span><span class="mono" style="font-weight: 700;">SENT AGAIN</span></span>
+      </sc-if>
+      <button class="btn btn-ghost" onClick="{{ changeEmail }}">Wrong address?</button>
+    </div>
+    <div style="border-top: 3px solid var(--color-divider); margin-top: 22px; padding-top: 18px;">
+      <p class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">CAN'T FIND IT? CHECK SPAM — SCHOOL EMAIL FILTERS ARE STRICT.</p>
+      <button class="btn btn-secondary" onClick="{{ verifyLater }}">Skip — take me to my books</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isProfileSetup }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 440px; margin: 0 auto; padding: 56px 24px;">
+    <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">STEP 2 OF 4</div>
+    <h1 style="font-size: 34px; margin: 0 0 6px;">What should we call you?</h1>
+    <p style="font-size: 14px; margin-bottom: 26px;">This is the name shown on your reviews and any lists you share. It doesn't have to be your real name.</p>
+    <div class="field" style="margin-bottom: 8px;"><label>Display name</label><input class="input" style="min-height: 42px;" placeholder="e.g. maya, or bookdragon03" value="{{ displayName }}" onInput="{{ setDisplayName }}"></div>
+    <sc-if value="{{ nameStatus.show }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-bottom: 10px;">
+        <div style="{{ nameChipStyle }}">
+          <span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ nameStatus.mark }}</span>
+          <span style="font-family: var(--font-heading); font-weight: 700; font-size: 14px;">{{ nameStatus.text }}</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ nameIsTaken }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+        <sc-for list="{{ suggestions }}" as="g" hint-placeholder-count="3">
+          <button class="btn btn-secondary" style="font-size: 13px; padding: 7px 12px;" onClick="{{ g.pick }}">{{ g.label }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6;">WE NEVER SHOW YOUR EMAIL ADDRESS TO ANYONE UNLESS REQUIRED BY LAW. THIS DISPLAY NAME IS THE ONLY NAME OTHERS SEE — IT APPEARS ON YOUR REVIEWS AND ON YOUR PROFILE.</div>
+    <sc-if value="{{ nameError }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700);">{{ nameError }}</div>
+    </sc-if>
+    <div style="border-top: 1px solid var(--color-divider); margin: 26px 0 0; padding-top: 22px;">
+      <div style="font-family: var(--font-heading); font-size: 20px;">Your monogram colour</div>
+      <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 14px;">PICK ONE — CHANGE IT ANY TIME</div>
+      <div style="display: flex; align-items: center; gap: 18px;">
+        <div class="blueprint" style="width: 84px; height: 84px; flex: none; display: grid; place-items: center; background: {{ avatarColor }};">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <span style="font-family: var(--font-heading); font-size: 38px; color: {{ avatarInk }};">{{ initials }}</span>
+        </div>
+        <div style="flex: 1;">
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
+            <sc-for list="{{ colorOpts }}" as="c" hint-placeholder-count="7">
+              <button class="btn" title="{{ c.label }}" style="min-height: 44px; font-size: 15px; border-color: var(--color-divider); color: {{ c.ink }}; background: {{ c.swatch }};" onClick="{{ c.pick }}">{{ c.mark }}</button>
+            </sc-for>
+          </div>
+          <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-top: 10px;">SELECTED: {{ colorName }}</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block blueprint" style="min-height: 46px; margin-top: 30px;" onClick="{{ submitProfile }}">Continue<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSurvey }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 620px; margin: 0 auto; padding: 48px 24px 72px;">
+    <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">{{ surveyKicker }}</div>
+    <h1 style="font-size: 34px; margin: 0 0 6px;">What do you like to read?</h1>
+    <p style="font-size: 14px; margin-bottom: 28px;">Pick anything that sounds like you. You can change these answers any time.</p>
+
+    <div style="font-family: var(--font-heading); font-size: 20px; margin-bottom: 4px;">Favourite genres</div>
+    <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 12px;">CHOOSE ONE OR MORE</div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 30px;">
+      <sc-for list="{{ genreOpts }}" as="g" hint-placeholder-count="11">
+        <label class="radio" style="border: 1px solid var(--color-divider); padding: 10px; min-height: 44px;"><input type="checkbox" checked="{{ g.on }}" onChange="{{ g.toggle }}"><span class="dot"></span>{{ g.label }}</label>
+      </sc-for>
+    </div>
+
+    <div style="font-family: var(--font-heading); font-size: 20px; margin-bottom: 4px;">Which age range suits you?</div>
+    <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 12px;">PICK ONE</div>
+    <div class="seg" style="margin-bottom: 30px;">
+      <sc-for list="{{ levelOpts }}" as="l" hint-placeholder-count="3">
+        <label class="seg-opt" style="min-height: 44px;"><input type="radio" name="lvl" checked="{{ l.on }}" onChange="{{ l.pick }}">{{ l.label }}</label>
+      </sc-for>
+    </div>
+    <sc-if value="{{ levelWarnShow }}" hint-placeholder-val="{{ false }}">
+      <div style="border: 3px solid #C41031; padding: 12px 14px; margin: -18px 0 30px;">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 5px;">{{ levelWarnHead }}</div>
+        <div class="mono" style="color: var(--color-problem-text); line-height: 1.7;">{{ levelWarnText }}</div>
+      </div>
+    </sc-if>
+
+    <div style="font-family: var(--font-heading); font-size: 20px; margin-bottom: 4px;">How long do you like your books?</div>
+    <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 12px;">PICK ONE</div>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px;">
+      <sc-for list="{{ lengthOpts }}" as="p" hint-placeholder-count="5">
+        <label class="radio" style="min-height: 40px;"><input type="radio" name="len" checked="{{ p.on }}" onChange="{{ p.pick }}"><span class="dot"></span>{{ p.label }}</label>
+      </sc-for>
+    </div>
+    <button class="btn btn-primary btn-block blueprint" style="min-height: 48px; font-size: 17px;" onClick="{{ submitSurvey }}">{{ surveyCta }}<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 4px;">Welcome back, {{ name }}</h1>
+    <div class="mono" style="color: var(--color-accent-700); margin-bottom: 8px;">BASED ON: {{ basedOn }} · <a onClick="{{ nav.editSurvey }}" style="cursor: pointer;">EDIT</a></div>
+    <sc-if value="{{ hasFinished }}" hint-placeholder-val="{{ false }}">
+      <div style="display: inline-flex; align-items: center; gap: 9px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); padding: 6px 14px; margin-bottom: 26px;">
+        <span style="font-family: var(--font-display); font-size: 22px; line-height: 1;">✓</span>
+        <span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ finishedLine }}</span>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px;">
+      <h4 style="margin: 0;">Picked for you</h4>
+      <button class="btn btn-ghost" onClick="{{ nav.recs }}">See all recommendations</button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 36px;">
+      <sc-for list="{{ homeRecs }}" as="b" hint-placeholder-count="5">
+        <div class="rowlink" style="display: flex; flex-direction: column; gap: 6px;" onClick="{{ b.open }}">
+          <div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div>
+          <sc-if value="{{ b.hasBadge }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex;"><span class="tag" style="{{ b.badgeStyle }}">{{ b.badgeLabel }}</span></div>
+          </sc-if>
+          <div style="font-family: var(--font-heading); font-size: 16px;">{{ b.title }}</div>
+          <span class="stars" style="font-size: 13px;">{{ b.starStr }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;">
+          <h4 style="margin: 0;">Currently reading</h4>
+          <button class="btn btn-ghost" onClick="{{ nav.tracker }}">Open tracker</button>
+        </div>
+        <sc-if value="{{ hasReading }}" hint-placeholder-val="{{ true }}">
+          <div style="border: 1px solid var(--color-divider);">
+            <sc-for list="{{ reading }}" as="b" hint-placeholder-count="2">
+              <div style="display: flex; gap: 12px; padding: 12px; align-items: center; border-bottom: 3px solid var(--color-divider);">
+                <div class="cover" style="width: 36px; height: 52px; flex: none;"></div>
+                <div class="rowlink" style="flex: 1;" onClick="{{ b.open }}"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ b.title }}</div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                    <div style="flex: 1; max-width: 150px; height: 10px; border: 2px solid var(--color-text);"><div style="{{ b.barStyle }}"></div></div>
+                    <span class="mono" style="color: var(--color-neutral-700);">{{ b.pctLabel }}</span>
+                  </div>
+                </div>
+                <button class="btn btn-secondary" onClick="{{ b.markRead }}">Mark as read</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noReading }}" hint-placeholder-val="{{ false }}">
+          <div style="border: 1px dashed var(--color-divider); padding: 26px; text-align: center;">
+            <div style="font-family: var(--font-heading); font-size: 20px;">Nothing on the go</div>
+            <p class="text-muted" style="font-size: 13px; margin: 6px 0 14px;">Open a book and mark it as Currently Reading.</p>
+            <button class="btn btn-secondary" onClick="{{ nav.search }}">Browse books</button>
+          </div>
+        </sc-if>
+      </div>
+      <div>
+        <h4 style="margin: 0 0 10px;">Your shelves</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="card rowlink" style="gap: 2px; background: #c6f24e; color: #14110f; box-shadow: 4px 4px 0 var(--color-text);" onClick="{{ nav.tracker }}"><div style="font-family: var(--font-display); font-size: 32px; line-height: 1;">{{ counts.read }}</div><div class="mono" style="font-weight: 700;">READ</div></div>
+          <div class="card rowlink" style="gap: 2px; background: #ff3d9a; color: #14110f; box-shadow: 4px 4px 0 var(--color-text);" onClick="{{ nav.tracker }}"><div style="font-family: var(--font-display); font-size: 32px; line-height: 1;">{{ counts.reading }}</div><div class="mono" style="font-weight: 700;">CURRENTLY READING</div></div>
+          <div class="card rowlink" style="gap: 2px; background: #1B3BFF; color: #EFECE3; box-shadow: 4px 4px 0 var(--color-text);" onClick="{{ nav.tracker }}"><div style="font-family: var(--font-display); font-size: 32px; line-height: 1;">{{ counts.want }}</div><div class="mono" style="font-weight: 700;">WANT TO READ</div></div>
+          <div class="card rowlink" style="gap: 2px;" onClick="{{ nav.lists }}"><div style="font-family: var(--font-display); font-size: 32px; line-height: 1;">{{ counts.lists }}</div><div class="mono" style="font-weight: 700; color: var(--color-neutral-700);">MY LISTS</div></div>
+        </div>
+        <button class="btn btn-secondary btn-block" style="min-height: 42px;" onClick="{{ nav.request }}">Request a missing book</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isRecs }}" hint-placeholder-val="{{ true }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 4px;">Recommendations</h1>
+    <div class="mono" style="color: var(--color-accent-700); margin-bottom: 24px;">MATCHED ON: {{ basedOn }} · <a onClick="{{ nav.editSurvey }}" style="cursor: pointer;">EDIT MY ANSWERS</a></div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+      <sc-for list="{{ recs }}" as="b" hint-placeholder-count="8">
+        <div class="card blueprint rowlink" style="gap: 10px;" onClick="{{ b.open }}">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div>
+          <div class="card-title">{{ b.title }}</div>
+          <div class="card-meta">{{ b.author }}</div>
+          <div style="display: flex; align-items: center; gap: 8px;"><span class="stars" style="font-size: 13px;">{{ b.starStr }}</span><span class="mono text-muted">{{ b.ratingStr }}</span></div>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+            <sc-for list="{{ b.tags }}" as="t" hint-placeholder-count="2"><span class="tag tag-accent">{{ t }}</span></sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ noRecs }}" hint-placeholder-val="{{ false }}">
+      <div style="border: 1px dashed var(--color-divider); padding: 30px; text-align: center;">
+        <div style="font-family: var(--font-heading); font-size: 21px;">Nothing matched exactly</div>
+        <p class="text-muted" style="font-size: 13px; margin: 6px 0 14px;">Widen your answers and we'll try again.</p>
+        <button class="btn btn-secondary" onClick="{{ nav.editSurvey }}">Edit my answers</button>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSearch }}" hint-placeholder-val="{{ true }}">
+  <div class="wrap">
+    <div style="display: flex; gap: 10px; margin-bottom: 24px;">
+      <input class="input" style="flex: 1; min-height: 44px;" placeholder="Search by title or author" value="{{ query }}" onInput="{{ setQuery }}">
+      <button class="btn btn-primary" style="padding: 0 24px;">Search</button>
+    </div>
+    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 32px;">
+      <div>
+        <div class="mono" style="color: var(--color-accent-700); margin-bottom: 12px;">FILTERS</div>
+        <div style="font-family: var(--font-heading); font-size: 15px; margin-bottom: 6px;">Genre</div>
+        <div style="display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px;">
+          <sc-for list="{{ genreFilters }}" as="f" hint-placeholder-count="10">
+            <label class="radio"><input type="checkbox" checked="{{ f.on }}" onChange="{{ f.toggle }}"><span class="dot"></span>{{ f.label }}</label>
+          </sc-for>
+        </div>
+        <div style="font-family: var(--font-heading); font-size: 15px; margin-bottom: 6px;">Length</div>
+        <div style="display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px;">
+          <sc-for list="{{ lengthFilters }}" as="f" hint-placeholder-count="4">
+            <label class="radio"><input type="checkbox" checked="{{ f.on }}" onChange="{{ f.toggle }}"><span class="dot"></span>{{ f.label }}</label>
+          </sc-for>
+        </div>
+        <div style="font-family: var(--font-heading); font-size: 15px; margin-bottom: 6px;">Reading level</div>
+        <div style="display: flex; flex-direction: column; gap: 7px;">
+          <sc-for list="{{ levelFilters }}" as="f" hint-placeholder-count="3">
+            <label class="radio"><input type="checkbox" checked="{{ f.on }}" onChange="{{ f.toggle }}"><span class="dot"></span>{{ f.label }}</label>
+          </sc-for>
+        </div>
+        <button class="btn btn-ghost" style="margin-top: 16px;" onClick="{{ clearFilters }}">Clear all filters</button>
+      </div>
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px;">
+          <span class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">{{ resultCount }}</span>
+          <span class="mono" style="color: var(--color-accent-700);">SORT: MOST REVIEWED</span>
+        </div>
+        <div style="border-top: 1px solid var(--color-divider);">
+          <sc-for list="{{ results }}" as="b" hint-placeholder-count="4">
+            <div style="display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent);">
+              <div class="cover rowlink" style="width: 68px; height: 100px; flex: none;" onClick="{{ b.open }}"><span class="mono">COVER</span></div>
+              <div class="rowlink" style="flex: 1;" onClick="{{ b.open }}">
+                <div style="font-family: var(--font-heading); font-size: 19px;">{{ b.title }}</div>
+                <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 6px;">{{ b.metaUp }}</div>
+                <p style="font-size: 13px; margin-bottom: 8px;">{{ b.blurb }}</p>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <span class="stars" style="font-size: 13px;">{{ b.starStr }}</span>
+                  <sc-for list="{{ b.allTags }}" as="t" hint-placeholder-count="3"><span class="tag tag-neutral">{{ t }}</span></sc-for>
+                </div>
+              </div>
+              <div style="align-self: center; flex: none; text-align: right;">
+                <sc-if value="{{ b.hasBadge }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-bottom: 8px;"><span class="tag" style="{{ b.badgeStyle }}">{{ b.badgeLabel }}</span></div>
+                </sc-if>
+                <button class="btn btn-secondary" onClick="{{ b.open }}">Open</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ manyResults }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 18px;">
+            <button class="btn btn-secondary" onClick="{{ prevResults }}">← Previous</button>
+            <span class="mono" style="color: var(--color-neutral-700); flex: 1;">{{ resultPageLabel }} · FIVE BOOKS A PAGE</span>
+            <button class="btn btn-secondary" onClick="{{ nextResults }}">Next →</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+          <div style="border: 1px dashed var(--color-divider); padding: 30px; text-align: center;">
+            <div style="font-family: var(--font-heading); font-size: 21px;">No books matched</div>
+            <p class="text-muted" style="font-size: 13px; margin: 6px 0 14px;">Try fewer filters, or ask us to add the book.</p>
+            <button class="btn btn-secondary" onClick="{{ nav.request }}">Request a missing book</button>
+          </div>
+        </sc-if>
+        <div style="border: 1px dashed var(--color-divider); padding: 16px; margin-top: 20px; display: flex; align-items: center; gap: 14px;">
+          <div style="flex: 1;"><div style="font-family: var(--font-heading); font-size: 17px;">Couldn't find the book you wanted?</div><p class="text-muted" style="font-size: 13px; margin: 2px 0 0;">Tell us and we'll look it up by hand.</p></div>
+          <button class="btn btn-secondary" onClick="{{ nav.request }}">Request it</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isBook }}" hint-placeholder-val="{{ true }}">
+  <div class="wrap">
+    <button class="btn btn-ghost" style="margin-bottom: 16px;" onClick="{{ nav.back }}">← Back</button>
+    <sc-if value="{{ justPosted }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: center; gap: 12px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 12px 16px; margin-bottom: 22px;">
+        <span style="font-family: var(--font-display); font-size: 24px; line-height: 1;">✓</span>
+        <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Review posted</div><div class="mono">IT IS PUBLIC NOW · YOU CAN EDIT IT ANY TIME</div></div>
+      </div>
+    </sc-if>
+    <div style="display: grid; grid-template-columns: 230px 1fr; gap: 36px;">
+      <div>
+        <div class="cover blueprint" style="height: 330px;"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span class="mono">COVER FROM API</span></div>
+        <div class="mono" style="margin: 16px 0 6px; color: var(--color-accent-700);">READING STATUS</div>
+        <div class="seg" style="width: 100%; flex-direction: column;">
+          <label class="seg-opt" data-state="read" style="justify-content: center; min-height: 44px; border-left: 0;"><input type="radio" name="st" checked="{{ st.read }}" onChange="{{ st.setRead }}">Read</label>
+          <label class="seg-opt" data-state="reading" style="justify-content: center; min-height: 44px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="st" checked="{{ st.reading }}" onChange="{{ st.setReading }}">Currently Reading</label>
+          <label class="seg-opt" data-state="want" style="justify-content: center; min-height: 44px; border-left: 0; border-top: 3px solid var(--color-divider);"><input type="radio" name="st" checked="{{ st.want }}" onChange="{{ st.setWant }}">Want to Read</label>
+        </div>
+        <button class="btn btn-secondary btn-block" style="min-height: 42px;" onClick="{{ st.addToList }}">＋ Add to a list</button>
+        <sc-if value="{{ st.reading }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top: 16px;">
+            <div class="mono" style="color: var(--color-accent-700); margin-bottom: 6px;">HOW FAR ARE YOU?</div>
+            <div style="height: 12px; border: 3px solid var(--color-text); margin-bottom: 8px;"><div style="{{ progressBar }}"></div></div>
+            <div class="seg" style="width: 100%; flex-direction: column;">
+              <sc-for list="{{ progressSteps }}" as="p" hint-placeholder-count="3">
+                <label class="seg-opt" data-state="prog" style="justify-content: center; min-height: 42px; border-left: 0;"><input type="radio" name="prog" checked="{{ p.on }}" onChange="{{ p.pick }}">{{ p.label }}</label>
+              </sc-for>
+            </div>
+            <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px;">NO PAGE NUMBERS — WORKS FOR EBOOKS AND AUDIOBOOKS TOO</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ st.listedIn }}" hint-placeholder-val="{{ false }}">
+          <div class="mono" style="color: var(--color-accent-700); margin-top: 8px;">IN LIST: {{ st.listedIn }}</div>
+        </sc-if>
+      </div>
+      <div>
+        <h1 style="font-size: 42px; margin: 0 0 4px;">{{ book.title }}</h1>
+        <div style="font-size: 16px; margin-bottom: 12px;">{{ book.author }}</div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <span class="stars" style="font-size: 19px;">{{ book.starStr }}</span>
+          <span class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">{{ book.ratingLine }}</span>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px;">
+          <sc-for list="{{ book.tags }}" as="t" hint-placeholder-count="2"><span class="tag tag-accent">{{ t }}</span></sc-for>
+          <sc-for list="{{ book.facts }}" as="t" hint-placeholder-count="2"><span class="tag tag-neutral">{{ t }}</span></sc-for>
+        </div>
+        <h4 style="margin: 0 0 6px;">Summary</h4>
+        <p style="font-size: 15px; max-width: 620px; margin-bottom: 28px;">{{ book.summary }}</p>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--color-divider); padding-top: 20px; margin-bottom: 16px;">
+          <h4 style="margin: 0;">Reviews ({{ book.reviewCount }})</h4>
+          <button class="btn btn-primary" onClick="{{ st.writeReview }}">{{ book.reviewCta }}</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <sc-for list="{{ book.reviews }}" as="r" hint-placeholder-count="2">
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;"><div class="card-title" style="font-size: 16px;">{{ r.who }}</div><span class="mono" style="color: color-mix(in srgb, var(--color-text) 50%, transparent);">{{ r.date }}</span></div>
+              <span class="stars" style="font-size: 13px;">{{ r.starStr }}</span>
+              <p class="card-body">{{ r.text }}</p>
+              <sc-if value="{{ r.mine }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn btn-ghost" onClick="{{ r.edit }}">Edit my review</button>
+                  <button class="btn btn-ghost" style="color: var(--color-problem-text);" onClick="{{ deleteMyReview }}">Delete my review</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ r.notMine }}" hint-placeholder-val="{{ true }}">
+                <sc-if value="{{ r.notReported }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-ghost" onClick="{{ r.report }}">Report this review</button>
+                    <button class="btn btn-ghost" onClick="{{ r.reportUser }}">Report this reader</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.reported }}" hint-placeholder-val="{{ false }}">
+                  <span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; background: #c6f24e; color: #14110f; border: 3px solid var(--color-text); padding: 4px 10px;"><span style="font-family: var(--font-display); font-size: 15px; line-height: 1;">✓</span><span class="mono" style="font-weight: 700;">REPORTED — WE'LL TAKE A LOOK</span></span>
+                </sc-if>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isReview }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 480px; margin: 0 auto; padding: 48px 24px;">
+    <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 8px;">REVIEWING</div>
+    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 24px;">
+      <div class="cover" style="width: 44px; height: 64px; flex: none;"></div>
+      <div><div style="font-family: var(--font-heading); font-size: 21px;">{{ book.title }}</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">{{ book.authorUp }}</div></div>
+    </div>
+    <div class="field" style="margin-bottom: 18px;">
+      <label>Your rating</label>
+      <div style="display: flex; gap: 2px; margin-left: -6px;">
+        <sc-for list="{{ starPicker }}" as="s" hint-placeholder-count="5">
+          <button class="starbtn {{ s.cls }}" onClick="{{ s.pick }}">★</button>
+        </sc-for>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom: 18px;">
+      <label>What did you think?</label>
+      <textarea class="input" placeholder="What did you like? Who would enjoy it?" value="{{ draftText }}" onInput="{{ setDraftText }}"></textarea>
+    </div>
+    <sc-if value="{{ reviewBlocked }}" hint-placeholder-val="{{ false }}">
+      <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 14px 16px; margin-bottom: 16px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px; margin-bottom: 4px;">This one can't be posted</div>
+        <p style="font-size: 13px; margin: 0;">Reviews are public and plenty of younger readers use this site. Have another go without the offensive language — your words are still below, nothing was deleted.</p>
+      </div>
+    </sc-if>
+    <sc-if value="{{ reviewError }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); margin-bottom: 14px;">{{ reviewError }}</div>
+    </sc-if>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-primary" onClick="{{ postReview }}">Post review</button>
+      <button class="btn btn-secondary" onClick="{{ nav.back }}">Cancel</button>
+    </div>
+    <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-top: 12px;">POSTED REVIEWS ARE PUBLIC · YOU CAN EDIT YOURS LATER</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isTracker }}" hint-placeholder-val="{{ true }}">
+  <div class="wrap">
+    <h1 style="font-size: 36px; margin: 0 0 22px;">Reading tracker</h1>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+      <sc-for list="{{ shelves }}" as="s" hint-placeholder-count="3">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--color-divider); padding-bottom: 6px; margin-bottom: 14px;">
+            <div style="font-family: var(--font-heading); font-size: 19px;">{{ s.name }}</div><span class="mono" style="color: var(--color-accent-700);">{{ s.count }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{ s.books }}" as="b" hint-placeholder-count="2">
+              <div class="card" style="flex-direction: row; gap: 12px; align-items: center;">
+                <div class="cover rowlink" style="width: 36px; height: 52px; flex: none;" onClick="{{ b.open }}"></div>
+                <div class="rowlink" style="flex: 1;" onClick="{{ b.open }}"><div style="font-family: var(--font-heading); font-size: 16px;">{{ b.title }}</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">{{ b.authorUp }}</div></div>
+                <select class="input" style="width: 42px; padding: 4px; font-size: 11px;" value="{{ b.status }}" onChange="{{ b.move }}">
+                  <option value="read">Read</option>
+                  <option value="reading">Reading</option>
+                  <option value="want">Want</option>
+                  <option value="none">Remove</option>
+                </select>
+              </div>
+            </sc-for>
+            <sc-if value="{{ s.empty }}" hint-placeholder-val="{{ false }}">
+              <div style="border: 1px dashed var(--color-divider); padding: 22px 14px; text-align: center;">
+                <div class="mono text-muted">{{ s.emptyMsg }}</div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isLists }}" hint-placeholder-val="{{ true }}">
+  <div class="wrap">
+    <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px;">
+      <div>
+        <div class="mono" style="color: var(--color-accent-700); margin-bottom: 12px;">MY LISTS ({{ counts.lists }})</div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <sc-for list="{{ myLists }}" as="l" hint-placeholder-count="3">
+            <div class="rowlink" style="padding: 10px 12px; border: 1px solid var(--color-divider);" onClick="{{ l.select }}">
+              <div style="font-size: 14px; font-family: var(--font-heading);">{{ l.name }}</div>
+              <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">{{ l.metaUp }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 14px;">
+          <input class="input" placeholder="New list name" value="{{ newListName }}" onInput="{{ setNewListName }}">
+          <button class="btn btn-secondary" onClick="{{ createList }}">Add</button>
+        </div>
+        <sc-if value="{{ listError }}" hint-placeholder-val="{{ false }}">
+          <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-top: 8px; line-height: 1.6;">{{ listError }}</div>
+        </sc-if>
+      </div>
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <div>
+            <h2 style="margin: 0 0 4px;">{{ curList.name }}</h2>
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">{{ curList.metaUp }}</div>
+          </div>
+          <button class="btn btn-ghost" onClick="{{ deleteList }}">Delete list</button>
+        </div>
+        <sc-if value="{{ listDeleted }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 12px; background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 12px 14px; margin-top: 14px;">
+            <div style="flex: 1;"><span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">List deleted.</span> <span class="mono" style="font-weight: 700;">ITS SHARE LINK NOW SHOWS A NOT-FOUND PAGE.</span></div>
+            <button class="btn btn-secondary" style="border-color: #EFECE3; color: #EFECE3;" onClick="{{ tryDeadLink }}">Try the old link</button>
+            <button class="btn btn-ghost" style="color: #EFECE3;" onClick="{{ dismissDeleted }}">Dismiss</button>
+          </div>
+        </sc-if>
+        <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--color-divider); padding: 12px 14px; margin: 20px 0;">
+          <div style="flex: 1;">
+            <div style="font-family: var(--font-heading); font-size: 16px;">Who can see this list?</div>
+            <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">PUBLIC — SHOWS ON YOUR PROFILE. PRIVATE — LINK ONLY.</div>
+          </div>
+          <div class="seg">
+            <label class="seg-opt" style="min-height: 40px;"><input type="radio" name="vis" checked="{{ curList.isPublic }}" onChange="{{ setPublic }}">Public</label>
+            <label class="seg-opt" style="min-height: 40px;"><input type="radio" name="vis" checked="{{ curList.isPrivate }}" onChange="{{ setPrivate }}">Private</label>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 22px;">
+          <input class="input" value="{{ curList.link }}" readonly>
+          <button class="btn btn-primary" onClick="{{ openShared }}">Open share link</button>
+        </div>
+        <sc-if value="{{ shareLocked }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 12px; border: 3px dashed var(--color-divider); padding: 12px 14px; margin: -10px 0 22px;">
+            <div class="mono" style="flex: 1; color: var(--color-neutral-700);">SHARING IS LOCKED UNTIL YOUR EMAIL IS VERIFIED</div>
+            <button class="btn btn-secondary" onClick="{{ goVerify }}">Enter my code</button>
+          </div>
+        </sc-if>
+        <div style="border-top: 1px solid var(--color-divider);">
+          <sc-for list="{{ curList.books }}" as="b" hint-placeholder-count="3">
+            <div style="display: flex; gap: 14px; padding: 12px 0; align-items: center; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent);">
+              <span class="mono" style="color: color-mix(in srgb, var(--color-text) 45%, transparent);">{{ b.n }}</span>
+              <div class="cover rowlink" style="width: 34px; height: 50px; flex: none;" onClick="{{ b.open }}"></div>
+              <div class="rowlink" style="flex: 1;" onClick="{{ b.open }}"><div style="font-family: var(--font-heading); font-size: 17px;">{{ b.title }}</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">{{ b.alsoUp }}</div></div>
+              <button class="btn btn-ghost" onClick="{{ b.remove }}">Remove</button>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ curList.empty }}" hint-placeholder-val="{{ false }}">
+          <div style="border: 1px dashed var(--color-divider); padding: 30px; text-align: center;">
+            <div style="font-family: var(--font-heading); font-size: 20px;">This list is empty</div>
+            <p class="text-muted" style="font-size: 13px; margin: 6px 0 14px;">Open a book and use “Add to a list”.</p>
+            <button class="btn btn-secondary" onClick="{{ nav.search }}">Browse books</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isShared }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 620px; margin: 0 auto; padding: 40px 24px 60px;">
+    <div class="mono" style="color: var(--color-accent-700); margin-bottom: 8px;">A READING LIST SHARED BY {{ nameUp }}</div>
+    <h1 style="font-size: 36px; margin: 0 0 4px;">{{ curList.name }}</h1>
+    <div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: 24px;">{{ curList.sharedMetaUp }}</div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px;">
+      <sc-for list="{{ curList.books }}" as="b" hint-placeholder-count="4">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div class="cover" style="aspect-ratio: 2/3;"><span class="mono">COVER</span></div>
+          <div style="font-family: var(--font-heading); font-size: 15px;">{{ b.title }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div class="blueprint" style="padding: 20px; background: var(--color-accent-100);">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="font-family: var(--font-heading); font-size: 20px; margin-bottom: 4px;">Want a list like this?</div>
+      <p style="font-size: 13px; margin-bottom: 14px;">Make a free account and start tracking what you read.</p>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" onClick="{{ nav.start }}">Get Started</button>
+        <button class="btn btn-secondary" onClick="{{ nav.back }}">Back to my lists</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isProfile }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 620px; margin: 0 auto; padding: 40px 24px 60px;">
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+      <div class="blueprint" style="width: 60px; height: 60px; flex: none; display: grid; place-items: center; background: {{ avatarColor }};">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <span style="font-family: var(--font-heading); font-size: 28px; color: {{ avatarInk }};">{{ initials }}</span>
+      </div>
+      <h1 style="font-size: 36px; margin: 0;">{{ nameLine }}</h1>
+    </div>
+    <div class="card" style="margin-bottom: 18px;">
+      <div class="card-kicker">Reading preferences</div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 10px;">
+        <sc-for list="{{ prefTags }}" as="t" hint-placeholder-count="4"><span class="tag tag-accent">{{ t }}</span></sc-for>
+      </div>
+      <button class="btn btn-secondary" style="align-self: flex-start;" onClick="{{ nav.editSurvey }}">Edit my answers</button>
+    </div>
+    <div class="card" style="margin-bottom: 18px;">
+      <div class="card-kicker">Public lists</div>
+      <div class="mono" style="color: color-mix(in srgb, var(--color-text) 60%, transparent);">SHOWN TO ANYONE WHO VISITS THIS PROFILE</div>
+      <div style="display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
+        <sc-for list="{{ publicLists }}" as="l" hint-placeholder-count="1">
+          <div class="rowlink" style="flex: 1; min-width: 160px; border: 1px solid var(--color-divider); padding: 12px;" onClick="{{ l.select }}"><div style="font-family: var(--font-heading); font-size: 16px;">{{ l.name }}</div><div class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">{{ l.countUp }}</div></div>
+        </sc-for>
+        <div style="flex: 1; min-width: 160px; border: 1px dashed var(--color-divider); padding: 12px; display: grid; place-items: center;"><span class="mono" style="color: color-mix(in srgb, var(--color-text) 55%, transparent);">{{ privateCountUp }}</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom: 18px;">
+      <div class="card-kicker">Book requests</div>
+      <div class="mono" style="color: var(--color-neutral-700);">{{ requestCount }} ASKED FOR · {{ pendingCount }} STILL PENDING</div>
+      <button class="btn btn-secondary" style="align-self: flex-start;" onClick="{{ nav.requests }}">See my requests</button>
+    </div>
+    <div class="card">
+      <div class="card-kicker">Account</div>
+      <div style="font-size: 15px;">{{ accountEmail }}</div>
+      <div style="display: flex; gap: 8px; margin-top: 6px;">
+        <button class="btn btn-secondary" onClick="{{ nav.editProfile }}">Name &amp; colour</button>
+        <button class="btn btn-secondary" onClick="{{ nav.reset }}">Change password</button>
+        <button class="btn btn-ghost" onClick="{{ logout }}">Log out</button>
+      </div>
+    </div>
+    <div style="border: 3px solid #C41031; padding: 16px; margin-top: 22px;">
+      <div class="mono" style="color: var(--color-problem-text); font-weight: 700; margin-bottom: 6px;">DELETE MY ACCOUNT</div>
+      <p style="font-size: 13px; margin-bottom: 12px;">Everything goes — shelves, lists, reviews and requests. Only the site owner can recover it, and only for 14 days.</p>
+      <button class="btn" style="background: #C41031; color: #EFECE3;" onClick="{{ deleteMyAccount }}">Delete my account</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isRequests }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 640px; margin: 0 auto; padding: 40px 24px 60px;">
+    <h1 style="font-size: 36px; margin: 0 0 6px;">Books you've asked for</h1>
+    <p style="font-size: 14px; margin-bottom: 26px;">Anything missing from the catalogue that you've told us about, and where it got to.</p>
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <sc-for list="{{ myRequests }}" as="r" hint-placeholder-count="3">
+        <div class="card" style="gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+            <div>
+              <div class="card-title">{{ r.title }}</div>
+              <div class="card-meta">{{ r.author }}</div>
+            </div>
+            <span class="tag" style="{{ r.chip }}">{{ r.label }}</span>
+          </div>
+          <div class="mono" style="color: var(--color-neutral-700);">{{ r.note }}</div>
+          <sc-if value="{{ r.hasReason }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 13px; margin: 0;">{{ r.reason }}</p>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <button class="btn btn-primary" style="margin-top: 22px;" onClick="{{ nav.request }}">Ask for another book</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isRequest }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 480px; margin: 0 auto; padding: 48px 24px;">
+    <sc-if value="{{ requestSent }}" hint-placeholder-val="{{ false }}">
+      <div class="blueprint" style="padding: 28px;">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <h2 style="margin: 0 0 8px;">Request sent</h2>
+        <p style="font-size: 14px;">Thanks — we'll look it up by hand and add it if we can find it.</p>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" onClick="{{ nav.requests }}">See my requests</button>
+          <button class="btn btn-secondary" onClick="{{ nav.search }}">Back to browsing</button>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ requestOpen }}" hint-placeholder-val="{{ true }}">
+      <h2 style="margin: 0 0 6px;">Ask us to add a book</h2>
+      <p style="font-size: 14px; margin-bottom: 20px;">Tell us what's missing and we'll look it up by hand.</p>
+      <div class="field" style="margin-bottom: 12px;"><label>Book title</label><input class="input" style="min-height: 42px;" value="{{ reqTitle }}" onInput="{{ setReqTitle }}"></div>
+      <div class="field" style="margin-bottom: 12px;"><label>Author (if you know it)</label><input class="input" style="min-height: 42px;" value="{{ reqAuthor }}" onInput="{{ setReqAuthor }}"></div>
+      <div class="field" style="margin-bottom: 20px;"><label>Anything else?</label><textarea class="input" style="min-height: 72px;"></textarea></div>
+      <sc-if value="{{ reqError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-accent-700); margin-bottom: 12px;">{{ reqError }}</div>
+      </sc-if>
+      <button class="btn btn-primary btn-block" style="min-height: 46px;" onClick="{{ sendRequest }}">Send request</button>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 420px; margin: 0 auto; padding: 64px 24px;">
+    <h2 style="margin: 0 0 6px;">Welcome back</h2>
+    <p style="font-size: 14px; margin-bottom: 24px;">Log in to get to your recommendations and shelves.</p>
+    <div class="field" style="margin-bottom: 14px;"><label>Email</label><input class="input" style="min-height: 42px;" placeholder="you@school.uk" value="{{ email }}" onInput="{{ setEmail }}"></div>
+    <div class="field" style="margin-bottom: 6px;"><label>Password</label><input class="input" type="password" style="min-height: 42px;" value="{{ pw }}" onInput="{{ setPw }}"></div>
+    <sc-if value="{{ loginError }}" hint-placeholder-val="{{ false }}">
+      <div class="mono" style="color: var(--color-accent-700); margin-bottom: 14px;">{{ loginError }}</div>
+    </sc-if>
+    <button class="btn btn-primary btn-block blueprint" style="min-height: 46px; margin-top: 14px;" onClick="{{ submitLogin }}">Log in<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></button>
+    <div style="display: flex; justify-content: space-between; margin-top: 18px; border-bottom: 1px solid var(--color-divider); padding-bottom: 18px;">
+      <button class="btn btn-ghost" onClick="{{ nav.reset }}">Forgot password</button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 18px;">
+      <span style="font-size: 14px; flex: 1;">No account yet?</span>
+      <button class="btn btn-secondary" onClick="{{ nav.signup }}">Sign up</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isReset }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width: 420px; margin: 0 auto; padding: 64px 24px;">
+    <sc-if value="{{ resetSent }}" hint-placeholder-val="{{ false }}">
+      <div class="blueprint" style="padding: 26px;">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <h2 style="margin: 0 0 8px;">Check your email</h2>
+        <p style="font-size: 14px;">We've sent a link to set a new password. It works once and expires in an hour.</p>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" onClick="{{ openResetLink }}">Open the link</button>
+          <button class="btn btn-secondary" onClick="{{ nav.login }}">Back to log in</button>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ resetOpen }}" hint-placeholder-val="{{ true }}">
+      <div class="mono" style="color: var(--color-accent-700); margin-bottom: 10px;">PASSWORD RESET</div>
+      <h2 style="margin: 0 0 6px;">Forgotten your password?</h2>
+      <p style="font-size: 14px; margin-bottom: 22px;">Enter your email and we'll send a link to set a new one.</p>
+      <div class="field" style="margin-bottom: 6px;"><label>Email</label><input class="input" style="min-height: 42px;" placeholder="you@school.uk" value="{{ email }}" onInput="{{ setEmail }}"></div>
+      <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-accent-700); margin-top: 10px;">{{ resetError }}</div>
+      </sc-if>
+      <button class="btn btn-primary btn-block" style="min-height: 46px; margin-top: 18px;" onClick="{{ sendReset }}">Send reset link</button>
+      <button class="btn btn-ghost" style="margin-top: 14px;" onClick="{{ nav.login }}">Back to log in</button>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ reportersOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint" style="width: min(520px, 100%);">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="card-kicker">Who reported it</div>
+      <div class="dialog-title">{{ reportersTitle }}</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <sc-for list="{{ reportersList }}" as="p" hint-placeholder-count="3">
+          <div style="border: 3px solid var(--color-divider); padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
+              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ p.who }}</div>
+              <span class="mono" style="color: var(--color-neutral-700);">{{ p.when }}</span>
+            </div>
+            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">{{ p.reason }}</div>
+            <p style="font-size: 13px; margin: 6px 0 0;">{{ p.note }}</p>
+          </div>
+        </sc-for>
+      </div>
+      <div class="mono" style="color: var(--color-neutral-700); line-height: 1.6;">SEEING THE INDIVIDUAL REPORTS IS HOW YOU SPOT ONE READER REPEATEDLY REPORTING SOMEONE THEY DISLIKE. THREE REPORTS FROM ONE PERSON IS NOT THREE PEOPLE AGREEING.</div>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <button class="btn btn-secondary" onClick="{{ closeReporters }}">Close</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ renameOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="card-kicker">Force rename</div>
+      <div class="dialog-title">Rename {{ renameTarget }}</div>
+      <p class="dialog-body" style="margin: 0;">Pick the name they will be given. They are told it changed and why, and they can choose their own again — as long as it passes the filter.</p>
+      <div class="field">
+        <label>New display name</label>
+        <input class="input" style="min-height: 42px;" placeholder="e.g. reader_4821" value="{{ renameValue }}" onInput="{{ setRenameValue }}">
+      </div>
+      <sc-if value="{{ renameError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-problem-text); font-weight: 700;">{{ renameError }}</div>
+      </sc-if>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <button class="btn btn-primary" onClick="{{ doRename }}">Rename and notify</button>
+        <button class="btn btn-secondary" onClick="{{ cancelRename }}">Cancel</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ limitHit }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="display: inline-flex; align-items: center; gap: 10px; background: #FFD400; color: #14110f; border: 3px solid var(--color-text); padding: 6px 12px; align-self: flex-start;">
+        <span style="font-family: var(--font-display); font-size: 18px; line-height: 1;">!</span>
+        <span class="mono" style="font-weight: 700;">ALREADY REPORTED THREE TIMES</span>
+      </div>
+      <div class="dialog-title">You've reported this as much as you can</div>
+      <p class="dialog-body" style="margin: 0;">Three reports on the same thing is the limit — sending more does not make it go faster, and it stops one person being able to bury someone else. We have your reasons and a real person is reading them.</p>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <button class="btn btn-primary" onClick="{{ closeLimit }}">Fair enough</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ banBlockOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint" style="border-color: var(--color-problem-text);">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 12px 14px;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Your account is banned</div>
+        <div class="mono" style="font-weight: 700; margin-top: 4px;">BANNED FOR {{ banNotice.forHow }} · STARTED {{ banNotice.on }} AT {{ banNotice.at }}</div>
+      </div>
+      <p class="dialog-body" style="margin: 0;">While the ban lasts you can still read everything — books, reviews, your own shelves. You cannot post reviews, share lists or ask for new books.</p>
+      <p class="dialog-body" style="margin: 0;">If you think this is a mistake, reply to the email we sent you and a real person will read it.</p>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <button class="btn btn-primary" onClick="{{ closeBanBlock }}">I understand</button>
+        <button class="btn btn-secondary" onClick="{{ nav.search }}">Keep browsing</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint" style="width: min(500px, 100%);">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="card-kicker">Check before you act</div>
+      <div class="dialog-title">{{ confirmTitle }}</div>
+      <p class="dialog-body" style="margin: 0;">{{ confirmBody }}</p>
+      <sc-if value="{{ confirmIsBan }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 8px;">HOW LONG? PICK THE SMALLEST THING THAT WILL WORK</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <sc-for list="{{ banOptions }}" as="b" hint-placeholder-count="5">
+              <label class="radio" style="align-items: flex-start; border: 3px solid var(--color-divider); padding: 10px 12px;">
+                <input type="radio" name="ban" checked="{{ b.on }}" onChange="{{ b.pick }}"><span class="dot" style="margin-top: 2px;"></span>
+                <span style="flex: 1;">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ b.label }}</span>
+                    <sc-if value="{{ b.rec }}" hint-placeholder-val="{{ false }}">
+                      <span class="tag" style="background: #c6f24e; color: #14110f;">Start here</span>
+                    </sc-if>
+                  </span>
+                  <span class="mono" style="display: block; color: var(--color-neutral-700); line-height: 1.6; margin-top: 3px;">{{ b.caption }}</span>
+                </span>
+              </label>
+            </sc-for>
+          </div>
+          <div class="mono" style="color: var(--color-neutral-700); margin-top: 10px; line-height: 1.6;">YOU CAN ALWAYS EXTEND A BAN. YOU CANNOT UN-LOSE A READER WHO DECIDED THE SITE WAS UNFAIR.</div>
+        </div>
+      </sc-if>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <sc-if value="{{ confirmIsBan }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ banIsBan }}" hint-placeholder-val="{{ true }}">
+            <button class="btn" style="background: #C41031; color: #EFECE3;" onClick="{{ doConfirm }}">Ban for {{ banDuration }}</button>
+          </sc-if>
+          <sc-if value="{{ banIsWarning }}" hint-placeholder-val="{{ false }}">
+            <button class="btn btn-primary" onClick="{{ doConfirm }}">Send the warning</button>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ confirmIsMine }}" hint-placeholder-val="{{ false }}">
+          <button class="btn" style="background: #C41031; color: #EFECE3;" onClick="{{ doConfirm }}">{{ confirmMineCta }}</button>
+        </sc-if>
+        <sc-if value="{{ confirmIsAccount }}" hint-placeholder-val="{{ false }}">
+          <button class="btn" style="background: #C41031; color: #EFECE3;" onClick="{{ doConfirm }}">Yes, delete the account</button>
+        </sc-if>
+        <sc-if value="{{ confirmIsReview }}" hint-placeholder-val="{{ false }}">
+          <button class="btn" style="background: #C41031; color: #EFECE3;" onClick="{{ doConfirm }}">Yes, delete it</button>
+        </sc-if>
+        <button class="btn btn-secondary" onClick="{{ cancelConfirm }}">Cancel</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ reportOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint" style="width: min(520px, 100%);">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="card-kicker">Report</div>
+      <div class="dialog-title">{{ reportTitle }}</div>
+      <p class="dialog-body" style="margin: 0;">{{ reportSub }}</p>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+        <sc-for list="{{ reportReasons }}" as="r" hint-placeholder-count="5">
+          <label class="radio" style="border: 3px solid var(--color-divider); padding: 10px 12px; min-height: 44px;"><input type="radio" name="rep" checked="{{ r.on }}" onChange="{{ r.pick }}"><span class="dot"></span>{{ r.label }}</label>
+        </sc-for>
+      </div>
+      <div class="field">
+        <label>Anything else? (optional)</label>
+        <textarea class="input" style="min-height: 70px;" placeholder="Tell us in your own words" value="{{ reportOther }}" onInput="{{ setReportOther }}"></textarea>
+      </div>
+      <sc-if value="{{ isSafeguarding }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); padding: 12px 14px;">
+          <div style="font-family: var(--font-heading); font-weight: 700; font-size: 15px; margin-bottom: 4px;">If someone is in danger, tell an adult you trust</div>
+          <p style="font-size: 13px; margin: 0;">We read every report, but we are a book site — we cannot help in an emergency. Speak to a parent, carer or teacher as well.</p>
+        </div>
+      </sc-if>
+      <sc-if value="{{ reportError }}" hint-placeholder-val="{{ false }}">
+        <div class="mono" style="color: var(--color-accent-700); font-weight: 700;">{{ reportError }}</div>
+      </sc-if>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <button class="btn btn-primary" onClick="{{ submitReport }}">Send report</button>
+        <button class="btn btn-secondary" onClick="{{ cancelReport }}">Cancel</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ verifyGateOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="card-kicker">Almost there</div>
+      <div class="dialog-title">{{ verifyGateTitle }}</div>
+      <p class="dialog-body" style="margin: 0;">Anything public — reviews and shared lists — needs a confirmed email address. Your shelves and recommendations work either way.</p>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <button class="btn btn-primary" onClick="{{ goVerify }}">Enter my code</button>
+        <button class="btn btn-secondary" onClick="{{ closeVerifyGate }}">Not now</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ gateOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop">
+    <div class="dialog blueprint" style="background: var(--color-bg);">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="card-kicker">Free account</div>
+      <div class="dialog-title">{{ gateTitle }}</div>
+      <p class="dialog-body" style="margin: 0;">It takes about a minute — then we'll also recommend books that match what you like.</p>
+      <div class="dialog-actions" style="justify-content: flex-start;">
+        <button class="btn btn-primary" onClick="{{ nav.signup }}">Get Started</button>
+        <button class="btn btn-secondary" onClick="{{ nav.login }}">I already have an account</button>
+      </div>
+      <button class="btn btn-ghost" style="align-self: flex-start;" onClick="{{ closeGate }}">Keep browsing without an account</button>
+    </div>
+  </div>
+</sc-if>
+
+<div style="margin-top: auto; border-top: 1px solid var(--color-divider); padding: 12px 28px; display: flex; align-items: center; gap: 14px;">
+  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 50%, transparent); flex: 1;">CLICKABLE PROTOTYPE · {{ modeUp }} · SCREEN: {{ screenUp }}</span>
+  <button class="btn btn-ghost" onClick="{{ resetAll }}">Reset prototype</button>
+</div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  levelsList = ['Middle Grade', 'Young Adult', 'Adult'];
+  subjectMap = {
+    'juvenile fiction': 'Middle Grade', 'young adult fiction': 'Young Adult',
+    'fantasy & magic': 'Fantasy', 'fantasy': 'Fantasy', 'dragons': 'Fantasy',
+    'action & adventure': 'Adventure', 'mystery & detective': 'Mystery/Thriller',
+    'horror tales': 'Horror', 'humorous stories': 'Comedy/Humour',
+    'historical fiction': 'Historical Fiction', 'social themes': 'Realistic/Contemporary Fiction',
+    'science fiction': 'Sci-Fi'
+  };
+  apiLibrary = [
+    { id: 'skandar', title: 'Skandar and the Unicorn Thief', author: 'A.F. Steadman', pages: 448, series: true,
+      subjects: ['Juvenile fiction', 'Fantasy & magic', 'Action & adventure'],
+      summary: 'Skandar wants nothing more than to become a unicorn rider, but the islands guard their secrets closely.' },
+    { id: 'impossible', title: 'Impossible Creatures', author: 'Katherine Rundell', pages: 368, series: true,
+      subjects: ['Juvenile fiction', 'Fantasy & magic'],
+      summary: 'A boy and a flying girl cross an archipelago where the last mythical creatures are dying.' },
+    { id: 'wolfwilder', title: 'The Wolf Wilder', author: 'Katherine Rundell', pages: 248, series: false,
+      subjects: ['Juvenile fiction', 'Historical fiction', 'Action & adventure'],
+      summary: 'Feo teaches tame wolves to be wild again in the snow outside St Petersburg.' },
+    { id: 'dragonrider', title: 'Dragon Rider', author: 'Cornelia Funke', pages: 523, series: true,
+      subjects: ['Juvenile fiction', 'Dragons', 'Fantasy'],
+      summary: 'A silver dragon, a brownie and an orphan boy set out to find the Rim of Heaven.' },
+    { id: 'nevermoor2', title: 'Nevermoor', author: 'Jessica Townsend', pages: 464, series: true,
+      subjects: ['Juvenile fiction', 'Fantasy & magic', 'Mystery & detective'],
+      summary: 'A cursed girl is smuggled into a hidden city and has to win a place at its strangest institution.' }
+  ];
+  bandOf = (p) => { const n = parseInt(p, 10) || 0; return n < 200 ? 'Under 200 pages' : n <= 400 ? '200\u2013400 pages' : n <= 600 ? '400\u2013600 pages' : '600+ pages'; };
+  mapSubjects = (subjects) => {
+    const out = []; let level = 'Middle Grade';
+    subjects.forEach(x => {
+      const hit = this.subjectMap[x.toLowerCase()];
+      if (hit && this.levelsList.includes(hit)) level = hit;
+      else if (hit && out.indexOf(hit) === -1) out.push(hit);
+    });
+    return { genres: out, level };
+  };
+  startImport = (src, fulfilIndex) => {
+    const m = this.mapSubjects(src.subjects);
+    this.setState({
+      importing: src.id, draftError: '', justAdded: null, screen: 'adminCatalogue',
+      draft: {
+        title: src.title, author: src.author, pages: String(src.pages), series: src.series,
+        summary: src.summary, genres: m.genres, level: m.level, cover: null,
+        subjects: src.subjects, fulfilIndex: typeof fulfilIndex === 'number' ? fulfilIndex : -1, fulfil: true
+      }
+    });
+  };
+
+  books = [
+    { id: 'hobbit', title: 'The Hobbit', author: 'J.R.R. Tolkien', genres: ['Fantasy', 'Adventure'], level: 'Middle Grade', pages: 310, series: true,
+      summary: 'A very comfortable hobbit is talked into leaving home by a wizard and thirteen dwarves, and spends the next year regretting it and enjoying it in roughly equal measure.',
+      reviews: [{ who: 'Amara K.', stars: 5, date: '12 MAR', text: 'I picked this up because of the map on the cover and finished it in a weekend. The riddles in the dark chapter is the best bit.' }, { who: 'Joel T.', stars: 4, date: '04 MAR', text: 'Slow to start but the dragon is worth it.' }] },
+    { id: 'nevermoor', title: 'Nevermoor', author: 'Jessica Townsend', genres: ['Fantasy', 'Mystery/Thriller'], level: 'Middle Grade', pages: 464, series: true,
+      summary: 'A cursed girl is smuggled into a hidden city and has to win a place at its strangest institution before her luck runs out.',
+      reviews: [{ who: 'Priya S.', stars: 5, date: '28 FEB', text: 'If you liked the idea of a magic school but wanted something newer, start here.' }] },
+    { id: 'skellig', title: 'Skellig', author: 'David Almond', genres: ['Realistic/Contemporary Fiction'], level: 'Middle Grade', pages: 182, series: false,
+      summary: 'A boy finds something impossible in the garage of his family\u2019s new house, in the same week his baby sister goes into hospital.',
+      reviews: [{ who: 'Mr Hale', stars: 4, date: '19 FEB', text: 'Short, strange and quietly sad. Good for readers who say they hate reading.' }] },
+    { id: 'holes', title: 'Holes', author: 'Louis Sachar', genres: ['Mystery/Thriller', 'Comedy/Humour'], level: 'Middle Grade', pages: 233, series: false,
+      summary: 'Sent to a desert camp for a crime he did not commit, Stanley digs one hole a day and slowly works out what is buried under all of them.',
+      reviews: [{ who: 'Dan R.', stars: 5, date: '02 MAR', text: 'Three stories that turn out to be one story. I re-read it immediately.' }] },
+    { id: 'amari', title: 'Amari and the Night Brothers', author: 'B.B. Alston', genres: ['Fantasy', 'Adventure'], level: 'Middle Grade', pages: 407, series: true,
+      summary: 'Amari\u2019s brother has vanished, and the nomination he left behind drags her into a supernatural bureau that would rather she went home.',
+      reviews: [{ who: 'Kofi A.', stars: 5, date: '08 MAR', text: 'Funny and fast. The magician thing is a great twist.' }] },
+    { id: 'eragon', title: 'Eragon', author: 'Christopher Paolini', genres: ['Fantasy', 'Adventure'], level: 'Young Adult', pages: 528, series: true,
+      summary: 'A farm boy finds a blue stone in the mountains. It hatches, and the empire notices.',
+      reviews: [{ who: 'Lena M.', stars: 4, date: '11 MAR', text: 'Very long and very worth it if you like dragons, which I do.' }] },
+    { id: 'coraline', title: 'Coraline', author: 'Neil Gaiman', genres: ['Horror', 'Fantasy'], level: 'Middle Grade', pages: 176, series: false,
+      summary: 'Behind a bricked-up door in a boring new flat is a copy of Coraline\u2019s family that is much more interested in her, and that is the problem.',
+      reviews: [{ who: 'Tomas B.', stars: 5, date: '21 FEB', text: 'Genuinely frightening in about four places. Buttons.' }] },
+    { id: 'inkgirl', title: 'The Girl of Ink and Stars', author: 'Kiran Millwood Hargrave', genres: ['Adventure', 'Historical Fiction'], level: 'Middle Grade', pages: 227, series: false,
+      summary: 'A mapmaker\u2019s daughter draws her way across a forbidden island to find a missing friend.',
+      reviews: [{ who: 'Sofia D.', stars: 4, date: '14 FEB', text: 'The maps at the start of each chapter make it.' }] },
+    { id: 'rooftoppers', title: 'Rooftoppers', author: 'Katherine Rundell', genres: ['Adventure', 'Historical Fiction'], level: 'Middle Grade', pages: 278, series: false,
+      summary: 'Found in a cello case after a shipwreck, Sophie refuses to accept that her mother drowned, and goes looking for her across the roofs of Paris.',
+      reviews: [{ who: 'Ines P.', stars: 5, date: '01 MAR', text: 'Best last chapter of anything I read this year.' }] },
+    { id: 'wonder', title: 'Wonder', author: 'R.J. Palacio', genres: ['Realistic/Contemporary Fiction'], level: 'Middle Grade', pages: 315, series: false,
+      summary: 'Auggie starts mainstream school at ten, and the story is told by him and by nearly everyone around him in turn.',
+      reviews: [{ who: 'Grace W.', stars: 5, date: '07 MAR', text: 'Made me cry on the bus. Sorry.' }] },
+    { id: 'sixofcrows', title: 'Six of Crows', author: 'Leigh Bardugo', genres: ['Fantasy', 'Mystery/Thriller'], level: 'Young Adult', pages: 465, series: true,
+      summary: 'Six criminals take an impossible job breaking into the world\u2019s most secure prison, and mostly get in each other\u2019s way.',
+      reviews: [{ who: 'Ruben H.', stars: 5, date: '16 FEB', text: 'A heist book where the plan going wrong is the point.' }] },
+    { id: 'longway', title: 'A Long Way Down', author: 'Jason Reynolds', genres: ['Realistic/Contemporary Fiction'], level: 'Young Adult', pages: 306, series: false,
+      summary: 'Sixty seconds in a lift, one floor at a time, told in verse.',
+      reviews: [{ who: 'Ms Okafor', stars: 5, date: '23 FEB', text: 'Reluctant readers finish this one. Every time.' }] }
+  ];
+
+  allGenres = ['Fantasy', 'Adventure', 'Sci-Fi', 'Romance', 'Mystery/Thriller', 'Horror', 'Historical Fiction', 'Realistic/Contemporary Fiction', 'Comedy/Humour', 'Non-fiction'];
+  allLevels = ['Middle Grade', 'Young Adult', 'Adult'];
+  allLengths = ['Under 200 pages', '200–400 pages', '400–600 pages', '600+ pages'];
+
+  palette = [
+    { name: 'Red', css: '#C41031', ink: 'var(--color-bg)' },
+    { name: 'Orange', css: '#FF4D00', ink: 'var(--color-bg)' },
+    { name: 'Yellow', css: '#FFD400', ink: '#14110F' },
+    { name: 'Lime', css: '#C6F24E', ink: '#14110F' },
+    { name: 'Blue', css: '#1B3BFF', ink: 'var(--color-bg)' },
+    { name: 'Purple', css: '#7B2DFF', ink: 'var(--color-bg)' },
+    { name: 'Pink', css: '#FF3D9A', ink: '#14110F' }
+  ];
+
+  initial() {
+    return {
+      screen: 'landing', prev: 'landing', guest: true, dark: false,
+      email: '', pw: '', signupError: '', loginError: '', resetError: '', resetSent: false,
+      displayName: '', avatarColorName: 'Blue', nameError: '',
+      verified: false, verifyCode: '', verifyError: '', resent: false, verifyGate: null,
+      checking: false, checkSeq: 0,
+      survey: { genres: [], level: 'Middle Grade', length: '200–400 pages' }, surveyEditing: false,
+      statuses: {}, progress: {}, extraReviews: {}, bookId: null,
+      query: '', fGenres: [], fLengths: [], fLevels: [], resultPage: 0,
+      lists: [{ name: 'Favourite Fiction Reads', public: true, books: ['hobbit', 'nevermoor'] }, { name: 'Scary but not too scary', public: false, books: ['coraline'] }],
+      listIdx: 0, newListName: '',
+      draftStars: 0, draftText: '', reviewError: '',
+      reqTitle: '', reqAuthor: '', reqError: '', requestSent: false,
+      adminReviews: [
+        { id: 'r1', book: 'Eragon', who: 'dragonlad_09', stars: 2, when: '3 DAYS AGO', flag: 'reported', reports: 3, why: 'RUDE TO OTHER READERS ×3', text: 'this book is rubbish and anyone who likes it is an idiot, go and read something with pictures instead', status: 'pending' },
+        { id: 'r2', book: 'Holes', who: 'zeni_reads', stars: 5, when: 'YESTERDAY', flag: 'blocked', reports: 0, why: 'FILTER MATCHED “SWEAR” — LIKELY A FALSE POSITIVE', text: 'the bit at the end is so good it made me swear out loud, best book we have done in class', status: 'pending' },
+        { id: 'r3', book: 'Nevermoor', who: 'kofi_a', stars: 1, when: '2 DAYS AGO', flag: 'reported', reports: 1, why: 'NOTHING TO DO WITH THE BOOK ×1', text: 'buy cheap trainers at my shop, link in my profile, best prices anywhere', status: 'pending' },
+        { id: 'r4', book: 'Coraline', who: 'tomasb', stars: 5, when: '4 DAYS AGO', flag: 'reported', reports: 1, why: 'BAD LANGUAGE ×1', text: 'Genuinely frightening in about four places. Buttons.', status: 'pending' }
+      ],
+      adminAccounts: [
+        { id: 'a1', name: 'dragonlad_09', colour: '#7B2DFF', ink: '#EFECE3', joined: '12 MAR', reviews: 9, lists: 3, meta: '4 REPORTS ACROSS 3 REVIEWS · EMAIL VERIFIED', flag: 'reported', why: 'RUDE TO OTHER READERS', status: 'pending' },
+        { id: 'a2', name: 'bookhub_official', colour: '#FFD400', ink: '#14110F', joined: 'TODAY', reviews: 0, lists: 0, meta: '0 REVIEWS · EMAIL NOT VERIFIED', flag: 'name', why: 'IMPERSONATES THE SITE — THE FILTER CAUGHT IT AT SIGNUP', status: 'pending' },
+        { id: 'a3', name: 'xx_d4mn_xx', colour: '#C41031', ink: '#EFECE3', joined: 'YESTERDAY', reviews: 1, lists: 0, meta: '1 REVIEW · EMAIL VERIFIED', flag: 'name', why: 'BANNED WORD BEHIND LEETSPEAK', status: 'pending' },
+        { id: 'a4', name: 'zeni_reads', colour: '#1B3BFF', ink: '#EFECE3', joined: '02 FEB', reviews: 14, lists: 2, meta: '14 REVIEWS · 1 REPORT · EMAIL VERIFIED', flag: 'clean', why: 'NO ACTION NEEDED — SHOWN FOR CONTEXT', status: 'clean' },
+        { id: 'a5', name: 'kofi_a', colour: '#c6f24e', ink: '#14110F', joined: '19 JAN', reviews: 6, lists: 1, meta: '6 REVIEWS · 1 REPORT · EMAIL VERIFIED', flag: 'reported', why: 'SPAM OR ADVERTISING', status: 'pending' }
+      ],
+      declining: null, declineReason: 'Too old for the catalogue', declineText: '',
+      adminUser: null, confirm: null, banDuration: '1 week', adminSearch: '',
+      apiQuery: '', searched: false, catFilter: '', importing: null, draft: null, draftError: '', justAdded: null,
+      catalogue: [
+        { id: 'hobbit', title: 'The Hobbit', author: 'J.R.R. Tolkien', pages: 310, level: 'Middle Grade', genres: ['Fantasy', 'Adventure'], cover: 'api' },
+        { id: 'nevermoor', title: 'Nevermoor', author: 'Jessica Townsend', pages: 464, level: 'Middle Grade', genres: ['Fantasy', 'Mystery/Thriller'], cover: 'upload' },
+        { id: 'holes', title: 'Holes', author: 'Louis Sachar', pages: 233, level: 'Middle Grade', genres: ['Mystery/Thriller', 'Comedy/Humour'], cover: 'api' },
+        { id: 'skellig', title: 'Skellig', author: 'David Almond', pages: 182, level: 'Middle Grade', genres: ['Realistic/Contemporary Fiction'], cover: null },
+        { id: 'girlofink', title: 'The Girl of Ink and Stars', author: 'Kiran Millwood Hargrave', pages: 227, level: 'Middle Grade', genres: ['Adventure', 'Historical Fiction'], cover: null }
+      ],
+      usersPage: 0, reviewSearch: '', reviewPage: 0, requestSearch: '',
+      reporters: null, renaming: null, renameValue: '',
+      trash: [
+        { id: 't1', kind: 'Review', name: '“this book is rubbish…” on Eragon', by: 'dragonlad_09', when: 'Deleted 2 days ago', daysLeft: 12 },
+        { id: 't2', kind: 'Account', name: 'spam_trainers_uk', by: '0 reviews', when: 'Deleted 5 days ago', daysLeft: 9 }
+      ],
+      safeguarding: [
+        { id: 's1', who: 'quiet_reader_11', target: 'a review on “A Long Way Down”', when: '4 HOURS AGO', text: 'they said something about not wanting to be here anymore and it scared me', status: 'open' },
+        { id: 's2', who: 'zeni_reads', target: 'the reader kofi_a', when: 'YESTERDAY', text: 'he keeps asking people in reviews how old they are and where they go to school', status: 'open' }
+      ],
+      myReports: {}, banned: null, deadLinks: [], listDeleted: false, newPassword: '', newPassword2: '',
+      requests: [
+        { title: 'Impossible Creatures', author: 'Katherine Rundell', status: 'approved', reason: '' },
+        { title: 'The Boy in the Striped Pyjamas', author: 'John Boyne', status: 'declined', reason: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' },
+        { title: 'Skandar and the Unicorn Thief', author: 'A.F. Steadman', status: 'pending', reason: '' }
+      ],
+      gate: null
+    };
+  }
+  state = this.initial();
+
+  go = (screen) => this.setState(s => ({ screen, prev: s.screen, gate: null, justPosted: false }));
+  guard = (screen, why) => {
+    if (this.state.guest) { this.setState({ gate: why }); return; }
+    this.go(screen);
+  };
+  book = () => this.books.find(b => b.id === this.state.bookId) || this.books[0];
+  statusOf = (id) => this.state.statuses[id] || 'none';
+  setStatus = (id, v) => this.setState(s => ({ statuses: Object.assign({}, s.statuses, { [id]: v }) }));
+  reviewsFor = (b) => (b.reviews || []).concat(this.state.extraReviews[b.id] || []);
+  avg = (b) => { const r = this.reviewsFor(b); return r.length ? r.reduce((t, x) => t + x.stars, 0) / r.length : 0; };
+  starStr = (n) => '★★★★★☆☆☆☆☆'.slice(5 - Math.round(n), 10 - Math.round(n));
+  lengthLabel = (p) => p < 200 ? 'Under 200 pages' : p <= 400 ? '200–400 pages' : p <= 600 ? '400–600 pages' : '600+ pages';
+
+  // Progress is a three-step self-report — no page numbers, so it works for
+  // paperbacks, ebooks and audiobooks alike, and it is three taps to update.
+  steps = [
+    { key: 'started', label: 'Just started', caption: 'JUST STARTED', pct: 15 },
+    { key: 'halfway', label: 'Halfway', caption: 'ABOUT HALFWAY', pct: 50 },
+    { key: 'nearly', label: 'Nearly done', caption: 'NEARLY DONE', pct: 85 }
+  ];
+  takenNames = ['maya', 'bookworm', 'reader', 'admin', 'bookdragon03', 'holes', 'librarian'];
+  reservedNames = ['bookhub', 'moderator', 'support', 'admin', 'official'];
+
+  // Two lists, because substring matching alone creates the Scunthorpe problem:
+  // "sparse" contains "arse", "class" contains a slur fragment, and a filter that
+  // rejects real words teaches children the product is broken.
+  //   alwaysBad  — safe to match anywhere inside a word
+  //   wholeWords — only rejected when they ARE the word
+  alwaysBad = ['fuck', 'fck', 'bitch', 'wanker', 'twat', 'bollocks', 'motherf'];
+  wholeWords = ['shit', 'damn', 'crap', 'arse', 'ass', 'dick', 'cock', 'piss', 'prick', 'slag', 'whore', 'bastard', 'git', 'knob'];
+  // Kept for the display-name screen: names that impersonate the site.
+  bannedWords = ['fuck', 'shit', 'bitch', 'damn', 'crap'];
+
+  // Fold homoglyphs and l33tspeak, drop non-letters, collapse repeats.
+  fold = (v) => (v || '')
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[|!\u00a11l\u0131]/g, 'i')
+    .replace(/[0\u00f8]/g, 'o')
+    .replace(/[3\u20ac]/g, 'e')
+    .replace(/[4@]/g, 'a')
+    .replace(/[5$\u00a7]/g, 's')
+    .replace(/[7]/g, 't')
+    .replace(/8/g, 'b')
+    .replace(/9/g, 'g')
+    .replace(/2/g, 'z')
+    .replace(/vv/g, 'w')
+    .replace(/[^a-z]/g, '')
+    .replace(/(.)\1+/g, '$1');
+
+  normalise = (v) => this.fold(v);
+
+  // One gate for every field a stranger can read.
+  hasBanned = (text) => {
+    const t = String(text || '');
+    const joined = this.fold(t);
+    if (this.alwaysBad.some(w => joined.includes(this.fold(w)))) return true;
+    const tokens = t.split(/[^A-Za-z0-9@$!|+*]+/).map(x => this.fold(x)).filter(Boolean);
+    return tokens.some(tok => this.wholeWords.some(w => tok === this.fold(w)));
+  };
+
+  // Debounced availability check. The sequence number stops a slow earlier
+  // response from overwriting a newer keystroke.
+  checkName = (value) => {
+    const seq = this.state.checkSeq + 1;
+    this.setState({ displayName: value, nameError: '', checkSeq: seq, checking: value.trim().length >= 2 });
+    if (value.trim().length < 2) return;
+    setTimeout(() => { if (this.state.checkSeq === seq) this.setState({ checking: false }); }, 700);
+  };
+
+  nameState = () => {
+    const raw = this.state.displayName, v = raw.trim(), low = v.toLowerCase();
+    if (!v.length) return 'idle';
+    if (!/^[A-Za-z0-9_]+$/.test(v)) return 'invalid';
+    if (v.length < 2) return 'short';
+    if (this.hasBanned(v)) return 'banned';
+    if (this.reservedNames.includes(low)) return 'blocked';
+    if (this.state.checking) return 'checking';
+    if (this.takenNames.includes(low)) return 'taken';
+    return 'available';
+  };
+
+  stepOf = (id) => this.steps.find(x => x.key === (this.state.progress || {})[id]) || this.steps[0];
+  setStep = (id, key) => this.setState(s => ({ progress: Object.assign({}, s.progress, { [id]: key }) }));
+
+  decorate = (b) => ({
+    hasBadge: this.statusOf(b.id) !== 'none',
+    badgeLabel: ({ read: 'Read', reading: 'Reading', want: 'Want to read' })[this.statusOf(b.id)] || '',
+    badgeStyle: ({
+      read: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+      reading: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+      want: { background: '#1B3BFF', color: '#EFECE3', borderColor: '#14110f' }
+    })[this.statusOf(b.id)] || {},
+    pctLabel: this.stepOf(b.id).caption,
+    barStyle: { width: this.stepOf(b.id).pct + '%', background: '#ff3d9a', height: '100%' },
+    id: b.id, title: b.title, author: b.author, authorUp: b.author.toUpperCase(),
+    starStr: this.starStr(this.avg(b)),
+    ratingStr: this.avg(b).toFixed(1) + ' · ' + this.reviewsFor(b).length + ' REVIEWS',
+    metaUp: (b.author + ' · ' + b.pages + ' pages').toUpperCase(),
+    blurb: b.summary,
+    tags: b.genres,
+    allTags: b.genres.concat([b.level, this.lengthLabel(b.pages)]).concat(b.series ? ['Part of a series'] : []),
+    statusUp: { read: 'READ', reading: 'CURRENTLY READING', want: 'WANT TO READ', none: '' }[this.statusOf(b.id)],
+    status: this.statusOf(b.id),
+    open: () => this.setState(s => ({ bookId: b.id, screen: 'book', prev: s.screen, gate: null })),
+    markRead: () => this.setStatus(b.id, 'read'),
+    move: (e) => this.setStatus(b.id, e.target.value)
+  });
+
+  renderVals() {
+    const s = this.state, S = s.screen, b = this.book();
+    const surveyGenres = s.survey.genres;
+    const scored = this.books
+      .map(x => ({ x, hits: x.genres.filter(g => surveyGenres.includes(g)).length + (x.level === s.survey.level ? 1 : 0) + (this.lengthLabel(x.pages) === s.survey.length ? 1 : 0) }))
+      .filter(o => o.hits > 0).sort((a, c) => c.hits - a.hits || this.avg(c.x) - this.avg(a.x));
+    const recBooks = (scored.length ? scored.map(o => o.x) : this.books.slice().sort((a, c) => this.avg(c) - this.avg(a)));
+
+    const q = s.query.trim().toLowerCase();
+    const results = this.books.filter(x =>
+      (!q || x.title.toLowerCase().includes(q) || x.author.toLowerCase().includes(q)) &&
+      (!s.fGenres.length || x.genres.some(g => s.fGenres.includes(g))) &&
+      (!s.fLengths.length || s.fLengths.includes(this.lengthLabel(x.pages))) &&
+      (!s.fLevels.length || s.fLevels.includes(x.level))
+    ).sort((a, c) => this.reviewsFor(c).length - this.reviewsFor(a).length);
+
+    const byStatus = (v) => this.books.filter(x => this.statusOf(x.id) === v).map(this.decorate);
+    const shelfDefs = [['Currently Reading', 'reading', 'MARK A BOOK AS CURRENTLY READING'], ['Want to Read', 'want', 'NOTHING SAVED FOR LATER YET'], ['Read', 'read', 'FINISHED BOOKS LAND HERE']];
+    const list = s.lists[s.listIdx] || { name: '—', public: false, books: [] };
+    const listBooks = list.books.map((id, i) => {
+      const bk = this.books.find(x => x.id === id); const d = this.decorate(bk);
+      d.n = String(i + 1);
+      d.alsoUp = ({ read: 'ALSO IN: READ', reading: 'ALSO IN: CURRENTLY READING', want: 'ALSO IN: WANT TO READ', none: 'NOT ON A SHELF' })[this.statusOf(id)];
+      d.remove = () => this.setState(st => ({ lists: st.lists.map((l, li) => li === st.listIdx ? Object.assign({}, l, { books: l.books.filter(x => x !== id) }) : l) }));
+      return d;
+    });
+    const toggle = (key, v) => this.setState(st => ({ [key]: st[key].includes(v) ? st[key].filter(x => x !== v) : st[key].concat([v]) }));
+    const mkFilter = (key) => (label) => ({ label, on: s[key].includes(label), toggle: () => toggle(key, label) });
+    const prefs = surveyGenres.concat([s.survey.level, s.survey.length]);
+    const name = s.displayName.trim() || 'Maya';
+
+    return {
+      name, nameUp: name.toUpperCase(), nameLine: name + '\u2019s profile',
+      loggedIn: !s.guest,
+      finishedLine: byStatus('read').length + (byStatus('read').length === 1 ? ' book finished' : ' books finished'),
+      hasFinished: byStatus('read').length > 0,
+      justPosted: s.justPosted || false,
+      screen: S, screenUp: S.toUpperCase(), guest: s.guest, modeUp: s.guest ? 'GUEST' : 'LOGGED IN AS ' + name.toUpperCase(),
+      isProfileSetup: S === 'profileSetup',
+      chrome: ['landing', 'home', 'recs', 'search', 'book', 'tracker', 'lists', 'profile', 'requests'].includes(S),
+      isLanding: S === 'landing', isStart: S === 'start', isSignup: S === 'signup', isSurvey: S === 'survey',
+      isHome: S === 'home', isRecs: S === 'recs', isSearch: S === 'search', isBook: S === 'book',
+      isReview: S === 'review', isTracker: S === 'tracker', isLists: S === 'lists', isShared: S === 'shared',
+      isProfile: S === 'profile', isRequest: S === 'request', isLogin: S === 'login', isReset: S === 'reset',
+      cur: { home: S === 'home' ? 'page' : null, search: S === 'search' || S === 'book' ? 'page' : null, recs: S === 'recs' ? 'page' : null, tracker: S === 'tracker' ? 'page' : null, lists: S === 'lists' ? 'page' : null, profile: S === 'profile' ? 'page' : null },
+      nav: {
+        landing: () => this.go('landing'), start: () => this.go('start'), signup: () => this.go('signup'),
+        login: () => this.go('login'), reset: () => this.setState({ screen: 'reset', resetSent: false, resetError: '', gate: null }),
+        home: () => this.state.guest ? this.go('landing') : this.go('home'),
+        search: () => this.go('search'),
+        recs: () => this.guard('recs', 'See books picked for you'),
+        tracker: () => this.guard('tracker', 'Keep track of what you read'),
+        lists: () => this.guard('lists', 'Build your own reading lists'),
+        profile: () => this.guard('profile', 'Save your reading preferences'),
+        request: () => this.guard('request', 'Ask us to add a missing book'),
+        requests: () => this.guard('requests', 'Keep track of the books you ask for'),
+        editSurvey: () => this.setState({ screen: 'survey', surveyEditing: true, gate: null }),
+        editProfile: () => this.go('profileSetup'),
+        verify: () => this.setState({ screen: 'verify', verifyCode: '', verifyError: '', resent: false, gate: null }),
+        back: () => this.go(s.prev === S ? 'search' : s.prev)
+      },
+
+      email: s.email, pw: s.pw, accountEmail: s.email || 'maya@school.uk',
+      setEmail: (e) => this.setState({ email: e.target.value, signupError: '', loginError: '', resetError: '' }),
+      setPw: (e) => this.setState({ pw: e.target.value, signupError: '', loginError: '' }),
+      signupError: s.signupError, loginError: s.loginError, resetError: s.resetError,
+      submitSignup: () => {
+        if (!s.email.includes('@')) return this.setState({ signupError: 'ENTER A VALID EMAIL ADDRESS' });
+        if (s.pw.length < 8) return this.setState({ signupError: 'PASSWORD NEEDS AT LEAST 8 CHARACTERS' });
+        this.setState({ screen: 'profileSetup', surveyEditing: false, signupError: '', gate: null });
+      },
+      isVerify: S === 'verify',
+      verifyCode: s.verifyCode, verifyError: s.verifyError, resent: s.resent, notResent: !s.resent,
+      setVerifyCode: (e) => this.setState({ verifyCode: e.target.value.replace(/\D/g, '').slice(0, 6), verifyError: '' }),
+      submitVerify: () => {
+        if (s.verifyCode.length < 6) return this.setState({ verifyError: 'ENTER THE 6-DIGIT CODE FROM YOUR EMAIL' });
+        this.setState({ verified: true, guest: false, screen: 'home', verifyError: '' });
+      },
+      resend: () => this.setState({ resent: true }),
+      changeEmail: () => this.setState({ screen: 'signup', verifyCode: '', verifyError: '' }),
+      verifyLater: () => this.setState({ guest: false, screen: 'home', verifyError: '' }),
+      // Never on the verify screen itself, nor on the chrome-less onboarding screens.
+      unverified: !s.guest && !s.verified && ['home', 'recs', 'search', 'book', 'tracker', 'lists', 'profile'].includes(S),
+      displayName: s.displayName, nameError: s.nameError,
+      initials: (s.displayName.trim() || '?').slice(0, 1).toUpperCase(),
+      avatarColor: (this.palette.find(p => p.name === s.avatarColorName) || this.palette[4]).css,
+      avatarInk: (this.palette.find(p => p.name === s.avatarColorName) || this.palette[4]).ink,
+      colorName: s.avatarColorName.toUpperCase(),
+      colorOpts: this.palette.map(p => ({
+        label: p.name, swatch: p.css, ink: p.ink, on: p.name === s.avatarColorName,
+        mark: p.name === s.avatarColorName ? '✓' : '',
+        pick: () => this.setState({ avatarColorName: p.name })
+      })),
+      setDisplayName: (e) => this.checkName(e.target.value),
+      nameStatus: (() => {
+        const st = this.nameState();
+        const cfg = {
+          idle: { show: false },
+          short: { show: true, mark: '!', text: 'A bit short — 2 characters or more', bg: '#C41031', ink: '#EFECE3' },
+          invalid: { show: true, mark: '!', text: 'Letters, numbers and underscores only', bg: '#C41031', ink: '#EFECE3' },
+          blocked: { show: true, mark: '!', text: 'That one\u2019s reserved — pick something else', bg: '#C41031', ink: '#EFECE3' },
+          banned: { show: true, mark: '!', text: 'That name isn\u2019t allowed here', bg: '#C41031', ink: '#EFECE3' },
+          checking: { show: true, mark: '\u00b7\u00b7\u00b7', text: 'Checking if that\u2019s free\u2026', bg: 'transparent', ink: 'var(--color-text)' },
+          taken: { show: true, mark: '\u2715', text: 'Taken already — try one of these', bg: '#C41031', ink: '#EFECE3' },
+          available: { show: true, mark: '\u2713', text: 'That one\u2019s free', bg: '#c6f24e', ink: '#14110f' }
+        }[st];
+        return cfg;
+      })(),
+      nameChipStyle: (() => {
+        const st = this.nameState();
+        const base = { display: 'inline-flex', alignItems: 'center', gap: '9px', borderWidth: '3px', borderStyle: 'solid', padding: '6px 12px' };
+        if (st === 'checking') return Object.assign({}, base, { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' });
+        if (st === 'available') return Object.assign({}, base, { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' });
+        return Object.assign({}, base, { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' });
+      })(),
+      nameIsTaken: this.nameState() === 'taken',
+      nameOk: this.nameState() === 'available',
+      suggestions: (() => {
+        const base = s.displayName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || 'reader';
+        return [base + '_' + (new Date().getFullYear() % 100), base + '42', base + '_reads']
+          .filter(x => !this.takenNames.includes(x))
+          .slice(0, 3)
+          .map(x => ({ label: x, pick: () => this.checkName(x) }));
+      })(),
+      submitProfile: () => {
+        const st = this.nameState();
+        if (st === 'idle') return this.setState({ nameError: 'PICK A DISPLAY NAME FIRST' });
+        if (st === 'checking') return this.setState({ nameError: 'HANG ON \u2014 STILL CHECKING THAT NAME' });
+        if (st !== 'available') return this.setState({ nameError: 'THAT NAME WON\u2019T WORK \u2014 SEE ABOVE' });
+        this.setState({ screen: 'survey', nameError: '', gate: null });
+      },
+      submitLogin: () => {
+        if (!s.email.includes('@') || s.pw.length < 1) return this.setState({ loginError: 'EMAIL OR PASSWORD DIDN\u2019T MATCH' });
+        this.setState({ guest: false, screen: 'home', loginError: '', gate: null });
+      },
+      resetSent: s.resetSent, resetOpen: !s.resetSent,
+      sendReset: () => s.email.includes('@') ? this.setState({ resetSent: true }) : this.setState({ resetError: 'ENTER THE EMAIL YOU SIGNED UP WITH' }),
+      openResetLink: () => this.setState({ screen: 'newPassword', newPassword: '', newPassword2: '', pwError: '' }),
+      logout: () => this.setState(Object.assign(this.initial(), { screen: 'landing' })),
+      resetAll: () => this.setState(this.initial()),
+
+      surveyKicker: s.surveyEditing ? 'EDIT YOUR ANSWERS' : 'STEP 3 OF 4',
+      surveyCta: s.surveyEditing ? 'Save and refresh recommendations' : 'Find My Perfect Book!',
+      genreOpts: this.allGenres.concat(['Other']).map(g => ({ label: g, on: surveyGenres.includes(g), toggle: () => this.setState(st => ({ survey: Object.assign({}, st.survey, { genres: st.survey.genres.includes(g) ? st.survey.genres.filter(x => x !== g) : st.survey.genres.concat([g]) }) })) })),
+      levelWarnShow: s.survey.level === 'Young Adult' || s.survey.level === 'Adult',
+      levelWarnHead: s.survey.level === 'Adult' ? 'ADULT — WHAT THIS CAN INCLUDE' : 'YOUNG ADULT — WHAT THIS CAN INCLUDE',
+      levelWarnText: s.survey.level === 'Adult' ? 'ADULT BOOKS CAN CONTAIN EXPLICIT SEXUAL CONTENT, GRAPHIC VIOLENCE, DRUG USE AND DISTRESSING THEMES WITH NO AGE FILTERING AT ALL. CHOOSING THIS IS YOUR DECISION AND YOURS ALONE — THE SITE IS NOT RESPONSIBLE FOR WHAT YOU CHOOSE TO READ. IF YOU ARE UNSURE, TALK TO A PARENT, CARER OR TEACHER.' : 'YOUNG ADULT BOOKS OFTEN CARRY STRONGER LANGUAGE, VIOLENCE, ROMANCE AND SEXUAL REFERENCES, AND THEMES LIKE SELF-HARM, GRIEF, BULLYING AND DRUG USE. CHOOSING THIS IS YOUR DECISION AND YOURS ALONE — THE SITE IS NOT RESPONSIBLE FOR WHAT YOU CHOOSE TO READ. IF YOU ARE UNSURE, TALK TO A PARENT, CARER OR TEACHER.',
+      levelOpts: this.allLevels.map(l => ({ label: l, on: s.survey.level === l, pick: () => this.setState(st => ({ survey: Object.assign({}, st.survey, { level: l }) })) })),
+      lengthOpts: ['Short — under 200 pages', 'Medium — 200 to 400 pages', 'Long — 400 to 600 pages', 'Very long — 600 pages and up', 'I don\u2019t mind'].map((label, i) => {
+        const v = ['Under 200 pages', '200–400 pages', '400–600 pages', '600+ pages', 'Any'][i];
+        return { label, on: s.survey.length === v, pick: () => this.setState(st => ({ survey: Object.assign({}, st.survey, { length: v }) })) };
+      }),
+      submitSurvey: () => this.setState(st => ({
+        guest: false, surveyEditing: false, gate: null,
+        // Verification is the last step, so an existing user editing answers just goes home.
+        screen: st.surveyEditing || st.verified ? 'home' : 'verify',
+        verifyCode: '', verifyError: '', resent: false
+      })),
+
+      basedOn: (surveyGenres.length ? surveyGenres.join(' · ') + ' · ' : '') + s.survey.level + ' · ' + s.survey.length,
+      prefTags: prefs,
+      homeRecs: recBooks.slice(0, 5).map(this.decorate),
+      recs: recBooks.map(this.decorate), noRecs: recBooks.length === 0,
+      reading: byStatus('reading'), hasReading: byStatus('reading').length > 0, noReading: byStatus('reading').length === 0,
+      counts: { read: byStatus('read').length, reading: byStatus('reading').length, want: byStatus('want').length, lists: s.lists.length },
+
+      query: s.query, setQuery: (e) => this.setState({ query: e.target.value }),
+      genreFilters: this.allGenres.map(mkFilter('fGenres')),
+      lengthFilters: this.allLengths.map(mkFilter('fLengths')),
+      levelFilters: this.allLevels.map(mkFilter('fLevels')),
+      clearFilters: () => this.setState({ fGenres: [], fLengths: [], fLevels: [], query: '', resultPage: 0 }),
+      results: results.slice(s.resultPage * 5, s.resultPage * 5 + 5).map(this.decorate), noResults: results.length === 0,
+      resultPageLabel: 'PAGE ' + (s.resultPage + 1) + ' OF ' + Math.max(1, Math.ceil(results.length / 5)),
+      manyResults: results.length > 5,
+      onFirstPage: s.resultPage === 0,
+      onLastPage: (s.resultPage + 1) * 5 >= results.length,
+      prevResults: () => this.setState(st => ({ resultPage: Math.max(0, st.resultPage - 1) })),
+      nextResults: () => this.setState(st => ({ resultPage: (st.resultPage + 1) * 5 < results.length ? st.resultPage + 1 : st.resultPage })),
+      resultCount: results.length + (s.query ? ' RESULTS FOR “' + s.query.toUpperCase() + '”' : ' BOOKS'),
+
+      book: {
+        title: b.title, author: b.author, authorUp: b.author.toUpperCase(), summary: b.summary,
+        starStr: this.starStr(this.avg(b)),
+        ratingLine: this.avg(b).toFixed(1) + ' AVERAGE · ' + this.reviewsFor(b).length + ' REVIEWS',
+        tags: b.genres, facts: [b.level, this.lengthLabel(b.pages)].concat(b.series ? ['Part of a series'] : []),
+        reviewCount: this.reviewsFor(b).length,
+        reviewCta: (s.extraReviews[b.id] || []).length ? 'Edit my review' : 'Write a review',
+        reviews: this.reviewsFor(b).map((r, i) => {
+          const key = b.id + ':' + i;
+          return {
+            who: r.who, date: r.date, text: r.text, starStr: this.starStr(r.stars),
+            mine: r.who === name,
+            // Guests cannot report — an anonymous, accountless report button is a spam vector.
+            notMine: r.who !== name && !s.guest,
+            reported: !!(s.reported || {})[key], notReported: !(s.reported || {})[key],
+            report: () => this.setState({ reportOpen: { key, who: r.who, kind: 'review' }, reportReason: '', reportOther: '' }),
+            reportUser: () => this.setState({ reportOpen: { key, who: r.who, kind: 'reader' }, reportReason: '', reportOther: '' }),
+            edit: () => this.setState({ screen: 'review', prev: 'book', draftStars: r.stars, draftText: r.text })
+          };
+        })
+      },
+      progressSteps: this.steps.map(x => ({
+        label: x.label, on: this.stepOf(b.id).key === x.key, pick: () => this.setStep(b.id, x.key)
+      })),
+      progressBar: { width: this.stepOf(b.id).pct + '%', background: '#ff3d9a', height: '100%' },
+      deleteMyReview: () => this.setState({ confirm: { kind: 'myReview', id: b.id, name: b.title } }),
+      deleteMyAccount: () => this.setState({ confirm: { kind: 'myAccount', name: name } }),
+      st: {
+        read: this.statusOf(b.id) === 'read', reading: this.statusOf(b.id) === 'reading', want: this.statusOf(b.id) === 'want',
+        setRead: () => s.guest ? this.setState({ gate: 'Sign up to save what you read' }) : (s.banned ? this.setState({ banBlock: true }) : this.setStatus(b.id, 'read')),
+        setReading: () => s.guest ? this.setState({ gate: 'Sign up to save what you read' }) : (s.banned ? this.setState({ banBlock: true }) : this.setStatus(b.id, 'reading')),
+        setWant: () => s.guest ? this.setState({ gate: 'Sign up to save what you read' }) : (s.banned ? this.setState({ banBlock: true }) : this.setStatus(b.id, 'want')),
+        writeReview: () => s.guest
+          ? this.setState({ gate: 'Sign up to write a review' })
+          : (s.banned ? this.setState({ banBlock: true })
+          : !s.verified
+            ? this.setState({ verifyGate: 'Verify your email to post a review' })
+            : this.setState({ screen: 'review', prev: 'book', draftStars: 0, draftText: '', reviewError: '' })),
+        deleteMine: () => this.setState({ confirm: { kind: 'myReview', id: b.id, name: b.title } }),
+        addToList: () => s.guest ? this.setState({ gate: 'Sign up to build reading lists' }) : s.banned ? this.setState({ banBlock: true }) : this.setState(st => ({ lists: st.lists.map((l, li) => li === st.listIdx && !l.books.includes(b.id) ? Object.assign({}, l, { books: l.books.concat([b.id]) }) : l) })),
+        listedIn: s.lists.filter(l => l.books.includes(b.id)).map(l => l.name).join(', ')
+      },
+      starPicker: [1, 2, 3, 4, 5].map(n => ({ cls: n <= s.draftStars ? 'on' : '', pick: () => this.setState({ draftStars: n, reviewError: '' }) })),
+      draftText: s.draftText, setDraftText: (e) => this.setState({ draftText: e.target.value, reviewError: '', reviewBlocked: false }),
+      reviewError: s.reviewError,
+      reviewBlocked: s.reviewBlocked || false,
+      postReview: () => {
+        if (!s.draftStars) return this.setState({ reviewError: 'PICK A STAR RATING FIRST' });
+        if (s.draftText.trim().length < 4) return this.setState({ reviewError: 'WRITE A LINE OR TWO SO IT HELPS SOMEONE' });
+        // Same filter as display names. Their text is never wiped — they have to be
+        // able to see and fix what they wrote.
+        if (this.hasBanned(s.draftText)) return this.setState({ reviewBlocked: true, reviewError: '' });
+        this.setState(st => ({ extraReviews: Object.assign({}, st.extraReviews, { [b.id]: [{ who: name, stars: st.draftStars, date: 'TODAY', text: st.draftText }] }), screen: 'book', draftStars: 0, draftText: '', justPosted: true }));
+      },
+
+      shelves: shelfDefs.map(([name, key, emptyMsg]) => { const bs = byStatus(key); return { name, count: bs.length, books: bs, empty: bs.length === 0, emptyMsg }; }),
+      myLists: s.lists.map((l, i) => ({ name: l.name, metaUp: (l.public ? 'PUBLIC' : 'PRIVATE') + ' · ' + l.books.length + ' BOOKS', select: () => this.setState({ listIdx: i, screen: 'lists' }) })),
+      publicLists: s.lists.filter(l => l.public).map(l => ({ name: l.name, countUp: l.books.length + ' BOOKS', select: () => this.setState({ listIdx: s.lists.indexOf(l), screen: 'lists' }) })),
+      privateCountUp: s.lists.filter(l => !l.public).length + ' PRIVATE LISTS HIDDEN',
+      curList: {
+        name: list.name, books: listBooks, empty: listBooks.length === 0,
+        metaUp: listBooks.length + ' BOOKS · ' + (list.public ? 'PUBLIC' : 'PRIVATE'),
+        sharedMetaUp: listBooks.length + ' BOOKS · VIEW ONLY',
+        isPublic: list.public, isPrivate: !list.public,
+        link: 'bookhub.example/l/' + (s.listIdx + 9) + 'fk2p'
+      },
+      setPublic: () => this.setState(st => ({ lists: st.lists.map((l, i) => i === st.listIdx ? Object.assign({}, l, { public: true }) : l) })),
+      setPrivate: () => this.setState(st => ({ lists: st.lists.map((l, i) => i === st.listIdx ? Object.assign({}, l, { public: false }) : l) })),
+      newListName: s.newListName, setNewListName: (e) => this.setState({ newListName: e.target.value, listError: '' }),
+      listError: s.listError || '',
+      createList: () => {
+        const n = s.newListName.trim();
+        if (!n) return;
+        if (this.hasBanned(n)) return this.setState({ listError: 'THAT LIST NAME ISN\u2019T ALLOWED \u2014 LISTS CAN BE SHARED WITH ANYONE' });
+        this.setState(st => ({ lists: st.lists.concat([{ name: n, public: false, books: [] }]), listIdx: st.lists.length, newListName: '', listError: '' }));
+      },
+
+      openShared: () => s.banned ? this.setState({ banBlock: true }) : s.verified ? this.go('shared') : this.setState({ verifyGate: 'Verify your email to share a list' }),
+      deleteList: () => this.setState(st => ({ confirm: { kind: 'myList', id: st.listIdx, name: (st.lists[st.listIdx] || {}).name, link: 'bookhub.example/l/' + (st.listIdx + 9) + 'fk2p' } })),
+      listDeleted: s.listDeleted,
+      tryDeadLink: () => this.setState({ screen: 'notFound', notFoundKind: 'list', listDeleted: false }),
+      dismissDeleted: () => this.setState({ listDeleted: false }),
+      shareLocked: !s.verified,
+      shareUnlocked: s.verified,
+      verifyGateOpen: !!s.verifyGate, verifyGateTitle: s.verifyGate || '',
+      closeVerifyGate: () => this.setState({ verifyGate: null }),
+      goVerify: () => this.setState({ screen: 'verify', verifyGate: null, verifyCode: '', verifyError: '', resent: false }),
+
+      reqTitle: s.reqTitle, reqAuthor: s.reqAuthor, reqError: s.reqError, requestSent: s.requestSent, requestOpen: !s.requestSent,
+      setReqTitle: (e) => this.setState({ reqTitle: e.target.value, reqError: '' }),
+      setReqAuthor: (e) => this.setState({ reqAuthor: e.target.value }),
+      sendRequest: () => this.hasBanned(s.reqTitle + ' ' + s.reqAuthor)
+        ? this.setState({ reqError: 'THAT LOOKS LIKE A JOKE ENTRY \u2014 TRY THE REAL TITLE' })
+        : s.reqTitle.trim()
+        ? this.setState(st => ({ requestSent: true, requests: [{ title: st.reqTitle.trim(), author: st.reqAuthor.trim(), status: 'pending', reason: '' }].concat(st.requests), reqTitle: '', reqAuthor: '' }))
+        : this.setState({ reqError: 'WE NEED AT LEAST A TITLE' }),
+      isRequests: S === 'requests',
+      requestCount: s.requests.length,
+      pendingCount: s.requests.filter(r => r.status === 'pending').length,
+      myRequests: s.requests.map(r => ({
+        title: r.title, author: r.author || 'Author not given', reason: r.reason,
+        hasReason: !!r.reason,
+        label: ({ pending: 'Pending', approved: 'Approved', declined: 'Declined' })[r.status],
+        chip: ({
+          pending: { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' },
+          approved: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+          declined: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+        })[r.status],
+        note: ({
+          pending: 'WE LOOK AT THESE BY HAND \u2014 USUALLY WITHIN A FEW DAYS',
+          approved: 'IT IS IN THE CATALOGUE NOW \u2014 SEARCH FOR IT',
+          declined: 'WHY:'
+        })[r.status]
+      })),
+
+      gateOpen: !!s.gate, gateTitle: s.gate || '', closeGate: () => this.setState({ gate: null }),
+
+      isAdminHome: S === 'adminHome', isAdminReviews: S === 'adminReviews',
+      isAdminAccounts: S === 'adminAccounts', isAdminRequests: S === 'adminRequests',
+      adminChrome: ['adminHome', 'adminReviews', 'adminAccounts', 'adminRequests', 'adminUsers', 'adminUser', 'adminSafeguarding', 'adminTrash', 'adminCatalogue'].includes(S),
+      adminCur: {
+        home: S === 'adminHome' ? 'page' : null, reviews: S === 'adminReviews' ? 'page' : null,
+        accounts: S === 'adminAccounts' ? 'page' : null, requests: S === 'adminRequests' ? 'page' : null,
+        users: S === 'adminUsers' || S === 'adminUser' ? 'page' : null,
+        catalogue: S === 'adminCatalogue' ? 'page' : null,
+        safeguarding: S === 'adminSafeguarding' ? 'page' : null,
+        trash: S === 'adminTrash' ? 'page' : null
+      },
+      admin: {
+        home: () => this.go('adminHome'), reviews: () => this.go('adminReviews'),
+        accounts: () => this.go('adminAccounts'), requests: () => this.go('adminRequests'),
+        users: () => this.go('adminUsers'),
+        catalogue: () => this.go('adminCatalogue'),
+        safeguarding: () => this.go('adminSafeguarding'),
+        trash: () => this.go('adminTrash'),
+        exit: () => this.go('home')
+      },
+      pendingReviews: s.adminReviews.filter(r => r.status === 'pending').length,
+      pendingAccounts: s.adminAccounts.filter(a => a.status === 'pending').length,
+      pendingRequests: s.requests.filter(r => r.status === 'pending').length,
+      allClear: s.adminReviews.every(r => r.status !== 'pending') && s.adminAccounts.every(a => a.status !== 'pending') && s.requests.every(r => r.status !== 'pending'),
+      queueReviews: s.adminReviews.map(r => {
+        const done = r.status !== 'pending';
+        return {
+          book: r.book.toUpperCase(), who: r.who, when: r.when, why: r.why, text: r.text,
+          rating: r.stars + '/5',
+          flagLabel: r.status === 'allowed' ? 'Allowed' : r.status === 'deleted' ? 'Deleted' : r.flag === 'blocked' ? 'Auto-blocked' : 'Reported ×' + r.reports,
+          hasReporters: r.reports > 0 && r.status === 'pending',
+          showReporters: () => this.setState({
+            reporters: {
+              title: r.reports + (r.reports === 1 ? ' report on this review' : ' reports on this review'),
+              list: [
+                { who: 'zeni_reads', reason: 'Rude or unkind to other readers', when: '3 DAYS AGO', note: 'calling people idiots for liking a book' },
+                { who: 'ines_p', reason: 'Nothing to do with the book', when: '3 DAYS AGO', note: 'this is just having a go at people, it says nothing about the story' },
+                { who: 'kofi_a', reason: 'Spam or advertising', when: '2 DAYS AGO', note: '' },
+                { who: 'tomasb', reason: 'Bad language or slurs', when: 'YESTERDAY', note: 'not swearing exactly but really nasty' }
+              ].slice(0, Math.max(1, r.reports))
+            }
+          }),
+          flagStyle: r.status === 'allowed' ? { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' }
+            : r.status === 'deleted' ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+            : r.flag === 'blocked' ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+            : { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+          pending: !done, done,
+          allow: () => this.setState(st => ({ adminReviews: st.adminReviews.map(x => x.id === r.id ? Object.assign({}, x, { status: 'allowed' }) : x) })),
+          del: () => this.setState({ confirm: { kind: 'review', id: r.id, name: r.book } }),
+          openUser: () => {
+            const acct = s.adminAccounts.find(x => x.name === r.who);
+            this.setState({ adminUser: acct ? acct.id : null, screen: 'adminUser', prev: 'adminReviews' });
+          },
+          undo: () => this.setState(st => ({ adminReviews: st.adminReviews.map(x => x.id === r.id ? Object.assign({}, x, { status: 'pending' }) : x) }))
+        };
+      }),
+      queueAccounts: s.adminAccounts.map(a => {
+        const done = a.status !== 'pending';
+        return {
+          name: a.name, initial: a.name.slice(0, 1).toUpperCase(), why: a.why,
+          meta: 'JOINED ' + a.joined + ' · ' + a.meta,
+          avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '46px', height: '46px', flex: 'none', border: '3px solid var(--color-text)', background: a.colour, color: a.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '20px' },
+          flagLabel: a.status === 'allowed' ? 'Allowed' : a.status === 'deleted' ? 'Deleted' : a.status === 'renamed' ? 'Rename forced' : a.flag === 'name' ? 'Name refused' : 'Reported',
+          flagStyle: a.status === 'allowed' || a.status === 'renamed' ? { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' }
+            : a.status === 'deleted' ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+            : a.flag === 'name' ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+            : { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+          pending: !done, done, isName: a.flag === 'name' && !done,
+          allow: () => this.setState(st => ({ adminAccounts: st.adminAccounts.map(x => x.id === a.id ? Object.assign({}, x, { status: 'allowed' }) : x) })),
+          rename: () => this.setState({ renaming: { id: a.id, name: a.name }, renameValue: '', renameError: '' }),
+          del: () => this.setState({ confirm: { kind: 'account', id: a.id, name: a.name, counts: a.reviews + ' reviews and ' + a.lists + ' lists' } }),
+          openUser: () => this.setState({ adminUser: a.id, screen: 'adminUser', prev: 'adminAccounts' }),
+          undo: () => this.setState(st => ({ adminAccounts: st.adminAccounts.map(x => x.id === a.id ? Object.assign({}, x, { status: 'pending' }) : x) }))
+        };
+      }),
+      isAdminUsers: S === 'adminUsers', isAdminUser: S === 'adminUser',
+      adminSearch: s.adminSearch,
+      setAdminSearch: (e) => this.setState({ adminSearch: e.target.value }),
+      // — safeguarding, kept out of the ordinary queues on purpose —
+      isAdminSafeguarding: S === 'adminSafeguarding',
+      safeguardingCount: s.safeguarding.filter(x => x.status === 'open').length,
+      safeguardingList: s.safeguarding.map(x => ({
+        who: x.who, target: x.target, when: x.when, text: x.text,
+        open: x.status === 'open', done: x.status !== 'open',
+        stateLabel: x.status === 'open' ? 'Open' : 'Actioned',
+        stateStyle: x.status === 'open'
+          ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+          : { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+        action: () => this.setState(st => ({ safeguarding: st.safeguarding.map(y => y.id === x.id ? Object.assign({}, y, { status: 'done' }) : y) })),
+        undo: () => this.setState(st => ({ safeguarding: st.safeguarding.map(y => y.id === x.id ? Object.assign({}, y, { status: 'open' }) : y) }))
+      })),
+
+      // — trash, 14-day window —
+      isAdminTrash: S === 'adminTrash',
+      trashCount: s.trash.length,
+      trashList: s.trash.map(t => ({
+        kind: t.kind, name: t.name, by: t.by, when: t.when.toUpperCase(),
+        daysLeft: t.daysLeft + (t.daysLeft === 1 ? ' day left' : ' days left'),
+        soon: t.daysLeft <= 3,
+        restore: () => this.setState(st => ({ trash: st.trash.filter(x => x.id !== t.id) })),
+        purge: () => this.setState(st => ({ trash: st.trash.filter(x => x.id !== t.id) }))
+      })),
+      trashEmpty: s.trash.length === 0,
+
+      // — reporters popup —
+      reportersOpen: !!s.reporters,
+      reportersTitle: s.reporters ? s.reporters.title : '',
+      reportersList: s.reporters ? s.reporters.list : [],
+      closeReporters: () => this.setState({ reporters: null }),
+
+      // — force rename —
+      renameOpen: !!s.renaming,
+      renameTarget: s.renaming ? s.renaming.name : '',
+      renameValue: s.renameValue,
+      setRenameValue: (e) => this.setState({ renameValue: e.target.value, renameError: '' }),
+      renameError: s.renameError || '',
+      doRename: () => {
+        const v = (s.renameValue || '').trim();
+        if (v.length < 2) return this.setState({ renameError: 'AT LEAST 2 CHARACTERS' });
+        if (!/^[A-Za-z0-9_]+$/.test(v)) return this.setState({ renameError: 'LETTERS, NUMBERS AND UNDERSCORES ONLY' });
+        if (this.hasBanned(v)) return this.setState({ renameError: 'THAT NAME WOULD FAIL THE FILTER TOO' });
+        this.setState(st => ({
+          adminAccounts: st.adminAccounts.map(x => x.id === st.renaming.id ? Object.assign({}, x, { name: v, status: 'renamed' }) : x),
+          renaming: null, renameValue: '', renameError: ''
+        }));
+      },
+      cancelRename: () => this.setState({ renaming: null, renameValue: '', renameError: '' }),
+
+      usersPage: s.usersPage,
+      usersPageLabel: 'PAGE ' + (s.usersPage + 1) + ' OF ' + Math.max(1, Math.ceil(s.adminAccounts.filter(a => !s.adminSearch || a.name.toLowerCase().includes(s.adminSearch.toLowerCase())).length / 3)),
+      usersPrev: () => this.setState(st => ({ usersPage: Math.max(0, st.usersPage - 1) })),
+      usersNext: () => this.setState(st => {
+        const total = st.adminAccounts.filter(a => !st.adminSearch || a.name.toLowerCase().includes(st.adminSearch.toLowerCase())).length;
+        return { usersPage: Math.min(Math.ceil(total / 3) - 1, st.usersPage + 1) };
+      }),
+      reviewSearch: s.reviewSearch,
+      setReviewSearch: (e) => this.setState({ reviewSearch: e.target.value, reviewPage: 0 }),
+
+      allUsers: s.adminAccounts
+        .filter(a => !s.adminSearch || a.name.toLowerCase().includes(s.adminSearch.toLowerCase()))
+        .slice(s.usersPage * 3, s.usersPage * 3 + 3)
+        .map(a => ({
+          name: a.name, initial: a.name.slice(0, 1).toUpperCase(),
+          meta: 'JOINED ' + a.joined + ' · ' + a.reviews + (a.reviews === 1 ? ' REVIEW · ' : ' REVIEWS · ') + a.lists + (a.lists === 1 ? ' LIST' : ' LISTS'),
+          avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '40px', height: '40px', flex: 'none', border: '3px solid var(--color-text)', background: a.colour, color: a.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '17px' },
+          stateLabel: a.status === 'pending' && a.flag === 'name'
+            ? 'Name refused'
+            : ({ pending: 'Reported', banned: 'Banned', deleted: 'Deleted', allowed: 'Cleared', renamed: 'Renamed', warned: 'Warned', clean: 'OK' })[a.status],
+          stateStyle: a.status === 'pending' && a.flag === 'name'
+            ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+            : ({
+            pending: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+            banned: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
+            deleted: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
+            allowed: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+            renamed: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+            warned: { background: '#FFD400', color: '#14110f', borderColor: '#14110f' },
+            clean: { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' }
+          })[a.status],
+          open: () => this.setState({ adminUser: a.id, screen: 'adminUser', prev: 'adminUsers' })
+        })),
+      user: (() => {
+        const a = s.adminAccounts.find(x => x.id === s.adminUser) || s.adminAccounts[0];
+        const rs = s.adminReviews.filter(r => r.who === a.name);
+        return {
+          name: a.name, initial: a.name.slice(0, 1).toUpperCase(), why: a.why,
+          meta: 'JOINED ' + a.joined + ' · ' + a.meta,
+          counts: a.reviews + ' reviews · ' + a.lists + ' lists',
+          avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '64px', height: '64px', flex: 'none', border: '3px solid var(--color-text)', background: a.colour, color: a.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '28px' },
+          stateLabel: ({ pending: 'Reported — content still live', banned: 'Banned', deleted: 'Deleted', allowed: 'Cleared', renamed: 'Rename forced', warned: 'Warned', clean: 'No action needed' })[a.status],
+          stateStyle: ({
+            pending: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+            banned: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
+            deleted: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
+            allowed: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+            renamed: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+            warned: { background: '#FFD400', color: '#14110f', borderColor: '#14110f' },
+            clean: { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' }
+          })[a.status],
+          isBanned: a.status === 'banned', isDeleted: a.status === 'deleted',
+          actionable: a.status !== 'deleted', notDeleted: a.status !== 'deleted',
+          banUntil: a.banUntil || '',
+          hasReviews: rs.length > 0, noReviews: rs.length === 0,
+          reviews: rs.map(r => ({
+            book: r.book.toUpperCase(), when: r.when, rating: r.stars + '/5', text: r.text, why: r.why,
+            live: r.status === 'pending' && a.status !== 'deleted',
+            stateLabel: r.status === 'allowed' ? 'Allowed' : r.status === 'deleted' ? 'Deleted' : 'Still live',
+            stateStyle: r.status === 'allowed' ? { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' }
+              : r.status === 'deleted' ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+              : { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+            allow: () => this.setState(st => ({ adminReviews: st.adminReviews.map(x => x.id === r.id ? Object.assign({}, x, { status: 'allowed' }) : x) })),
+            del: () => this.setState({ confirm: { kind: 'review', id: r.id, name: r.book } })
+          })),
+          askBan: () => this.setState({ confirm: { kind: 'ban', id: a.id, name: a.name }, banDuration: '1 week' }),
+          askDelete: () => this.setState({ confirm: { kind: 'account', id: a.id, name: a.name, counts: a.reviews + ' reviews and ' + a.lists + ' lists' } }),
+          unban: () => this.setState(st => ({ adminAccounts: st.adminAccounts.map(x => x.id === a.id ? Object.assign({}, x, { status: 'pending', banUntil: '' }) : x) }))
+        };
+      })(),
+      banOptions: [
+        { label: 'Warning only', caption: 'No ban. Sends them a note saying what was wrong. Right for a first offence, and it is the step most sites skip.', rec: false },
+        { label: '6 hours', caption: 'A cooling-off period. Enough to interrupt an argument between two readers without ending anyone\u2019s evening.', rec: true },
+        { label: '1 day', caption: 'A second rude review after a warning, or unkindness aimed at another reader.', rec: false },
+        { label: '1 week', caption: 'Repeat offender, or something deliberately nasty. Long enough that they notice it is not a glitch.', rec: false },
+        { label: '1 month', caption: 'Effectively a goodbye at this age. Use for spam accounts or targeted bullying \u2014 rarely for a review.', rec: false }
+      ].map(o => ({
+        label: o.label, caption: o.caption, rec: o.rec, notRec: !o.rec,
+        on: s.banDuration === o.label,
+        pick: () => this.setState({ banDuration: o.label })
+      })),
+      banIsWarning: s.banDuration === 'Warning only',
+      banIsBan: s.banDuration !== 'Warning only',
+      banDuration: s.banDuration,
+      confirmOpen: !!s.confirm,
+      confirmIsBan: !!s.confirm && (s.confirm.kind === 'ban' || s.confirm.kind === 'banSelf'),
+      confirmIsMine: !!s.confirm && ['myReview', 'myAccount', 'myList'].includes(s.confirm.kind),
+      confirmMineCta: s.confirm ? ({ myReview: 'Yes, delete my review', myAccount: 'Yes, delete everything', myList: 'Yes, delete the list' })[s.confirm.kind] : '',
+      confirmIsAccount: !!s.confirm && s.confirm.kind === 'account',
+      confirmIsReview: !!s.confirm && s.confirm.kind === 'review',
+      banSelf: () => this.setState({ confirm: { kind: 'banSelf', name: 'your own account' }, banDuration: '6 hours' }),
+      confirmTitle: s.confirm ? ({
+        ban: 'Ban ' + s.confirm.name + '?',
+        banSelf: 'Ban your own account?',
+        account: 'Delete ' + s.confirm.name + '?',
+        review: 'Delete this review?',
+        myReview: 'Delete your review?',
+        myAccount: 'Delete your account?',
+        myList: 'Delete “' + (s.confirm.name || '') + '”?'
+      })[s.confirm.kind] : '',
+      confirmBody: s.confirm ? ({
+        banSelf: 'Prototype control: this bans the account you are signed in as, so you can see what a banned reader hits. Come back here to lift it.',
+        myReview: 'It disappears from the book page straight away. Your star rating goes with it, and you can always write a new one later.',
+        myAccount: 'Everything goes: your shelves, your lists, your reviews and your requests. This cannot be undone by you \u2014 only the site owner can recover it, and only for 14 days.',
+        myList: 'The list goes and its share link stops working \u2014 anyone you sent it to will see a \u201cnot found\u201d page. The books stay on your shelves.',
+        ban: 'A ban stops them posting reviews, sharing lists and requesting books. It does not hide what they have already written \u2014 delete those separately if they need to go.',
+        account: 'This removes ' + (s.confirm.counts || 'their content') + ' along with the account. In the build this is a soft delete, so it is recoverable — but the reader loses access immediately.',
+        review: 'It disappears from the book page straight away. The author is not told which report caused it.'
+      })[s.confirm.kind] : '',
+      confirmCta: s.confirm ? ({ ban: 'Ban for ', account: 'Yes, delete the account', review: 'Yes, delete it' })[s.confirm.kind] : '',
+      doConfirm: () => {
+        const c = s.confirm;
+        if (!c) return;
+        if (c.kind === 'banSelf') {
+          return this.setState(st => ({
+            banned: { until: st.banDuration, at: this.now24(), on: this.today() },
+            confirm: null, screen: 'home'
+          }));
+        }
+        if (c.kind === 'myReview') {
+          return this.setState(st => {
+            const copy = Object.assign({}, st.extraReviews);
+            delete copy[c.id];
+            return { extraReviews: copy, confirm: null };
+          });
+        }
+        if (c.kind === 'myAccount') {
+          this.toTrash('Account', c.name + ' (deleted their own account)', 'self-service');
+          return this.setState(Object.assign(this.initial(), { screen: 'landing', trash: s.trash }));
+        }
+        if (c.kind === 'myList') {
+          return this.setState(st => ({
+            lists: st.lists.filter((l, i) => i !== c.id),
+            deadLinks: st.deadLinks.concat([c.link]),
+            listIdx: 0, listDeleted: true, confirm: null
+          }));
+        }
+        if (c.kind === 'ban') {
+          return this.setState(st => ({
+            adminAccounts: st.adminAccounts.map(x => x.id === c.id
+              ? Object.assign({}, x, st.banDuration === 'Warning only'
+                ? { status: 'warned' }
+                : { status: 'banned', banUntil: st.banDuration })
+              : x),
+            confirm: null
+          }));
+        }
+        if (c.kind === 'account') {
+          // The confirmation promises the reviews go too, so they actually do.
+          const acct = s.adminAccounts.find(x => x.id === c.id);
+          this.toTrash('Account', c.name, (acct ? acct.reviews : 0) + ' reviews');
+          return this.setState(st => ({
+            adminAccounts: st.adminAccounts.map(x => x.id === c.id ? Object.assign({}, x, { status: 'deleted' }) : x),
+            adminReviews: st.adminReviews.map(x => acct && x.who === acct.name ? Object.assign({}, x, { status: 'deleted' }) : x),
+            confirm: null
+          }));
+        }
+        this.toTrash('Review', 'Review on “' + c.name + '”', 'removed by you');
+        return this.setState(st => ({
+          adminReviews: st.adminReviews.map(x => x.id === c.id ? Object.assign({}, x, { status: 'deleted' }) : x),
+          confirm: null
+        }));
+      },
+      cancelConfirm: () => this.setState({ confirm: null }),
+      isAdminCatalogue: S === 'adminCatalogue',
+      catalogueCount: s.catalogue.length,
+      missingCovers: s.catalogue.filter(c => !c.cover).length,
+      apiQuery: s.apiQuery,
+      setApiQuery: (e) => this.setState({ apiQuery: e.target.value, searched: true }),
+      hasApiResults: !!s.apiQuery.trim() && this.apiLibrary.some(x => (x.title + ' ' + x.author).toLowerCase().includes(s.apiQuery.trim().toLowerCase())),
+      noApiResults: s.searched && s.apiQuery.trim().length > 1 && !this.apiLibrary.some(x => (x.title + ' ' + x.author).toLowerCase().includes(s.apiQuery.trim().toLowerCase())),
+      apiResults: (s.apiQuery.trim() ? this.apiLibrary.filter(x => (x.title + ' ' + x.author).toLowerCase().includes(s.apiQuery.trim().toLowerCase())) : []).map(x => {
+        const already = s.catalogue.some(c => c.title.toLowerCase() === x.title.toLowerCase());
+        const ri = s.requests.findIndex(r => r.status === 'pending' && r.title.toLowerCase() === x.title.toLowerCase());
+        return {
+          title: x.title, meta: (x.author + ' \u00b7 ' + x.pages + ' pages').toUpperCase(),
+          subjectsUp: x.subjects.join(', ').toUpperCase(),
+          already, importable: !already, matchesRequest: ri > -1 && !already,
+          start: () => this.startImport(x, ri)
+        };
+      }),
+      importing: !!s.importing,
+      draftError: s.draftError,
+      draft: s.draft ? {
+        title: s.draft.title, author: s.draft.author, pages: s.draft.pages, summary: s.draft.summary,
+        series: s.draft.series, band: this.bandOf(s.draft.pages),
+        hasCover: !!s.draft.cover, noCover: !s.draft.cover,
+        coverSource: s.draft.cover === 'upload' ? 'YOUR UPLOAD \u00b7 STORED BY US' : 'FROM THE API \u00b7 COPIED TO OUR STORAGE',
+        mappedFrom: 'FROM: ' + s.draft.subjects.join(', ').toUpperCase(),
+        matched: s.draft.fulfilIndex > -1,
+        matchLine: s.draft.fulfilIndex > -1 ? ((s.requests[s.draft.fulfilIndex] || {}).title + ' was asked for by a reader') : '',
+        fulfil: s.draft.fulfil
+      } : { title: '', author: '', pages: '', summary: '', band: '', mappedFrom: '', matchLine: '' },
+      setTitle: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { title: e.target.value }) })),
+      setAuthor: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { author: e.target.value }) })),
+      setPages: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { pages: e.target.value.replace(/\D/g, '') }) })),
+      setSummary: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { summary: e.target.value }) })),
+      toggleSeries: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { series: !st.draft.series }) })),
+      toggleFulfil: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { fulfil: !st.draft.fulfil }) })),
+      useApiCover: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { cover: 'api' }) })),
+      uploadCover: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { cover: 'upload' }) })),
+      clearCover: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { cover: null }) })),
+      draftGenreChips: this.allGenres.map(g => ({
+        label: g,
+        style: (s.draft && s.draft.genres.includes(g))
+          ? { background: 'var(--color-link)', color: '#EFECE3', borderColor: 'var(--color-text)' }
+          : { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' },
+        toggle: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { genres: st.draft.genres.includes(g) ? st.draft.genres.filter(x => x !== g) : st.draft.genres.concat([g]) }) }))
+      })),
+      draftLevelChips: this.levelsList.map(l => ({
+        label: l,
+        style: (s.draft && s.draft.level === l)
+          ? { background: 'var(--color-link)', color: '#EFECE3', borderColor: 'var(--color-text)' }
+          : { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' },
+        pick: () => this.setState(st => ({ draft: Object.assign({}, st.draft, { level: l }) }))
+      })),
+      cancelImport: () => this.setState({ importing: null, draft: null, draftError: '' }),
+      saveBook: () => {
+        const d = s.draft;
+        if (!d.title.trim()) return this.setState({ draftError: 'A BOOK NEEDS A TITLE' });
+        if (!d.genres.length) return this.setState({ draftError: 'GIVE IT AT LEAST ONE GENRE \u2014 RECOMMENDATIONS MATCH ON THESE' });
+        const closed = d.fulfilIndex > -1 && d.fulfil;
+        this.setState(st => ({
+          catalogue: st.catalogue.concat([{
+            id: 'c' + Date.now(), title: d.title.trim(), author: d.author.trim(),
+            pages: parseInt(d.pages, 10) || 0, level: d.level, genres: d.genres, cover: d.cover
+          }]),
+          requests: st.requests.map((r, i) => i === d.fulfilIndex && closed ? Object.assign({}, r, { status: 'approved', reason: '' }) : r),
+          importing: null, draft: null, draftError: '',
+          justAdded: { title: d.title.trim(), closed, cover: !!d.cover }
+        }));
+      },
+      justAdded: !!s.justAdded,
+      addedLine: s.justAdded ? ('\u201c' + s.justAdded.title + '\u201d is in the catalogue') : '',
+      addedNote: s.justAdded
+        ? ((s.justAdded.closed ? 'REQUEST CLOSED AND THE READER TOLD IT IS HERE' : 'NO REQUEST WAS WAITING \u2014 YOU ADDED IT YOURSELF') + (s.justAdded.cover ? '' : ' \u00b7 STILL NEEDS A COVER'))
+        : '',
+      dismissAdded: () => this.setState({ justAdded: null }),
+      catFilter: s.catFilter,
+      setCatFilter: (e) => this.setState({ catFilter: e.target.value }),
+      catalogueList: s.catalogue
+        .filter(c => !s.catFilter || (c.title + ' ' + c.author).toLowerCase().includes(s.catFilter.toLowerCase()))
+        .map(c => ({
+          title: c.title, meta: (c.author + ' \u00b7 ' + c.pages + ' pages \u00b7 ' + c.level).toUpperCase(),
+          tags: c.genres.concat([this.bandOf(c.pages)]),
+          hasCover: !!c.cover, noCover: !c.cover,
+          addCover: () => this.setState(st => ({ catalogue: st.catalogue.map(x => x.id === c.id ? Object.assign({}, x, { cover: 'upload' }) : x) })),
+          remove: () => {
+            this.toTrash('Book', c.title, 'REMOVED FROM THE CATALOGUE');
+            this.setState(st => ({ catalogue: st.catalogue.filter(x => x.id !== c.id) }));
+          }
+        })),
+
+      queueRequests: s.requests.map((r, i) => ({
+        title: r.title, author: (r.author || 'AUTHOR NOT GIVEN').toUpperCase(), reason: r.reason,
+        hasReason: !!r.reason,
+        statusLabel: ({ pending: 'Pending', approved: 'Approved', declined: 'Declined' })[r.status],
+        statusStyle: ({
+          pending: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
+          approved: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
+          declined: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+        })[r.status],
+        pending: r.status === 'pending',
+        isDeclining: s.declining === i,
+        approve: () => this.setState(st => ({ requests: st.requests.map((x, j) => j === i ? Object.assign({}, x, { status: 'approved', reason: '' }) : x), declining: null })),
+        startDecline: () => this.setState({ declining: i, declineReason: 'Too old for the catalogue', declineText: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' }),
+        cancelDecline: () => this.setState({ declining: null }),
+        decided: r.status !== 'pending',
+        // Undo puts the request back in the queue and reopens the decision you made,
+        // with your own wording still in the box.
+        undo: () => this.setState(st => ({
+          requests: st.requests.map((x, j) => j === i ? Object.assign({}, x, { status: 'pending' }) : x),
+          declining: r.status === 'declined' ? i : null,
+          declineReason: r.status === 'declined' ? 'Other' : st.declineReason,
+          declineText: r.status === 'declined' ? r.reason : st.declineText,
+          trash: st.trash.filter(t => t.name !== 'Declined: ' + r.title)
+        }))
+      })),
+      declineReasons: ['Too old for the catalogue', 'Couldn\u2019t find it', 'Already on the site', 'Other'].map(x => ({
+        label: x, on: s.declineReason === x,
+        pick: () => this.setState({
+          declineReason: x,
+          declineText: ({
+            'Too old for the catalogue': 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.',
+            'Couldn\u2019t find it': 'We could not find this one in the book database we use. Double-check the spelling of the title and author and send it again.',
+            'Already on the site': 'Good news — this one is already here. Search for it and it should come up.',
+            'Other': ''
+          })[x]
+        })
+      })),
+      declineText: s.declineText,
+      setDeclineText: (e) => this.setState({ declineText: e.target.value }),
+      sendDecline: () => this.setState(st => {
+        const title = (st.requests[st.declining] || {}).title || '';
+        return {
+          requests: st.requests.map((x, j) => j === st.declining ? Object.assign({}, x, { status: 'declined', reason: st.declineText }) : x),
+          declining: null,
+          trash: [{ id: 'd' + Date.now(), kind: 'Request', name: 'Declined: ' + title, by: 'reader was told why', when: 'Declined just now', daysLeft: 14 }].concat(st.trash)
+        };
+      }),
+
+      reportOpen: !!s.reportOpen,
+      reportTitle: s.reportOpen ? (s.reportOpen.kind === 'reader' ? 'Report ' + s.reportOpen.who : 'Report this review') : '',
+      reportSub: s.reportOpen && s.reportOpen.kind === 'reader'
+        ? 'What is the problem with this reader? Only the site owner sees this \u2014 they will not know who reported them.'
+        : 'What is the problem with this review? Only the site owner sees this \u2014 the author will not know who reported it.',
+      reportReasons: [
+        'Rude or unkind to other readers',
+        'Bad language or slurs',
+        'Nothing to do with the book',
+        'Spam or advertising',
+        'Something that worries me about their safety'
+      ].map(r => ({ label: r, on: s.reportReason === r, pick: () => this.setState({ reportReason: r }) })),
+      reportOther: s.reportOther || '',
+      setReportOther: (e) => this.setState({ reportOther: e.target.value, reportError: '' }),
+      reportError: s.reportError || '',
+      isSafeguarding: s.reportReason === 'Something that worries me about their safety',
+      submitReport: () => {
+        if (!s.reportReason && !(s.reportOther || '').trim()) return this.setState({ reportError: 'PICK A REASON, OR TELL US IN YOUR OWN WORDS' });
+        const k = s.reportOpen.key;
+        if ((s.myReports[k] || 0) >= this.REPORT_LIMIT) return this.setState({ limitHit: true, reportOpen: null });
+        this.setState(st => ({
+          reported: Object.assign({}, st.reported, { [k]: true }),
+          myReports: Object.assign({}, st.myReports, { [k]: (st.myReports[k] || 0) + 1 }),
+          reportOpen: null, reportReason: '', reportOther: '', reportError: ''
+        }));
+      },
+      limitHit: s.limitHit || false,
+      closeLimit: () => this.setState({ limitHit: false }),
+
+      // — banned reader —
+      isBannedUser: !!s.banned,
+      banNotice: s.banned ? {
+        forHow: s.banned.until,
+        at: s.banned.at,
+        on: s.banned.on
+      } : { forHow: '', at: '', on: '' },
+      banBlockOpen: !!s.banBlock,
+      closeBanBlock: () => this.setState({ banBlock: false }),
+
+      // — 404 —
+      isNotFound: S === 'notFound',
+      notFoundKind: s.notFoundKind || 'list',
+      goHomeFrom404: () => this.go(s.guest ? 'landing' : 'home'),
+
+      // — new password —
+      isNewPassword: S === 'newPassword',
+      newPassword: s.newPassword, newPassword2: s.newPassword2,
+      setNewPassword: (e) => this.setState({ newPassword: e.target.value, pwError: '' }),
+      setNewPassword2: (e) => this.setState({ newPassword2: e.target.value, pwError: '' }),
+      pwError: s.pwError || '',
+      savePassword: () => {
+        if (s.newPassword.length < 8) return this.setState({ pwError: 'AT LEAST 8 CHARACTERS' });
+        if (s.newPassword !== s.newPassword2) return this.setState({ pwError: 'THE TWO PASSWORDS DON\u2019T MATCH' });
+        this.setState({ screen: 'login', newPassword: '', newPassword2: '', pwError: '', resetSent: false });
+      },
+      cancelReport: () => this.setState({ reportOpen: null, reportReason: '', reportOther: '', reportError: '' }),
+
+      // Dark mode is a token override, not a second set of screens.
+      theme: s.dark ? {
+        '--color-bg': '#14110f', '--color-surface': '#241f1b', '--color-text': '#EFECE3',
+        '--color-divider': '#EFECE3', '--color-link': '#4E63FF',
+        '--color-neutral-400': '#4a3f33', '--color-neutral-600': '#8a7c64', '--color-neutral-700': '#9c8b76',
+        '--color-accent-100': '#3a2418', '--color-accent-700': '#ff8a57', '--color-problem-text': '#FF7D8F', '--color-link': '#7B8BFF', '--color-accent-800': '#ffc2a3',
+        background: '#14110f', color: '#EFECE3'
+      } : { background: '#fff3e2', color: '#14110f' },
+      // Always filled, never an outline — the ground flips, so an outline-only
+      // control disappears in one of the two states.
+      lightBtn: s.dark
+        ? { background: 'transparent', color: '#EFECE3' }
+        : { background: '#ff4d00', color: '#fff3e2' },
+      darkBtn: s.dark
+        ? { background: '#ff4d00', color: '#EFECE3', borderLeft: '3px solid #EFECE3' }
+        : { background: 'transparent', color: '#14110f', borderLeft: '3px solid #14110f' },
+      setLight: () => this.setState({ dark: false }),
+      setDark: () => this.setState({ dark: true })
+    };
+  }
+}
+
+</script>
+</body>
+</html>
