@@ -14,7 +14,7 @@ cross-cutting:
 | **Unverified** | `!guest && !verified` | Has an account, email not confirmed. Can browse *and track*, but nothing public. |
 | **Verified** | `!guest && verified` | Full reader. |
 | **Admin** | `isAdmin` on User | Everything above, plus `/admin`. |
-| *Banned* | `banned` (cross-cutting) | Blocked from write actions; still reads. |
+| *Banned* | `banned` (cross-cutting) | **In the export:** blocked from write actions, still signed in, still reads, sees a ban-block dialog. **As implemented here: not this — see "Deviation: banned users" below.** |
 
 The unverified tier is the one that's easy to miss and it is explicitly
 designed. The banner copy (line 73-79) states the rule:
@@ -39,6 +39,10 @@ else        → perform the action
 
 Order matters. A banned guest sees the signup gate, not the ban notice.
 
+*(The `banned?` step above describes the export as designed. As implemented,
+banned accounts can't reach this cascade at all — see the deviation note
+below.)*
+
 Two things follow from this that shape the implementation:
 
 1. **Gates are dialogs, not redirects.** The export never bounces a guest to
@@ -48,6 +52,27 @@ Two things follow from this that shape the implementation:
    status buttons and the review form entry. Clicking is what triggers the
    gate. Hiding the controls would remove the signup prompt the design uses
    them for.
+
+## Deviation: banned users
+
+The export keeps a banned account signed in and read-only, with its own
+`banBlock` dialog (see the table row and cascade step above). This build
+does something different on purpose: **`getCurrentUser()` in `lib/auth.ts`
+returns `null` for a banned account, full stop — a ban revokes the session
+rather than downgrading it.** The export's `banBlock` dialog is not ported;
+a banned user just can't sign in.
+
+This was decided outside the export (confirmed with the project owner
+2026-08-31), not inferred from it — flagging it here so it doesn't read as
+an accident later. Practical effects:
+
+- No read-only banned state exists anywhere in this app. "Banned" and
+  "no session" are the same thing.
+- The `banned?` cascade step above is dead code once real auth lands —
+  a banned user never has a session to run the cascade against.
+- If a banned-but-visible-elsewhere requirement shows up later (e.g. "let
+  a banned user still see their own past reviews marked as removed"),
+  that needs a fresh decision — this lockout model doesn't support it.
 
 ## Screen-level guards
 
