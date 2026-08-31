@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 /*
@@ -18,6 +18,7 @@ import { useState } from "react";
  */
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isDark, setIsDark] = useState(
     () =>
       typeof document !== "undefined" &&
@@ -53,9 +54,9 @@ export default function Nav() {
       <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined}>
         Profile
       </Link>
-      <Link href="/start" className="btn btn-primary">
+      <button className="btn btn-primary" onClick={() => router.push("/start")}>
         Get Started
-      </Link>
+      </button>
       <span className="mode-seg">
         <button
           style={
