@@ -4,7 +4,6 @@ import { use, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { adminAccounts, adminReviews } from "@/lib/mock";
 
@@ -91,9 +90,7 @@ export default function AdminUserPage({ params }: { params: Promise<{ id: string
 
   return (
     <>
-      <Nav />
-      <Nav />
-    <AdminNav />
+      <AdminNav />
       <div className="wrap">
         <Link
           href="/admin/users"

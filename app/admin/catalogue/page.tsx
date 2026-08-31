@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { CSSProperties } from "react";
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { allGenres, allLevels, apiLibrary, catalogue, lengthLabel, requests } from "@/lib/mock";
 
@@ -161,9 +160,7 @@ export default function AdminCataloguePage() {
 
   return (
     <>
-      <Nav />
-      <Nav />
-    <AdminNav />
+      <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Catalogue</h1>
         <p style={{ fontSize: 14, marginBottom: 22 }}>

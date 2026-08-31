@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { adminReviews, adminAccounts } from "@/lib/mock";
 
@@ -62,9 +61,7 @@ export default function AdminReviewsPage() {
 
   return (
     <>
-      <Nav />
-      <Nav />
-    <AdminNav />
+      <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 18px" }}>Reviews</h1>
         <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>

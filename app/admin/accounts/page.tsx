@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { adminAccounts } from "@/lib/mock";
 
@@ -39,9 +38,7 @@ export default function AdminAccountsPage() {
 
   return (
     <>
-      <Nav />
-      <Nav />
-    <AdminNav />
+      <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 18px" }}>Accounts</h1>
         <div style={{ borderTop: "3px solid var(--color-text)" }}>

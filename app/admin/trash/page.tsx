@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { trash } from "@/lib/mock";
 
@@ -23,9 +22,7 @@ export default function AdminTrashPage() {
 
   return (
     <>
-      <Nav />
-      <Nav />
-    <AdminNav />
+      <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Trash</h1>
         <p style={{ fontSize: 14, marginBottom: 22 }}>

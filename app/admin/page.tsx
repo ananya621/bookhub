@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { adminReviews, adminAccounts, requests, safeguarding } from "@/lib/mock";
 
@@ -37,9 +36,7 @@ export default function AdminHomePage() {
 
   return (
     <>
-      <Nav />
-      <Nav />
-    <AdminNav />
+      <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 40, margin: "0 0 20px" }}>What needs you</h1>
 
