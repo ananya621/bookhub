@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 
 /*
  * Ported from the `.wnav` block in Prototype with Admin.dc.html (lines
@@ -16,19 +16,47 @@ import { useState } from "react";
  * data-theme attribute on <html> and remember the choice in
  * localStorage, matching the toggle shown in the export's nav.
  */
+
+/* Which button is highlighted comes from <html data-theme>, which the
+   inline script in layout.tsx sets before React hydrates. That makes it
+   external state, not React state: reading it during render (the old
+   `typeof document !== "undefined"` check) returned false on the server
+   and true on the client, so the server shipped Light highlighted while
+   the client rendered Dark highlighted, and React reported a hydration
+   mismatch and left the buttons wrong until the next re-render.
+
+   useSyncExternalStore is the primitive for exactly this. React uses
+   getServerSnapshot for the server render AND the hydration render, so
+   the first client render matches the HTML; it then reads getSnapshot
+   and re-renders if they differ. Correct markup, no mismatch. */
+
+const THEME_CHANGE = "bookhub-theme-change";
+
+function subscribeToTheme(onChange: () => void) {
+  window.addEventListener(THEME_CHANGE, onChange);
+  return () => window.removeEventListener(THEME_CHANGE, onChange);
+}
+
+const getThemeSnapshot = () =>
+  document.documentElement.getAttribute("data-theme") === "dark";
+
+// The server has no localStorage, so it always renders the light default.
+const getThemeServerSnapshot = () => false;
+
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.getAttribute("data-theme") === "dark"
+  const isDark = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getThemeServerSnapshot
   );
 
   function setTheme(dark: boolean) {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     localStorage.setItem("bookhub-theme", dark ? "dark" : "light");
-    setIsDark(dark);
+    // Tells useSyncExternalStore to re-read the attribute above.
+    window.dispatchEvent(new Event(THEME_CHANGE));
   }
 
   return (

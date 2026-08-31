@@ -17,7 +17,12 @@ const themeInitScript = `
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning because themeInitScript above sets
+    // data-theme on this element before React hydrates, so the DOM
+    // legitimately has an attribute the server HTML didn't. It applies
+    // to this element's own attributes only — it does not cascade to
+    // children, so real mismatches further down still surface.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
