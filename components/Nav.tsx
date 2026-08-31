@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import { useCurrentUser } from "@/components/AuthProvider";
+import { initialsOf } from "@/lib/personas";
 
 /*
  * Ported from the `.wnav` block in Prototype with Admin.dc.html (lines
  * 51-71). That file drives everything from one shared state object, so
  * "logged in vs guest" and "which link is current" come from a single
- * source there. We don't have auth yet, so for now this always renders
- * the guest state (Get Started button, no avatar) — this will switch to
- * a real logged-in/guest check once auth is built.
+ * source there. The signed-in user comes from AuthProvider, which the
+ * root layout fills in on the server — this component must never work
+ * out who is signed in itself, or the nav would differ between the
+ * server and client renders and hydration would mismatch.
  *
  * The Light/Dark buttons are real and working: they toggle a
  * data-theme attribute on <html> and remember the choice in
@@ -46,6 +49,7 @@ const getThemeServerSnapshot = () => false;
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
+  const user = useCurrentUser();
   const isDark = useSyncExternalStore(
     subscribeToTheme,
     getThemeSnapshot,
@@ -60,7 +64,8 @@ export default function Nav() {
   }
 
   return (
-    <div className="wnav">
+    <>
+      <div className="wnav">
       <Link href="/" className="mono" style={{ all: "unset", cursor: "pointer" }}>
         <b style={{ display: "block" }}>Book Hub</b>
       </Link>
@@ -82,9 +87,30 @@ export default function Nav() {
       <Link href="/profile" aria-current={pathname === "/profile" ? "page" : undefined}>
         Profile
       </Link>
-      <button className="btn btn-primary" onClick={() => router.push("/start")}>
-        Get Started
-      </button>
+      {user ? (
+        <span
+          title={user.displayName}
+          style={{
+            display: "inline-grid",
+            placeItems: "center",
+            width: 32,
+            height: 32,
+            flex: "none",
+            border: "3px solid var(--color-text)",
+            fontFamily: "var(--font-heading)",
+            fontWeight: 700,
+            fontSize: 15,
+            background: user.avatarColor,
+            color: user.avatarInk,
+          }}
+        >
+          {initialsOf(user.displayName)}
+        </span>
+      ) : (
+        <button className="btn btn-primary" onClick={() => router.push("/start")}>
+          Get Started
+        </button>
+      )}
       <span className="mode-seg">
         <button
           style={
@@ -107,6 +133,66 @@ export default function Nav() {
           Dark
         </button>
       </span>
+      {/* Admin sits in the reader nav, after the theme toggle, exactly
+          where the export puts it (source lines 67-69). Admin is an
+          extra control on the normal site, not a separate app. */}
+      {user?.isAdmin && (
+        <Link
+          href="/admin"
+          className="btn btn-secondary"
+          style={{ flex: "none", background: "#7B2DFF", color: "#EFECE3" }}
+        >
+          Admin
+        </Link>
+      )}
+      </div>
+      <UnverifiedBanner />
+    </>
+  );
+}
+
+/*
+ * The pink "verify your email" bar. The export shows it only on these
+ * seven screens (source line 1929) — not on the auth screens, not on
+ * the public shared-list view, and not in admin.
+ */
+const BANNER_ROUTES = ["/home", "/recs", "/search", "/tracker", "/lists", "/profile"];
+
+function UnverifiedBanner() {
+  const user = useCurrentUser();
+  const pathname = usePathname();
+
+  const onBannerRoute =
+    BANNER_ROUTES.includes(pathname) || pathname.startsWith("/book/");
+  if (!user || user.emailVerified || !onBannerRoute) return null;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        background: "#ff3d9a",
+        color: "#14110f",
+        borderBottom: "3px solid var(--color-text)",
+        padding: "10px 28px",
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>
+          Your email isn&apos;t verified yet.
+        </span>{" "}
+        <span className="mono" style={{ fontWeight: 700 }}>
+          YOU CAN BROWSE AND TRACK BOOKS — REVIEWS AND SHARED LISTS UNLOCK ONCE IT IS.
+        </span>
+      </div>
+      <Link
+        href="/verify"
+        className="btn btn-secondary"
+        style={{ borderColor: "#14110f", color: "#14110f" }}
+      >
+        Enter my code
+      </Link>
     </div>
   );
 }

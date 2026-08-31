@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSessionData } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import Nav from "@/components/Nav";
 import { books } from "@/lib/mock";
@@ -24,13 +25,9 @@ import { books } from "@/lib/mock";
 
 type Status = "read" | "reading" | "want" | "none";
 
-const initialStatuses: Record<string, Status> = {
-  hobbit: "read",
-  nevermoor: "reading",
-  skellig: "reading",
-  coraline: "want",
-  holes: "want",
-};
+/* Shelves come from the signed-in reader (persona fixture today,
+   Supabase later) rather than a hardcoded seed, so an account with
+   nothing tracked renders the empty shelves. */
 
 // Order and copy match `shelfDefs` in the source exactly.
 const shelfDefs: { name: string; key: Exclude<Status, "none">; emptyMsg: string }[] = [
@@ -41,7 +38,8 @@ const shelfDefs: { name: string; key: Exclude<Status, "none">; emptyMsg: string 
 
 export default function TrackerPage() {
   const router = useRouter();
-  const [statuses, setStatuses] = useState(initialStatuses);
+  const sessionData = useSessionData();
+  const [statuses, setStatuses] = useState<Record<string, Status>>(sessionData.statuses);
 
   const statusOf = (id: string): Status => statuses[id] ?? "none";
   const move = (id: string, status: Status) => setStatuses((s) => ({ ...s, [id]: status }));

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { safeguarding } from "@/lib/mock";
 
@@ -28,7 +29,9 @@ export default function AdminSafeguardingPage() {
 
   return (
     <>
-      <AdminNav />
+      <Nav />
+      <Nav />
+    <AdminNav />
       <div className="wrap">
         <div
           style={{

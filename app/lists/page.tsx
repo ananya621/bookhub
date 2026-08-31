@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Nav from "@/components/Nav";
 import { bookById } from "@/lib/mock";
-import { seedLists, slugify, type ReadingList } from "@/app/lists/data";
+import { slugify, type ReadingList } from "@/app/lists/data";
+import { useSessionData } from "@/components/AuthProvider";
 
 /*
  * Ported from the `isLists` block in Prototype with Admin.dc.html
@@ -61,7 +62,10 @@ const alsoInLabel: Record<Status, string> = {
 
 export default function ListsPage() {
   const router = useRouter();
-  const [lists, setLists] = useState<ReadingList[]>(seedLists);
+  // The reader's own lists, from the session rather than a static seed,
+  // so an account with none renders the empty state.
+  const sessionData = useSessionData();
+  const [lists, setLists] = useState<ReadingList[]>(sessionData.lists);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [newListName, setNewListName] = useState("");
   const [listError, setListError] = useState("");

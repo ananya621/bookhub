@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
+import DevPersonaSwitcher from "@/components/DevPersonaSwitcher";
+import { SESSION_COOKIE, getCurrentUser } from "@/lib/auth";
+import { PERSONAS, isPersonaId, type PersonaId } from "@/lib/personas";
 
 export const metadata: Metadata = {
   title: "Book Hub",
@@ -15,7 +20,19 @@ const themeInitScript = `
   } catch (e) {}
 `;
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+const isDev = process.env.NODE_ENV !== "production";
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Resolved once, on the server, and handed to client components through
+  // AuthProvider. Client components must not work this out themselves —
+  // see the note in components/AuthProvider.tsx.
+  const user = await getCurrentUser();
+
+  // Only for showing which persona is active in the dev switcher.
+  const raw = (await cookies()).get(SESSION_COOKIE)?.value ?? "guest";
+  const persona: PersonaId = isPersonaId(raw) ? raw : "guest";
+  const data = PERSONAS[persona].data;
+
   return (
     // suppressHydrationWarning because themeInitScript above sets
     // data-theme on this element before React hydrates, so the DOM
@@ -26,7 +43,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* key remounts the tree when the persona changes, so pages
+            re-seed their local state from the new fixture instead of
+            keeping the previous reader's shelves. */}
+        <AuthProvider key={persona} user={user} data={data}>
+          {children}
+          {isDev && <DevPersonaSwitcher current={persona} />}
+        </AuthProvider>
+      </body>
     </html>
   );
 }

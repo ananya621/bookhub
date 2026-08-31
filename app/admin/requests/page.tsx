@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { requests } from "@/lib/mock";
 
@@ -89,7 +90,9 @@ export default function AdminRequestsPage() {
 
   return (
     <>
-      <AdminNav />
+      <Nav />
+      <Nav />
+    <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 18px" }}>Book requests</h1>
         <div style={{ borderTop: "3px solid var(--color-text)" }}>

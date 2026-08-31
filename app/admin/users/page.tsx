@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
+import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { adminAccounts } from "@/lib/mock";
 
@@ -61,7 +62,9 @@ export default function AdminUsersPage() {
 
   return (
     <>
-      <AdminNav />
+      <Nav />
+      <Nav />
+    <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>All users</h1>
         <p style={{ fontSize: 14, marginBottom: 20 }}>

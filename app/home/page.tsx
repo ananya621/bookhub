@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
+import { useSessionData } from "@/components/AuthProvider";
 import Nav from "@/components/Nav";
 import { books, avg, starStr, lengthLabel, steps, type Book } from "@/lib/mock";
 
@@ -33,28 +34,9 @@ type Status = "read" | "reading" | "want" | "none";
 type StepKey = (typeof steps)[number]["key"];
 
 const READER_NAME = "Maya";
-const MY_LISTS_COUNT = 2;
 
-const initialStatuses: Record<string, Status> = {
-  hobbit: "read",
-  nevermoor: "reading",
-  skellig: "reading",
-  coraline: "want",
-  holes: "want",
-};
 
-const initialProgress: Record<string, StepKey> = {
-  nevermoor: "halfway",
-  skellig: "started",
-};
 
-// Seeded as though the reader already completed the survey — the
-// survey screen itself lives at /survey and isn't ported here.
-const survey = {
-  genres: ["Fantasy", "Adventure"],
-  level: "Middle Grade",
-  length: "200–400 pages",
-};
 
 const badgeStyles: Record<Exclude<Status, "none">, CSSProperties> = {
   read: { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" },
@@ -69,8 +51,14 @@ const badgeLabels: Record<Exclude<Status, "none">, string> = {
 };
 
 // Same scoring the export uses: genre overlap + level match + length
-// match, falling back to highest-rated first if nothing scores.
-function recommend(): Book[] {
+// match, falling back to highest-rated first if nothing scores. Takes
+// the survey as an argument because it belongs to the signed-in reader
+// now — an account that skipped the survey scores nothing and gets the
+// highest-rated fallback, which is what the export does too.
+type Survey = { genres: string[]; level: string; length: string };
+
+function recommend(survey: Survey | null): Book[] {
+  if (!survey) return books.slice().sort((a, c) => avg(c) - avg(a)).slice(0, 5);
   const scored = books
     .map((b) => ({
       book: b,
@@ -87,12 +75,13 @@ function recommend(): Book[] {
   return ranked.slice(0, 5);
 }
 
-const homeRecs = recommend();
-
 export default function HomePage() {
   const router = useRouter();
-  const [statuses, setStatuses] = useState(initialStatuses);
-  const [progress] = useState(initialProgress);
+  const sessionData = useSessionData();
+  const [statuses, setStatuses] = useState<Record<string, Status>>(sessionData.statuses);
+  const [progress] = useState<Record<string, StepKey>>(sessionData.progress);
+  const survey = sessionData.survey;
+  const homeRecs = recommend(survey);
 
   const statusOf = (id: string): Status => statuses[id] ?? "none";
   const markRead = (id: string) => setStatuses((s) => ({ ...s, [id]: "read" }));
@@ -101,11 +90,12 @@ export default function HomePage() {
   const readCount = books.filter((b) => statusOf(b.id) === "read").length;
   const wantCount = books.filter((b) => statusOf(b.id) === "want").length;
 
-  const basedOn =
-    (survey.genres.length ? survey.genres.join(" · ") + " · " : "") +
-    survey.level +
-    " · " +
-    survey.length;
+  const basedOn = survey
+    ? (survey.genres.length ? survey.genres.join(" · ") + " · " : "") +
+      survey.level +
+      " · " +
+      survey.length
+    : "YOUR SURVEY ANSWERS";
 
   return (
     <>
@@ -236,7 +226,7 @@ export default function HomePage() {
                 <div className="mono" style={{ fontWeight: 700 }}>WANT TO READ</div>
               </div>
               <div className="card rowlink" style={{ gap: 2 }} onClick={() => router.push("/lists")}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{MY_LISTS_COUNT}</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{sessionData.lists.length}</div>
                 <div className="mono" style={{ fontWeight: 700, color: "var(--color-neutral-700)" }}>MY LISTS</div>
               </div>
             </div>

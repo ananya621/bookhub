@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 
 /*
  * Ported from the `.anav` block in Prototype with Admin.dc.html (lines
- * 84-95). Same shape as Nav.tsx but for the admin shell: no theme
- * toggle and no avatar there, and "Back to site" is a plain link to /
- * rather than the export's admin.exit state change.
+ * 84-95), with one deliberate change: the export made admin a separate
+ * shell that replaced the site nav, so it needed a "Back to site"
+ * button. Here admin is a section of the site — the reader nav renders
+ * above this bar on every /admin page — so that button is gone and this
+ * is purely the section nav.
  *
- * There is no auth yet, so this renders for anyone who visits /admin —
- * gating it on User.isAdmin comes with auth.
+ * Non-admins are redirected away from /admin/* in middleware.ts, so
+ * this bar only ever renders for an admin.
  */
 
 const LINKS = [
@@ -41,9 +43,6 @@ export default function AdminNav() {
           {l.label}
         </Link>
       ))}
-      <Link href="/" className="btn btn-secondary">
-        Back to site
-      </Link>
     </div>
   );
 }
