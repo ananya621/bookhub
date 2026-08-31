@@ -246,3 +246,26 @@ body { margin: 0; }
 .mode-seg button { font-family: var(--font-heading); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 5px 11px; border: 0; cursor: pointer; }
 a { color: var(--color-link); }
 a:hover { color: var(--color-accent); }
+
+/* The rest of that same <style> block (lines 13-45 of Prototype with
+   Admin.dc.html) — the classes the remaining screens need: review
+   stars, clickable table rows, the star-picker buttons, the admin nav
+   bar, the moderation-queue row, and the status colours on the
+   tracker segmented control. Copied verbatim, same as above. */
+.stars { letter-spacing: 2px; color: var(--color-accent-700); }
+.rowlink { cursor: pointer; }
+.rowlink:hover { background: var(--color-accent-100); }
+.starbtn { background: none; border: 0; cursor: pointer; font-size: 30px; line-height: 1; padding: 4px 6px; color: var(--color-neutral-400); }
+.starbtn:hover { color: var(--color-accent-400); }
+.starbtn.on { color: var(--color-accent); }
+.shell { flex: 1; display: flex; flex-direction: column; }
+.anav { display: flex; align-items: center; gap: 16px; padding: 13px 28px; border-bottom: 3px solid var(--color-text); font-size: 13px; white-space: nowrap; }
+.anav b { font-family: var(--font-display); font-size: 19px; text-transform: uppercase; margin-right: auto; }
+.anav a { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 2px; border-bottom: 3px solid transparent; }
+.anav a:hover { color: var(--color-accent-700); }
+.anav a[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
+.qrow { display: flex; gap: 14px; padding: 16px 0; border-bottom: 3px solid var(--color-divider); align-items: flex-start; }
+.seg-opt[data-state="read"]:has(input:checked) { background: #c6f24e; color: #14110f; }
+.seg-opt[data-state="reading"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
+.seg-opt[data-state="prog"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
+.seg-opt[data-state="want"]:has(input:checked) { background: #1B3BFF; color: #EFECE3; }
