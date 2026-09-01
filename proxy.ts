@@ -64,15 +64,34 @@ export async function proxy(request: NextRequest) {
   let user: RoutingUser | null = null;
 
   if (authUser) {
-    const [{ data: profile }, { data: role }, { data: survey }] = await Promise.all([
-      supabase.from("profiles").select("display_name").eq("id", authUser.id).maybeSingle(),
-      supabase.from("user_roles").select("is_admin").eq("user_id", authUser.id).maybeSingle(),
-      supabase.from("surveys").select("user_id").eq("user_id", authUser.id).maybeSingle(),
-    ]);
+    // One call. See the note on current_user_state() in the migration:
+    // the ban check needs a database function regardless, so it answers
+    // everything at once rather than adding a fourth query.
+    const { data } = await supabase.rpc("current_user_state").maybeSingle();
+    const state = data as {
+      display_name: string | null;
+      is_admin: boolean;
+      has_survey: boolean;
+      is_banned: boolean;
+    } | null;
+
+    if (state?.is_banned) {
+      // Supabase leaves an existing session working for up to an hour
+      // after a ban, so end it here rather than waiting for it to
+      // expire. Signing out is better than ignoring the session: it
+      // clears the cookie, so they stop being asked about on every
+      // subsequent request.
+      await supabase.auth.signOut();
+      return to("/login?banned=1");
+    }
 
     user = {
-      isAdmin: Boolean(role?.is_admin),
-      onboardingStep: !profile?.display_name ? "profile" : !survey ? "survey" : null,
+      isAdmin: Boolean(state?.is_admin),
+      onboardingStep: !state?.display_name
+        ? "profile"
+        : !state.has_survey
+          ? "survey"
+          : null,
     };
   } else if (process.env.NODE_ENV !== "production") {
     // Development-only fallback to the fake persona, matching

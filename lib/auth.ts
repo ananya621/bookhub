@@ -15,6 +15,13 @@ import { PERSONAS, type PersonaId } from "@/lib/personas";
  * user is confirmed by definition. A field that is always true is worse
  * than no field — it invites branches that can never run.
  *
+ * A banned account returns null, exactly like being signed out. That is
+ * not automatic: Supabase blocks a banned person from signing IN again
+ * but leaves any session they already have working until it next
+ * refreshes, which can be an hour. Checking here is what closes that
+ * window, and it is why this asks the database rather than trusting the
+ * token alone.
+ *
  * Nothing else in the app should read session cookies or decide what
  * logged-in means. Everything imports from here.
  */
@@ -65,22 +72,36 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   } = await supabase.auth.getUser();
 
   if (user) {
-    const [{ data: profile }, { data: role }, { data: survey }] = await Promise.all([
-      supabase.from("profiles").select("display_name, avatar_color").eq("id", user.id).maybeSingle(),
-      supabase.from("user_roles").select("is_admin").eq("user_id", user.id).maybeSingle(),
-      supabase.from("surveys").select("user_id").eq("user_id", user.id).maybeSingle(),
-    ]);
+    // One call, not four. The ban check has to read auth.users, which
+    // needs a database function anyway, so that function answers
+    // everything at once.
+    const { data } = await supabase.rpc("current_user_state").maybeSingle();
+    const state = data as {
+      display_name: string | null;
+      avatar_color: string;
+      is_admin: boolean;
+      has_survey: boolean;
+      is_banned: boolean;
+    } | null;
 
-    const colour = PALETTE[profile?.avatar_color ?? "Blue"] ?? PALETTE.Blue;
+    // Treated as signed out. Their session is technically still valid;
+    // we simply stop honouring it.
+    if (state?.is_banned) return null;
+
+    const colour = PALETTE[state?.avatar_color ?? "Blue"] ?? PALETTE.Blue;
 
     return {
       id: user.id,
-      displayName: profile?.display_name ?? "",
+      displayName: state?.display_name ?? "",
       email: user.email ?? "",
       avatarColor: colour.css,
       avatarInk: colour.ink,
-      isAdmin: Boolean(role?.is_admin),
-      onboardingStep: !profile?.display_name ? "profile" : !survey ? "survey" : null,
+      isAdmin: Boolean(state?.is_admin),
+      onboardingStep: !state?.display_name
+        ? "profile"
+        : !state.has_survey
+          ? "survey"
+          : null,
     };
   }
 
