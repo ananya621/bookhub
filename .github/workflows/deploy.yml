@@ -1,0 +1,139 @@
+name: Deploy
+
+# Every push to main deploys. Merging a pull request into main is a push,
+# so merges deploy too.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One production deploy at a time, and never cancel one that has started.
+# A half-finished run could leave the database migrated with no matching
+# app deployed.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  # Not a secret. This is the "vzznwebsaielxpsscwlw" in the Supabase
+  # dashboard URL, and it is already part of NEXT_PUBLIC_SUPABASE_URL,
+  # which is sent to every visitor's browser by design.
+  SUPABASE_PROJECT_ID: vzznwebsaielxpsscwlw
+  # `vercel build` further down runs here, on this runner, not on Vercel's
+  # machines. Keep this the same as the Node version in the Vercel project
+  # settings, or the app is built with one version and run with another.
+  NODE_VERSION: "22"
+
+jobs:
+  # ---------------------------------------------------------------
+  # 1. Is the code OK? Needs no secrets, so it still works before any
+  #    of the Vercel or Supabase setup has been done.
+  # ---------------------------------------------------------------
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # Next reuses work between builds from .next/cache. Keeping it
+      # between runs makes the build below noticeably quicker.
+      - name: Reuse the Next.js build cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'lib/**', 'components/**', 'proxy.ts') }}
+          restore-keys: nextjs-${{ hashFiles('package-lock.json') }}-
+
+      - run: npm ci
+
+      # Next writes the route types this app uses (LayoutProps and
+      # friends) into .next/types. They are generated, not committed, so
+      # `tsc` cannot find them until this has run and the typecheck fails
+      # with "Cannot find name 'LayoutProps'". `typegen` writes just those
+      # types, in under a second, so we don't need a whole build first.
+      - name: Generate route types
+        run: npx next typegen
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint
+
+      # Catches build errors before we touch the database. The build that
+      # actually gets deployed is made later, in the deploy job.
+      - name: Build
+        run: npm run build
+
+  # ---------------------------------------------------------------
+  # 2. Database first, app second. A new page that reads a new column
+  #    would break if it went live before the column existed.
+  # ---------------------------------------------------------------
+  migrate:
+    name: Database migrations
+    needs: checks
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Connect to the Supabase project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      # Printed first so the log shows what was about to run even if
+      # applying it fails.
+      - name: List the migrations that will be applied
+        run: supabase db push --dry-run
+
+      # --yes because there is nobody here to answer the confirmation
+      # prompt. Without a terminal the CLI already assumes yes, but say it
+      # out loud rather than depend on that.
+      - name: Apply the migrations
+        run: supabase db push --yes
+
+  # ---------------------------------------------------------------
+  # 3. Build with the real production settings, then put it live.
+  # ---------------------------------------------------------------
+  deploy:
+    name: Deploy to Vercel
+    needs: migrate
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@latest
+
+      # Fetches the project's build settings and its Production
+      # environment variables, including NEXT_PUBLIC_SITE_URL. This is why
+      # those variables are set in Vercel and not in this file.
+      - name: Fetch the production settings
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "Deployed: $url"
+          echo "Deployed to $url" >> "$GITHUB_STEP_SUMMARY"

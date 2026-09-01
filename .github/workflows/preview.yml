@@ -1,0 +1,136 @@
+name: Preview
+
+# Runs while a pull request is open, so you can see the change on a real
+# URL before it is merged. Nothing here touches production.
+on:
+  pull_request:
+    branches: [main]
+
+# Pushing again to the same pull request replaces the previous run.
+concurrency:
+  group: preview-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  SUPABASE_PROJECT_ID: vzznwebsaielxpsscwlw
+  NODE_VERSION: "22"
+
+jobs:
+  # Same checks as the deploy workflow. Needs no secrets, so it also runs
+  # on pull requests opened from someone else's fork of the repo.
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Reuse the Next.js build cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'lib/**', 'components/**', 'proxy.ts') }}
+          restore-keys: nextjs-${{ hashFiles('package-lock.json') }}-
+
+      - run: npm ci
+
+      # See the comment in deploy.yml. Without this the typecheck fails on
+      # types that Next generates rather than us writing them.
+      - name: Generate route types
+        run: npx next typegen
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint
+
+      - name: Build
+        run: npm run build
+
+  # Says which migrations would run if this pull request were merged.
+  # --dry-run only reads; it changes nothing.
+  migrations:
+    name: Migrations this would apply
+    # Secrets are not given to pull requests from forks, so this would
+    # fail there. Skip it rather than show a confusing red cross.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Connect to the Supabase project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Dry run
+        run: |
+          supabase db push --dry-run | tee dry-run.txt
+          {
+            echo "### Migrations that would run when this is merged"
+            echo ""
+            echo '```'
+            cat dry-run.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  preview:
+    name: Preview deployment
+    needs: checks
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Fetch the preview settings
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Build
+        run: vercel build --token="$VERCEL_TOKEN"
+
+      - name: Deploy
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      # One comment on the pull request, edited in place on later pushes
+      # rather than a new comment every time.
+      - name: Post the link on the pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ steps.deploy.outputs.url }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          body="Preview for this branch: $URL
+
+          Heads up: previews share the **real** database. Anything you
+          create or delete here is created or deleted for everyone."
+          gh pr comment "$PR" --body "$body" --edit-last --create-if-none \
+            || gh pr comment "$PR" --body "$body"

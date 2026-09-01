@@ -16,7 +16,32 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { error: string } | undefined;
 
-const siteUrl = () => process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+/*
+ * Where confirmation and password-reset links point back to.
+ *
+ * This throws rather than falling back in production, on purpose. A
+ * silent fallback to localhost is the worst possible failure here:
+ * the build passes, the deploy passes, the logs stay clean, and real
+ * people get emailed a link to their own machine that can never work.
+ * Nobody would notice until someone complained they could not sign up.
+ *
+ * Failing at the first signup attempt with a clear message is far
+ * easier to diagnose than a link that silently goes nowhere.
+ */
+const siteUrl = () => {
+  const url = process.env.NEXT_PUBLIC_SITE_URL;
+  if (url) return url;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "NEXT_PUBLIC_SITE_URL is not set. Confirmation emails would link to " +
+        "localhost and nobody could finish signing up. Set it to the real " +
+        "site address in the hosting environment."
+    );
+  }
+
+  return "http://localhost:3000";
+};
 
 /* --- Signing up ---------------------------------------------------- */
 
