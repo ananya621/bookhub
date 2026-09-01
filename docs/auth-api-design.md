@@ -357,3 +357,19 @@ has to be answered first, in that order.
 
 - **`email_change` and `reauthentication` templates** also default to link or
   OTP variants. Out of scope here, but they exist and will surprise us later.
+
+- **The name filter misses `v` for `u`.** `fvck` comes back `available`. This
+  is faithful — the export's `fold()` maps `vv` to `w` but never `v` to `u`,
+  so the original allows it too. Confirmed against the live function:
+  `vvanker` folds to `wanker` and is caught; `fvck` folds to `fvck` and is not.
+
+  Worth fixing, but it is not a one-line change: the `vv` to `w` rule has to
+  run *before* any `v` to `u` mapping, or `vvanker` folds to `uuanker` and the
+  filter gets worse rather than better. The current order in `fold_name` is
+  translate, then `vv`, so adding `v` to the translate map alone would break
+  the case that currently works.
+
+  Worth remembering what this filter is for: it stops a child picking an
+  obviously offensive display name. It is not, and cannot be, a complete
+  defence against someone determined to get one past it — reporting and
+  moderation are what cover that.
