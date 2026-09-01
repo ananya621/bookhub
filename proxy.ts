@@ -30,7 +30,6 @@ const ACCOUNT_ONLY = [
   "/requests",
   "/requests/new",
   "/survey",
-  "/verify",
 ];
 
 /** Signed-in users have no use for these. */
@@ -40,13 +39,11 @@ const SIGNED_OUT_ONLY = ["/", "/start", "/signup", "/login", "/reset", "/reset/n
 const ONBOARDING_ROUTE = {
   profile: "/profile/setup",
   survey: "/survey",
-  verify: "/verify",
 } as const;
 
 type RoutingUser = {
-  emailVerified: boolean;
   isAdmin: boolean;
-  onboardingStep: "profile" | "survey" | "verify" | null;
+  onboardingStep: "profile" | "survey" | null;
 };
 
 export async function proxy(request: NextRequest) {
@@ -73,17 +70,9 @@ export async function proxy(request: NextRequest) {
       supabase.from("surveys").select("user_id").eq("user_id", authUser.id).maybeSingle(),
     ]);
 
-    const emailVerified = Boolean(authUser.email_confirmed_at);
     user = {
-      emailVerified,
       isAdmin: Boolean(role?.is_admin),
-      onboardingStep: !profile?.display_name
-        ? "profile"
-        : !survey
-          ? "survey"
-          : !emailVerified
-            ? "verify"
-            : null,
+      onboardingStep: !profile?.display_name ? "profile" : !survey ? "survey" : null,
     };
   } else if (process.env.NODE_ENV !== "production") {
     // Development-only fallback to the fake persona, matching
@@ -92,7 +81,6 @@ export async function proxy(request: NextRequest) {
     const persona = cookie && isPersonaId(cookie) ? PERSONAS[cookie].user : null;
     if (persona) {
       user = {
-        emailVerified: persona.emailVerified,
         isAdmin: persona.isAdmin,
         onboardingStep: persona.onboardingStep,
       };
@@ -122,15 +110,10 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (pathname === "/verify" && user.emailVerified) return to("/home");
+  // Signed in means confirmed, so the "check your email" page has
+  // nothing left to say.
+  if (pathname === "/verify") return to("/home");
   if (SIGNED_OUT_ONLY.includes(pathname)) return to("/home");
-
-  // Posting a review is one of the two things that need a confirmed
-  // email (the other is opening a list's share link, which is a control
-  // inside /lists rather than a route of its own).
-  if (!user.emailVerified && /^\/book\/[^/]+\/review$/.test(pathname)) {
-    return to("/verify");
-  }
 
   if (pathname.startsWith("/admin") && !user.isAdmin) return to("/home");
 

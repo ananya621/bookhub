@@ -40,9 +40,14 @@ export async function signUp(_prev: ActionResult, formData: FormData): Promise<A
     return { error: error.message.toUpperCase() };
   }
 
-  // The database trigger has already made the profile and role rows.
-  // Next stop is picking a display name.
-  redirect("/profile/setup");
+  // No session yet, on purpose. The project requires a confirmed email
+  // before anyone can sign in, so signing up creates the account and
+  // sends the email, and that is all. The rest of onboarding happens
+  // after the link is clicked.
+  //
+  // The address travels in the URL because there is no session to read
+  // it back from — /verify only uses it to say who we emailed.
+  redirect(`/verify?email=${encodeURIComponent(email)}`);
 }
 
 /* --- Display name and avatar --------------------------------------- */
@@ -113,23 +118,26 @@ export async function saveSurvey(_prev: ActionResult, formData: FormData): Promi
   if (error) return { error: error.message.toUpperCase() };
 
   revalidatePath("/", "layout");
-  // Verifying is the last step. Someone editing their answers later has
-  // already done it and just goes home.
-  redirect(user.email_confirmed_at ? "/home" : "/verify");
+  // The survey is the last step now — confirming the email happened
+  // before any of this.
+  redirect("/home");
 }
 
 /* --- Verifying ------------------------------------------------------ */
 
-export async function resendConfirmation(): Promise<ActionResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return { error: "WE COULDN’T FIND YOUR EMAIL ADDRESS" };
+export async function resendConfirmation(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  // Taken from the form, not the session — there is no session until the
+  // email has been confirmed.
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email.includes("@")) return { error: "WE COULDN’T FIND YOUR EMAIL ADDRESS" };
 
+  const supabase = await createClient();
   const { error } = await supabase.auth.resend({
     type: "signup",
-    email: user.email,
+    email,
     options: { emailRedirectTo: `${siteUrl()}/auth/confirm` },
   });
 

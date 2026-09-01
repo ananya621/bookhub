@@ -64,8 +64,7 @@ export default function Nav() {
   }
 
   return (
-    <>
-      <div className="wnav">
+    <div className="wnav">
       <Link href="/" className="mono" style={{ all: "unset", cursor: "pointer" }}>
         <b style={{ display: "block" }}>Book Hub</b>
       </Link>
@@ -145,54 +144,7 @@ export default function Nav() {
           Admin
         </Link>
       )}
-      </div>
-      <UnverifiedBanner />
-    </>
-  );
-}
-
-/*
- * The pink "verify your email" bar. The export shows it only on these
- * seven screens (source line 1929) — not on the auth screens, not on
- * the public shared-list view, and not in admin.
- */
-const BANNER_ROUTES = ["/home", "/recs", "/search", "/tracker", "/lists", "/profile"];
-
-function UnverifiedBanner() {
-  const user = useCurrentUser();
-  const pathname = usePathname();
-
-  const onBannerRoute =
-    BANNER_ROUTES.includes(pathname) || pathname.startsWith("/book/");
-  if (!user || user.emailVerified || !onBannerRoute) return null;
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        background: "#ff3d9a",
-        color: "#14110f",
-        borderBottom: "3px solid var(--color-text)",
-        padding: "10px 28px",
-      }}
-    >
-      <div style={{ flex: 1 }}>
-        <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>
-          Your email isn&apos;t verified yet.
-        </span>{" "}
-        <span className="mono" style={{ fontWeight: 700 }}>
-          YOU CAN BROWSE AND TRACK BOOKS — REVIEWS AND SHARED LISTS UNLOCK ONCE IT IS.
-        </span>
-      </div>
-      <Link
-        href="/verify"
-        className="btn btn-secondary"
-        style={{ borderColor: "#14110f", color: "#14110f" }}
-      >
-        Enter my code
-      </Link>
     </div>
   );
 }
+

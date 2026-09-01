@@ -3,27 +3,63 @@
 Derived from the export (`web-app-design-system/Prototype with Admin.dc.html`),
 not invented. Source line numbers cited throughout.
 
-## It's four states, not two
+> **Read the deviations first.** Two of the states below describe the export
+> as designed, not as built. Both were dropped on purpose, for reasons that
+> came from Supabase rather than the design. See "Deviation: banned users" and
+> "Deviation: the unverified tier".
+
+## In the export: four states, not two
 
 The design doesn't have a logged-in/logged-out binary. It has four, plus one
 cross-cutting:
 
-| State | Condition in export | Meaning |
-|---|---|---|
-| **Guest** | `guest: true` (line 1682) | No account. Can browse. |
-| **Unverified** | `!guest && !verified` | Has an account, email not confirmed. Can browse *and track*, but nothing public. |
-| **Verified** | `!guest && verified` | Full reader. |
-| **Admin** | `isAdmin` on User | Everything above, plus `/admin`. |
-| *Banned* | `banned` (cross-cutting) | **In the export:** blocked from write actions, still signed in, still reads, sees a ban-block dialog. **As implemented here: not this — see "Deviation: banned users" below.** |
+| State | Condition in export | Meaning | Built? |
+|---|---|---|---|
+| **Guest** | `guest: true` (line 1682) | No account. Can browse. | yes |
+| **Unverified** | `!guest && !verified` | Has an account, email not confirmed. Can browse *and track*, but nothing public. | **no — see below** |
+| **Verified** | `!guest && verified` | Full reader. | yes, as simply "signed in" |
+| **Admin** | `isAdmin` on User | Everything above, plus `/admin`. | yes |
+| *Banned* | `banned` (cross-cutting) | Blocked from write actions, still signed in, still reads. | **no — see below** |
 
-The unverified tier is the one that's easy to miss and it is explicitly
-designed. The banner copy (line 73-79) states the rule:
+The unverified tier is easy to miss and is explicitly designed. The banner copy
+(line 73-79) states the rule:
 
 > Your email isn't verified yet. **You can browse and track books — reviews and
 > shared lists unlock once it is.**
 
-So verification gates *public* output only (reviews, shared lists). Private
-activity (shelves, lists, recommendations) works unverified.
+So in the export, verification gates *public* output only (reviews, shared
+lists), while private activity (shelves, lists, recommendations) works
+unverified. That is the part we could not keep.
+
+## Deviation: the unverified tier
+
+**Not built.** There is no signed-in-but-unconfirmed state in this app.
+
+Supabase is set to require a confirmed email before anyone can sign in at all.
+An account that has signed up but not clicked the link gets
+`400: Email not confirmed` from the token endpoint — confirmed from the auth
+logs, not assumed. Supabase offers confirm-before-sign-in or no confirmation;
+there is no middle setting that lets someone in while unconfirmed.
+
+So confirming moved into signup, and the order became:
+
+    sign up -> check email -> tap link -> pick a name -> survey -> home
+
+Everything that existed only to serve the unverified tier is gone:
+
+- the pink "your email isn't verified yet" banner
+- the two verify gates (posting a review, opening a list's share link)
+- the `unverified` test persona
+- `emailVerified` on `CurrentUser` — every signed-in user is confirmed, so a
+  field that is always true would only invite branches that never run
+- `verify` as an onboarding step; `/verify` is now a public "check your email"
+  page reached *before* there is any session, with the address passed in the
+  URL because there is nothing to read it back from
+
+The tables still carry everything needed to bring it back: verification state
+lives in `auth.users.email_confirmed_at`, which is Supabase's, not ours. If a
+custom SMTP server is ever set up, this decision is worth revisiting — the
+design is better with the tier than without it.
 
 ## The gate cascade
 

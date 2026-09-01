@@ -10,6 +10,11 @@ import { PERSONAS, type PersonaId } from "@/lib/personas";
  * switcher still works for walking the UI. In production there is no
  * fallback: no session means signed out.
  *
+ * Note there is no `emailVerified` here. Supabase is set to require a
+ * confirmed email before anyone can sign in at all, so every signed-in
+ * user is confirmed by definition. A field that is always true is worse
+ * than no field — it invites branches that can never run.
+ *
  * Nothing else in the app should read session cookies or decide what
  * logged-in means. Everything imports from here.
  */
@@ -23,17 +28,18 @@ export type CurrentUser = {
   /** Hex, from the export's avatar palette. */
   avatarColor: string;
   avatarInk: string;
-  emailVerified: boolean;
   isAdmin: boolean;
   /**
    * Which onboarding step this account still owes, or null when it has
-   * finished. Signup order is profile -> survey -> verify.
+   * finished. Confirming the email happens before any of this — you
+   * cannot be signed in without having done it — so the order that
+   * remains is profile, then survey.
    *
-   * Derived, never stored. The three columns it reads already decide the
-   * answer, so a stored copy would be a fourth version of the same fact
-   * and would drift the first time someone verified out of band.
+   * Derived, never stored. The two things it reads already decide the
+   * answer, so a stored copy would be a third version of the same fact
+   * and would drift.
    */
-  onboardingStep: "profile" | "survey" | "verify" | null;
+  onboardingStep: "profile" | "survey" | null;
 };
 
 /*
@@ -65,7 +71,6 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       supabase.from("surveys").select("user_id").eq("user_id", user.id).maybeSingle(),
     ]);
 
-    const emailVerified = Boolean(user.email_confirmed_at);
     const colour = PALETTE[profile?.avatar_color ?? "Blue"] ?? PALETTE.Blue;
 
     return {
@@ -74,15 +79,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       email: user.email ?? "",
       avatarColor: colour.css,
       avatarInk: colour.ink,
-      emailVerified,
       isAdmin: Boolean(role?.is_admin),
-      onboardingStep: !profile?.display_name
-        ? "profile"
-        : !survey
-          ? "survey"
-          : !emailVerified
-            ? "verify"
-            : null,
+      onboardingStep: !profile?.display_name ? "profile" : !survey ? "survey" : null,
     };
   }
 

@@ -11,19 +11,19 @@ import type { CurrentUser } from "@/lib/auth";
  *   data  — the rows that would belong to that user in Postgres
  *
  * Personas are chosen to cover the states that render differently, not
- * to be a plausible spread of users. Two are easy to overlook and are
- * here on purpose:
+ * to be a plausible spread of users. `empty` is the one that is easy to
+ * overlook and is here on purpose: it is the only way to reach the four
+ * empty states the export ships — "Nothing on the go", "This list is
+ * empty", "No books matched" and "Nothing matched exactly". A
+ * fully-populated account can never render them.
  *
- *   - `unverified` has the most unique UI of any state (the banner on
- *     seven screens, plus the two verify gates on posting a review and
- *     opening a list's share link).
- *   - `empty` is the only way to reach the four empty states the export
- *     ships: "Nothing on the go", "This list is empty", "No books
- *     matched" and "Nothing matched exactly". A fully-populated account
- *     can never render them.
+ * Two personas that used to exist are gone, both because the states
+ * they described cannot happen:
  *
- * There is no banned persona: a banned account cannot log in, so it has
- * no signed-in UI to test. See the note in lib/auth.ts.
+ *   - banned: a banned account cannot log in at all.
+ *   - unverified: confirming the email now happens during signup,
+ *     before there is a session, so nobody can be signed in and
+ *     unconfirmed.
  */
 
 export type Status = "read" | "reading" | "want" | "none";
@@ -49,13 +49,7 @@ export type Persona = {
   data: PersonaData;
 };
 
-export type PersonaId =
-  | "guest"
-  | "onboarding"
-  | "unverified"
-  | "empty"
-  | "full"
-  | "admin";
+export type PersonaId = "guest" | "onboarding" | "empty" | "full" | "admin";
 
 const NO_DATA: PersonaData = {
   statuses: {},
@@ -66,8 +60,8 @@ const NO_DATA: PersonaData = {
   survey: null,
 };
 
-/* The populated account, shared by `unverified`, `full` and `admin` so
-   the three differ only by the flags under test, not by content. */
+/* The populated account, shared by `full` and `admin` so the two differ
+   only by the flag under test, not by content. */
 const LIVED_IN: PersonaData = {
   statuses: {
     hobbit: "read",
@@ -110,40 +104,22 @@ export const PERSONAS: Record<PersonaId, Persona> = {
   onboarding: {
     id: "onboarding",
     label: "Just signed up",
-    note: "Mid-onboarding — walks profile setup, then the survey, then verify.",
+    note: "Confirmed their email, now picking a name and doing the survey.",
     user: {
       id: "u-onboarding",
       displayName: "",
       email: "new@school.uk",
       avatarColor: "#1B3BFF",
       avatarInk: "#EFECE3",
-      emailVerified: false,
       isAdmin: false,
       onboardingStep: "profile",
     },
     data: NO_DATA,
   },
 
-  unverified: {
-    id: "unverified",
-    label: "Signed up, not verified",
-    note: "Can browse and track. Reviews and shared lists are locked; banner on 7 screens.",
-    user: {
-      id: "u-unverified",
-      displayName: "Sam",
-      email: "sam@school.uk",
-      avatarColor: "#FF3D9A",
-      avatarInk: "#14110F",
-      emailVerified: false,
-      isAdmin: false,
-      onboardingStep: null,
-    },
-    data: LIVED_IN,
-  },
-
   empty: {
     id: "empty",
-    label: "Verified, nothing tracked",
+    label: "New, nothing tracked",
     note: "Finished onboarding but has no data — the only way to see the empty states.",
     user: {
       id: "u-empty",
@@ -151,7 +127,6 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       email: "ada@school.uk",
       avatarColor: "#C6F24E",
       avatarInk: "#14110F",
-      emailVerified: true,
       isAdmin: false,
       onboardingStep: null,
     },
@@ -160,7 +135,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
 
   full: {
     id: "full",
-    label: "Verified, full account",
+    label: "Everyday reader",
     note: "Shelves, lists, a posted review and past requests. The everyday case.",
     user: {
       id: "u-full",
@@ -168,7 +143,6 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       email: "maya@school.uk",
       avatarColor: "#1B3BFF",
       avatarInk: "#EFECE3",
-      emailVerified: true,
       isAdmin: false,
       onboardingStep: null,
     },
@@ -185,7 +159,6 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       email: "hale@school.uk",
       avatarColor: "#7B2DFF",
       avatarInk: "#EFECE3",
-      emailVerified: true,
       isAdmin: true,
       onboardingStep: null,
     },
@@ -196,7 +169,6 @@ export const PERSONAS: Record<PersonaId, Persona> = {
 export const PERSONA_ORDER: PersonaId[] = [
   "guest",
   "onboarding",
-  "unverified",
   "empty",
   "full",
   "admin",

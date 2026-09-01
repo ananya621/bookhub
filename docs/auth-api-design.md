@@ -322,6 +322,15 @@ fixtures.
 
 ## 7. Decisions
 
+> **Superseded on 2026-09-01:** the 6-digit code is gone and so is the
+> unverified tier. Supabase requires a confirmed email before anyone can sign
+> in — `400: Email not confirmed`, seen in the auth logs — so confirming moved
+> into signup and nobody can be signed in while unconfirmed. The flow in §6 is
+> now: sign up, check email, tap link, pick a name, survey, home. See
+> "Deviation: the unverified tier" in docs/auth-states.md for what was removed
+> and why. The tables below are unchanged and correct.
+
+
 - **OTP, not magic link.** Change the Confirm signup template to carry
   `{{ .Token }}` and verify with `verifyOtp`, so `/verify` keeps its 6-digit
   code screen as designed. Still worth checking `'signup'` vs `'email'` for

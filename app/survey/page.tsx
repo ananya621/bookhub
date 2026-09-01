@@ -68,7 +68,7 @@ export default function SurveyPage() {
   return (
     <form action={formAction} style={{ maxWidth: 620, margin: "0 auto", padding: "48px 24px 72px" }}>
       <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 10 }}>
-        STEP 3 OF 4
+        STEP 4 OF 4
       </div>
       <h1 style={{ fontSize: 34, margin: "0 0 6px" }}>What do you like to read?</h1>
       <p style={{ fontSize: 14, marginBottom: 28 }}>

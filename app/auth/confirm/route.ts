@@ -10,14 +10,18 @@ import { createClient } from "@/lib/supabase/server";
  * /verify screen tells people to tap it rather than type a code.
  *
  * The link goes to Supabase first. Supabase checks it, then sends the
- * person here with a `code` in the URL, which we swap for a real
- * session. After that auth.users.email_confirmed_at is set, which is
- * what the whole app reads to decide if someone is verified.
+ * person here with a `code` in the URL, which we swap for a session.
+ * This is the moment someone first becomes signed in — the project
+ * requires a confirmed email before sign-in, so there is no session
+ * before this point.
+ *
+ * They land on /profile/setup to carry on with onboarding. If they had
+ * already finished it, proxy.ts moves them along to /home.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/home";
+  const next = searchParams.get("next") ?? "/profile/setup";
 
   if (!code) {
     // No code means the link was malformed or already used.
