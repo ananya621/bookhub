@@ -69,16 +69,22 @@ These are settings the app reads while it runs. They live in Vercel, not
 in the repo.
 
 Go to the project → **Settings** → **Environment Variables**. Add these
-three. For each one, tick **Production** *and* **Preview**.
+four. For each one, tick **Production** *and* **Preview**.
 
 | Name | Value | Where to get it |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **Data API** → **Project URL** |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **API Keys** → the publishable key |
-| `NEXT_PUBLIC_SITE_URL` | `YOUR-SITE-URL` | From Step 1 |
+| `NEXT_PUBLIC_SITE_URL` | `https://litconnect.io` | Your domain — see Step 3a |
+| `GOOGLE_BOOKS_API_KEY` | Copy from your `.env.local` | Or: Google Cloud console → **APIs & Services** → **Credentials** |
 
 The first two are safe to expose. They are sent to every visitor's browser
-on purpose. What actually protects the data is the row-level security
+on purpose.
+
+`GOOGLE_BOOKS_API_KEY` is different — treat it as private. Without it the
+"suggest a book" search says it is not set up rather than failing
+silently, so the site still works, but nobody can search for a book to
+ask for. What actually protects the data is the row-level security
 rules in the database, not these keys. They still belong in Vercel rather
 than typed into the code, so the code works the same whichever project it
 points at.
@@ -103,10 +109,45 @@ signing up from a preview still ends up confirmed on the real site.
 
 ---
 
+## Step 3a — Point litconnect.io at the site
+
+You own the domain; this tells Vercel to answer for it.
+
+1. Vercel → your project → **Settings** → **Domains**
+2. Type `litconnect.io` and press **Add**
+3. Add `www.litconnect.io` too, and set it to redirect to the bare domain
+4. Vercel then shows you the DNS records it wants
+
+Now go to wherever you bought the domain and add those records. It is
+usually one of these two shapes:
+
+| Record | Name | Points at |
+|---|---|---|
+| `A` | `@` | the IP address Vercel shows you |
+| `CNAME` | `www` | `cname.vercel-dns.com` |
+
+Vercel tells you the exact values — use those rather than anything you
+read elsewhere, because they do change.
+
+Then wait. DNS updates spread across the internet slowly; usually minutes,
+occasionally a couple of hours. Vercel's Domains page shows a tick when it
+has worked, and issues the certificate for `https://` on its own.
+
+**Do not set `NEXT_PUBLIC_SITE_URL` to the domain until that tick
+appears.** Until then the domain does not answer, so confirmation emails
+would point somewhere that does not load. Use the `.vercel.app` address
+Vercel gave you in Step 1 in the meantime, and switch it over afterwards.
+
+---
+
 ## Step 3 — Tell Supabase about the new address
 
 Supabase will not send people to an address it doesn't recognise. Right
 now it only knows about `localhost`.
+
+Add **both** the `.vercel.app` address and `https://litconnect.io`, so
+the site keeps working while the domain is still propagating and after it
+has finished.
 
 1. Go to your Supabase project.
 2. **Authentication** → **URL Configuration**.
