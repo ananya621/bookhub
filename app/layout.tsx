@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import DevPersonaSwitcher from "@/components/DevPersonaSwitcher";
+import ProjectBanner from "@/components/ProjectBanner";
 import { SESSION_COOKIE, getCurrentUser } from "@/lib/auth";
 import { PERSONAS, isPersonaId, type PersonaId } from "@/lib/personas";
 
@@ -48,6 +49,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             re-seed their local state from the new fixture instead of
             keeping the previous reader's shelves. */}
         <AuthProvider key={persona} user={user} data={data}>
+          {/* Above everything, including the nav and the unverified
+              banner, and on the chrome-less auth screens too. */}
+          <ProjectBanner />
           {children}
           {isDev && <DevPersonaSwitcher current={persona} />}
         </AuthProvider>
