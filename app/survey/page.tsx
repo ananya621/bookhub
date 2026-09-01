@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState, useState } from "react";
+import { saveSurvey, type ActionResult } from "@/app/actions/auth";
 import { allGenres, allLevels, allLengths } from "@/lib/mock";
 
 /*
@@ -45,7 +45,10 @@ const LENGTH_OPTS: { label: string; value: string }[] = [
 
 const GENRE_OPTS = [...allGenres, "Other"];
 export default function SurveyPage() {
-  const router = useRouter();
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(
+    saveSurvey,
+    undefined
+  );
   const [genres, setGenres] = useState<string[]>([]);
   const [level, setLevel] = useState(allLevels[0]);
   const [length, setLength] = useState(allLengths[1]);
@@ -62,12 +65,8 @@ export default function SurveyPage() {
       ? "ADULT BOOKS CAN CONTAIN EXPLICIT SEXUAL CONTENT, GRAPHIC VIOLENCE, DRUG USE AND DISTRESSING THEMES WITH NO AGE FILTERING AT ALL. CHOOSING THIS IS YOUR DECISION AND YOURS ALONE — THE SITE IS NOT RESPONSIBLE FOR WHAT YOU CHOOSE TO READ. IF YOU ARE UNSURE, TALK TO A PARENT, CARER OR TEACHER."
       : "YOUNG ADULT BOOKS OFTEN CARRY STRONGER LANGUAGE, VIOLENCE, ROMANCE AND SEXUAL REFERENCES, AND THEMES LIKE SELF-HARM, GRIEF, BULLYING AND DRUG USE. CHOOSING THIS IS YOUR DECISION AND YOURS ALONE — THE SITE IS NOT RESPONSIBLE FOR WHAT YOU CHOOSE TO READ. IF YOU ARE UNSURE, TALK TO A PARENT, CARER OR TEACHER.";
 
-  function submitSurvey() {
-    router.push("/verify");
-  }
-
   return (
-    <div style={{ maxWidth: 620, margin: "0 auto", padding: "48px 24px 72px" }}>
+    <form action={formAction} style={{ maxWidth: 620, margin: "0 auto", padding: "48px 24px 72px" }}>
       <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 10 }}>
         STEP 3 OF 4
       </div>
@@ -153,17 +152,32 @@ export default function SurveyPage() {
         ))}
       </div>
 
+      {/* The answers live in React state so the age warning can react to
+          them, so they go to the server as hidden fields. */}
+      {genres.map((g) => (
+        <input key={g} type="hidden" name="genres" value={g} />
+      ))}
+      <input type="hidden" name="readingLevel" value={level} />
+      <input type="hidden" name="preferredLength" value={length} />
+
+      {state?.error && (
+        <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 12 }}>
+          {state.error}
+        </div>
+      )}
+
       <button
+        type="submit"
+        disabled={pending}
         className="btn btn-primary btn-block blueprint"
         style={{ minHeight: 48, fontSize: 17 }}
-        onClick={submitSurvey}
       >
-        Find My Perfect Book!
+        {pending ? "Saving your answers…" : "Find My Perfect Book!"}
         <i className="corner tl" />
         <i className="corner tr" />
         <i className="corner bl" />
         <i className="corner br" />
       </button>
-    </div>
+    </form>
   );
 }

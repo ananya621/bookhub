@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { isPersonaId } from "@/lib/personas";
 
 /*
@@ -47,7 +48,11 @@ export async function POST(request: Request) {
 
   if (persona === "guest") {
     // Guest is the absence of a session, not a session that says
-    // "guest" — same as signing out.
+    // "guest" — same as signing out. This also ends any REAL Supabase
+    // session, so picking "Site visitor" is the way to sign out of a
+    // test account while developing.
+    const supabase = await createClient();
+    await supabase.auth.signOut();
     response.cookies.delete(SESSION_COOKIE);
   } else {
     response.cookies.set(SESSION_COOKIE, persona, {
@@ -65,6 +70,9 @@ export async function POST(request: Request) {
 export async function DELETE() {
   const blocked = disabledInProduction();
   if (blocked) return blocked;
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
 
   const response = NextResponse.json({ persona: "guest" });
   response.cookies.delete(SESSION_COOKIE);

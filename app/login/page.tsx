@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useActionState } from "react";
+import { signIn, type ActionResult } from "@/app/actions/auth";
 
 /*
  * Ported from the `isLogin` block in Prototype with Admin.dc.html
@@ -15,66 +16,55 @@ import { useRouter } from "next/navigation";
  * that's unauthenticated navigation until the real login API exists.
  */
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [loginError, setLoginError] = useState("");
-
-  function submitLogin() {
-    if (!email.includes("@") || pw.length < 1) {
-      setLoginError("EMAIL OR PASSWORD DIDN’T MATCH");
-      return;
-    }
-    setLoginError("");
-    router.push("/home");
-  }
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(
+    signIn,
+    undefined
+  );
 
   return (
-    <div style={{ maxWidth: 420, margin: "0 auto", padding: "64px 24px" }}>
+    <form action={formAction} style={{ maxWidth: 420, margin: "0 auto", padding: "64px 24px" }}>
       <h2 style={{ margin: "0 0 6px" }}>Welcome back</h2>
       <p style={{ fontSize: 14, marginBottom: 24 }}>
         Log in to get to your recommendations and shelves.
       </p>
 
       <div className="field" style={{ marginBottom: 14 }}>
-        <label>Email</label>
+        <label htmlFor="email">Email</label>
         <input
+          id="email"
+          name="email"
+          type="email"
           className="input"
           style={{ minHeight: 42 }}
           placeholder="you@school.uk"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setLoginError("");
-          }}
+          required
         />
       </div>
       <div className="field" style={{ marginBottom: 6 }}>
-        <label>Password</label>
+        <label htmlFor="password">Password</label>
         <input
-          className="input"
+          id="password"
+          name="password"
           type="password"
+          className="input"
           style={{ minHeight: 42 }}
-          value={pw}
-          onChange={(e) => {
-            setPw(e.target.value);
-            setLoginError("");
-          }}
+          required
         />
       </div>
 
-      {loginError && (
+      {state?.error && (
         <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 14 }}>
-          {loginError}
+          {state.error}
         </div>
       )}
 
       <button
+        type="submit"
+        disabled={pending}
         className="btn btn-primary btn-block blueprint"
         style={{ minHeight: 46, marginTop: 14 }}
-        onClick={submitLogin}
       >
-        Log in
+        {pending ? "Logging in…" : "Log in"}
         <i className="corner tl" />
         <i className="corner tr" />
         <i className="corner bl" />
@@ -90,17 +80,17 @@ export default function LoginPage() {
           paddingBottom: 18,
         }}
       >
-        <button className="btn btn-ghost" onClick={() => router.push("/reset")}>
+        <Link href="/reset" className="btn btn-ghost">
           Forgot password
-        </button>
+        </Link>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18 }}>
         <span style={{ fontSize: 14, flex: 1 }}>No account yet?</span>
-        <button className="btn btn-secondary" onClick={() => router.push("/signup")}>
+        <Link href="/signup" className="btn btn-secondary">
           Sign up
-        </button>
+        </Link>
       </div>
-    </div>
+    </form>
   );
 }

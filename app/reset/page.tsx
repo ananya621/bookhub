@@ -1,37 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useActionState } from "react";
+import { requestReset, type ActionResult } from "@/app/actions/auth";
 
 /*
  * Ported from the `isReset` block in Prototype with Admin.dc.html
  * (lines 1342-1366). Chrome-less screen, no <Nav /> — see app/start
  * for why.
  *
- * Two sub-states from the source, kept as local state instead of the
- * export's shared `resetSent` flag: the request form, and the "check
- * your email" confirmation once it's been sent. `sendReset`'s
- * validation (just needs an "@") is copied verbatim — there's no real
- * email-sending backend yet.
+ * Two sub-states from the source: the request form, and the "check your
+ * email" confirmation.
+ *
+ * The confirmation is shown whether or not that email has an account.
+ * That is on purpose — if it only appeared for real accounts, this form
+ * would be a way to find out who has signed up. For the same reason the
+ * action doesn't report whether the send worked.
+ *
+ * The export had an "Open the link" button that jumped straight to the
+ * new-password screen, which was fine for a prototype. It's gone now:
+ * the real link arrives by email and carries a token, and without that
+ * token the new-password screen has nothing to act on.
  */
 export default function ResetPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [resetError, setResetError] = useState("");
-  const [resetSent, setResetSent] = useState(false);
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(
+    async (prev, formData) => {
+      const result = await requestReset(prev, formData);
+      return result ?? { error: "" }; // "" means sent, see below
+    },
+    undefined
+  );
 
-  function sendReset() {
-    if (email.includes("@")) {
-      setResetError("");
-      setResetSent(true);
-    } else {
-      setResetError("ENTER THE EMAIL YOU SIGNED UP WITH");
-    }
-  }
+  const sent = state !== undefined && state.error === "";
 
   return (
     <div style={{ maxWidth: 420, margin: "0 auto", padding: "64px 24px" }}>
-      {resetSent && (
+      {sent ? (
         <div className="blueprint" style={{ padding: 26 }}>
           <i className="corner tl" />
           <i className="corner tr" />
@@ -39,22 +43,17 @@ export default function ResetPage() {
           <i className="corner br" />
           <h2 style={{ margin: "0 0 8px" }}>Check your email</h2>
           <p style={{ fontSize: 14 }}>
-            We&apos;ve sent a link to set a new password. It works once and
-            expires in an hour.
+            If that address has an account, we&apos;ve sent a link to set a new
+            password. It works once and expires in an hour.
           </p>
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-primary" onClick={() => router.push("/reset/new")}>
-              Open the link
-            </button>
-            <button className="btn btn-secondary" onClick={() => router.push("/login")}>
+            <Link href="/login" className="btn btn-secondary">
               Back to log in
-            </button>
+            </Link>
           </div>
         </div>
-      )}
-
-      {!resetSent && (
-        <>
+      ) : (
+        <form action={formAction}>
           <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 10 }}>
             PASSWORD RESET
           </div>
@@ -63,38 +62,34 @@ export default function ResetPage() {
             Enter your email and we&apos;ll send a link to set a new one.
           </p>
           <div className="field" style={{ marginBottom: 6 }}>
-            <label>Email</label>
+            <label htmlFor="email">Email</label>
             <input
+              id="email"
+              name="email"
+              type="email"
               className="input"
               style={{ minHeight: 42 }}
               placeholder="you@school.uk"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setResetError("");
-              }}
+              required
             />
           </div>
-          {resetError && (
+          {state?.error ? (
             <div className="mono" style={{ color: "var(--color-accent-700)", marginTop: 10 }}>
-              {resetError}
+              {state.error}
             </div>
-          )}
+          ) : null}
           <button
+            type="submit"
+            disabled={pending}
             className="btn btn-primary btn-block"
             style={{ minHeight: 46, marginTop: 18 }}
-            onClick={sendReset}
           >
-            Send reset link
+            {pending ? "Sending…" : "Send reset link"}
           </button>
-          <button
-            className="btn btn-ghost"
-            style={{ marginTop: 14 }}
-            onClick={() => router.push("/login")}
-          >
+          <Link href="/login" className="btn btn-ghost" style={{ marginTop: 14 }}>
             Back to log in
-          </button>
-        </>
+          </Link>
+        </form>
       )}
     </div>
   );

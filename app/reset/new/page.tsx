@@ -1,38 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState } from "react";
+import { setNewPassword, type ActionResult } from "@/app/actions/auth";
 
 /*
  * Ported from the `isNewPassword` block in Prototype with Admin.dc.html
  * (lines 197-206). Chrome-less screen, no <Nav /> — see app/start for
  * why.
  *
- * `savePassword`'s validation (8+ characters, both fields matching) is
- * copied verbatim from the export. There's no real password-reset
- * backend, so success just sends the user to /login.
+ * The two checks (8+ characters, both fields matching) are the export's
+ * own. They now run in the setNewPassword server action, which changes
+ * the password in Supabase.
+ *
+ * You only reach this with a valid reset session — the link in the email
+ * goes via /auth/confirm, which signs you in first. Without that,
+ * Supabase has no account to change and returns an error.
  */
 export default function NewPasswordPage() {
-  const router = useRouter();
-  const [newPassword, setNewPassword] = useState("");
-  const [newPassword2, setNewPassword2] = useState("");
-  const [pwError, setPwError] = useState("");
-
-  function savePassword() {
-    if (newPassword.length < 8) {
-      setPwError("AT LEAST 8 CHARACTERS");
-      return;
-    }
-    if (newPassword !== newPassword2) {
-      setPwError("THE TWO PASSWORDS DON’T MATCH");
-      return;
-    }
-    setPwError("");
-    router.push("/login");
-  }
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(
+    setNewPassword,
+    undefined
+  );
 
   return (
-    <div style={{ maxWidth: 420, margin: "0 auto", padding: "64px 24px" }}>
+    <form action={formAction} style={{ maxWidth: 420, margin: "0 auto", padding: "64px 24px" }}>
       <div
         className="mono"
         style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 10 }}
@@ -46,46 +37,43 @@ export default function NewPasswordPage() {
       </p>
 
       <div className="field" style={{ marginBottom: 14 }}>
-        <label>New password</label>
+        <label htmlFor="password">New password</label>
         <input
+          id="password"
+          name="password"
           className="input"
           type="password"
           style={{ minHeight: 42 }}
           placeholder="At least 8 characters"
-          value={newPassword}
-          onChange={(e) => {
-            setNewPassword(e.target.value);
-            setPwError("");
-          }}
+          required
         />
       </div>
       <div className="field" style={{ marginBottom: 6 }}>
-        <label>Type it again</label>
+        <label htmlFor="confirm">Type it again</label>
         <input
+          id="confirm"
+          name="confirm"
           className="input"
           type="password"
           style={{ minHeight: 42 }}
-          value={newPassword2}
-          onChange={(e) => {
-            setNewPassword2(e.target.value);
-            setPwError("");
-          }}
+          required
         />
       </div>
 
-      {pwError && (
+      {state?.error && (
         <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
-          {pwError}
+          {state.error}
         </div>
       )}
 
       <button
+        type="submit"
+        disabled={pending}
         className="btn btn-primary btn-block"
         style={{ minHeight: 46, marginTop: 18 }}
-        onClick={savePassword}
       >
-        Save and log in
+        {pending ? "Saving…" : "Save and log in"}
       </button>
-    </div>
+    </form>
   );
 }
