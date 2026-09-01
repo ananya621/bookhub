@@ -1,43 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useActionState } from "react";
+import { signUp, type ActionResult } from "@/app/actions/auth";
 
 /*
  * Ported from the `isSignup` block in Prototype with Admin.dc.html
  * (lines 653-669). Chrome-less screen, no <Nav /> — see app/start for
  * why.
  *
- * The export's own `submitSignup` handler is copied verbatim: it only
- * checks the email has an "@" and the password is 8+ characters, then
- * moves on. There's no real signup API yet, so this still just does
- * that same shape check and navigates — nothing invented beyond what
- * the source already did here. On success the export sends the user
- * to `profileSetup` next (not `verify` — verification is the export's
- * step 4, after profile setup and the survey), so that's what this
- * button does too.
+ * This now creates a real account. The form posts to the signUp server
+ * action, which does the same two checks the export did (email has an
+ * "@", password is 8+ characters) and then calls Supabase. The error
+ * wording is unchanged from the export.
+ *
+ * On success Supabase emails a confirmation link and the person carries
+ * on to profile setup — the export's order too: profile setup, survey,
+ * then verify last.
  */
 export default function SignupPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [signupError, setSignupError] = useState("");
-
-  function submitSignup() {
-    if (!email.includes("@")) {
-      setSignupError("ENTER A VALID EMAIL ADDRESS");
-      return;
-    }
-    if (pw.length < 8) {
-      setSignupError("PASSWORD NEEDS AT LEAST 8 CHARACTERS");
-      return;
-    }
-    setSignupError("");
-    router.push("/profile/setup");
-  }
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(
+    signUp,
+    undefined
+  );
 
   return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "56px 24px" }}>
+    <form action={formAction} style={{ maxWidth: 440, margin: "0 auto", padding: "56px 24px" }}>
       <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 10 }}>
         STEP 1 OF 4
       </div>
@@ -48,45 +36,43 @@ export default function SignupPage() {
       </p>
 
       <div className="field" style={{ marginBottom: 14 }}>
-        <label>Email address</label>
+        <label htmlFor="email">Email address</label>
         <input
+          id="email"
+          name="email"
+          type="email"
           className="input"
           style={{ minHeight: 42 }}
           placeholder="you@school.uk"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setSignupError("");
-          }}
+          required
         />
       </div>
       <div className="field" style={{ marginBottom: 6 }}>
-        <label>Password</label>
+        <label htmlFor="password">Password</label>
         <input
-          className="input"
+          id="password"
+          name="password"
           type="password"
+          className="input"
           style={{ minHeight: 42 }}
           placeholder="At least 8 characters"
-          value={pw}
-          onChange={(e) => {
-            setPw(e.target.value);
-            setSignupError("");
-          }}
+          required
         />
       </div>
 
-      {signupError && (
+      {state?.error && (
         <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 14 }}>
-          {signupError}
+          {state.error}
         </div>
       )}
 
       <button
+        type="submit"
+        disabled={pending}
         className="btn btn-primary btn-block blueprint"
         style={{ minHeight: 46, marginTop: 14 }}
-        onClick={submitSignup}
       >
-        Continue
+        {pending ? "Making your account…" : "Continue"}
         <i className="corner tl" />
         <i className="corner tr" />
         <i className="corner bl" />
@@ -94,13 +80,13 @@ export default function SignupPage() {
       </button>
 
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}>
-        <button className="btn btn-ghost" onClick={() => router.push("/login")}>
+        <Link href="/login" className="btn btn-ghost">
           I already have an account
-        </button>
-        <button className="btn btn-ghost" onClick={() => router.push("/reset")}>
+        </Link>
+        <Link href="/reset" className="btn btn-ghost">
           Forgot password
-        </button>
+        </Link>
       </div>
-    </div>
+    </form>
   );
 }

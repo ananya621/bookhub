@@ -1,22 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth";
 import { PERSONAS, isPersonaId } from "@/lib/personas";
+import { refreshSession } from "@/lib/supabase/proxy";
 
 /*
- * Route-level auth rules.
+ * Route-level auth rules, and session refresh.
  *
  * This is `proxy.ts`, not `middleware.ts`: Next 16 deprecated the
  * middleware file convention and renamed it to proxy. Same behaviour,
  * runs before routes render.
  *
- * This is UX, not security. It keeps people out of pages that would be
- * meaningless or broken for them; it is not what stops someone reading
- * another user's data. That job belongs to row-level security in
- * Postgres once the schema lands — see docs/auth-states.md.
+ * Refreshing the session here is not optional — Supabase sessions
+ * expire, and if nothing renews the cookie people get logged out
+ * mid-visit.
  *
- * When Supabase Auth arrives this file keeps the same rules and swaps
- * how it identifies the user: refresh the auth cookie and read the
- * session here, instead of looking up a persona fixture.
+ * The redirects below are convenience, not security. They keep people
+ * off pages that would be meaningless for them. What actually stops
+ * someone reading another user's data is row-level security in Postgres.
  */
 
 /** Guests get bounced off these; they have nothing to show without an account. */
@@ -43,12 +43,61 @@ const ONBOARDING_ROUTE = {
   verify: "/verify",
 } as const;
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const to = (path: string) => NextResponse.redirect(new URL(path, request.url));
+type RoutingUser = {
+  emailVerified: boolean;
+  isAdmin: boolean;
+  onboardingStep: "profile" | "survey" | "verify" | null;
+};
 
-  const cookie = request.cookies.get(SESSION_COOKIE)?.value;
-  const user = cookie && isPersonaId(cookie) ? PERSONAS[cookie].user : null;
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Always refresh first, so the cookie is current whatever we decide
+  // to do with the request.
+  const { response, user: authUser, supabase } = await refreshSession(request);
+
+  const to = (path: string) => {
+    const redirect = NextResponse.redirect(new URL(path, request.url));
+    // Carry over any refreshed session cookies, or the refresh is lost
+    // on every redirect.
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  };
+
+  let user: RoutingUser | null = null;
+
+  if (authUser) {
+    const [{ data: profile }, { data: role }, { data: survey }] = await Promise.all([
+      supabase.from("profiles").select("display_name").eq("id", authUser.id).maybeSingle(),
+      supabase.from("user_roles").select("is_admin").eq("user_id", authUser.id).maybeSingle(),
+      supabase.from("surveys").select("user_id").eq("user_id", authUser.id).maybeSingle(),
+    ]);
+
+    const emailVerified = Boolean(authUser.email_confirmed_at);
+    user = {
+      emailVerified,
+      isAdmin: Boolean(role?.is_admin),
+      onboardingStep: !profile?.display_name
+        ? "profile"
+        : !survey
+          ? "survey"
+          : !emailVerified
+            ? "verify"
+            : null,
+    };
+  } else if (process.env.NODE_ENV !== "production") {
+    // Development-only fallback to the fake persona, matching
+    // getCurrentUser(). Production has no fallback.
+    const cookie = request.cookies.get(SESSION_COOKIE)?.value;
+    const persona = cookie && isPersonaId(cookie) ? PERSONAS[cookie].user : null;
+    if (persona) {
+      user = {
+        emailVerified: persona.emailVerified,
+        isAdmin: persona.isAdmin,
+        onboardingStep: persona.onboardingStep,
+      };
+    }
+  }
 
   // --- Signed out ---------------------------------------------------
   if (!user) {
@@ -60,17 +109,17 @@ export function proxy(request: NextRequest) {
     // redirects for now — revisit when the gate components land.
     if (needsAccount) return to("/start");
     if (pathname.startsWith("/admin")) return to("/");
-    return NextResponse.next();
+    return response;
   }
 
   // --- Signed in ----------------------------------------------------
 
-  // Finish onboarding before anything else. Without this the "just
-  // signed up" persona could wander into pages that assume a profile.
+  // Finish onboarding before anything else, otherwise a half-finished
+  // account can wander into pages that assume a profile.
   if (user.onboardingStep) {
     const step = ONBOARDING_ROUTE[user.onboardingStep];
     if (pathname !== step) return to(step);
-    return NextResponse.next();
+    return response;
   }
 
   if (pathname === "/verify" && user.emailVerified) return to("/home");
@@ -78,22 +127,18 @@ export function proxy(request: NextRequest) {
 
   // Posting a review is one of the two things that need a confirmed
   // email (the other is opening a list's share link, which is a control
-  // inside /lists rather than a route of its own). The export shows a
-  // "Verify your email to post a review" dialog here; until that dialog
-  // is ported, send them to the verify screen.
+  // inside /lists rather than a route of its own).
   if (!user.emailVerified && /^\/book\/[^/]+\/review$/.test(pathname)) {
     return to("/verify");
   }
 
-  // Non-admins are sent away rather than shown a 403 — no point
-  // confirming the section exists.
   if (pathname.startsWith("/admin") && !user.isAdmin) return to("/home");
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
-  // Everything except Next internals, the dev persona endpoint (it must
-  // stay reachable to switch out of a persona) and static files.
-  matcher: ["/((?!_next/|api/|favicon.ico|.*\\.[^/]+$).*)"],
+  // Everything except Next internals, API routes (the dev persona
+  // endpoint and the auth callback must stay reachable) and static files.
+  matcher: ["/((?!_next/|api/|auth/|favicon.ico|.*\\.[^/]+$).*)"],
 };

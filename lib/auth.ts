@@ -1,19 +1,17 @@
 import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 import { PERSONAS, type PersonaId } from "@/lib/personas";
 
 /*
- * The single seam between the app and "who is signed in".
+ * The single place that answers "who is signed in".
  *
- * Today `getCurrentUser()` reads a fake session cookie set by the dev
- * persona switcher. When Supabase Auth lands it calls
- * `supabase.auth.getUser()` and joins the profile row instead — the
- * return type stays the same, so nothing that imports from here has to
- * change. Keep it that way: no other module should read the session
- * cookie or decide what "logged in" means.
+ * A real Supabase session always wins. If there isn't one, and we are in
+ * development, we fall back to the fake persona cookie so the persona
+ * switcher still works for walking the UI. In production there is no
+ * fallback: no session means signed out.
  *
- * Note for the real implementation: use `getUser()`, never
- * `getSession()`. getSession() trusts the cookie without revalidating
- * it against the auth server, so it can be forged.
+ * Nothing else in the app should read session cookies or decide what
+ * logged-in means. Everything imports from here.
  */
 
 export const SESSION_COOKIE = "bookhub-session";
@@ -29,21 +27,69 @@ export type CurrentUser = {
   isAdmin: boolean;
   /**
    * Which onboarding step this account still owes, or null when it has
-   * finished. Signup order is profile -> survey -> verify (verified
-   * against the export's handlers at lines 1916 / 1976 / 2002).
+   * finished. Signup order is profile -> survey -> verify.
+   *
+   * Derived, never stored. The three columns it reads already decide the
+   * answer, so a stored copy would be a fourth version of the same fact
+   * and would drift the first time someone verified out of band.
    */
   onboardingStep: "profile" | "survey" | "verify" | null;
 };
 
 /*
- * There is deliberately no `isBanned` here. A banned account cannot
- * authenticate at all, so it can never be the current user — the ban
- * lives on the admin-facing account records, not on the session. (The
- * export took the other route, keeping banned users signed in and
- * read-only; we chose lockout, so its `banBlock` dialog is not ported.)
+ * No `isBanned` here on purpose. Supabase refuses to authenticate a
+ * banned account (auth.users.banned_until), so a banned user can never
+ * be the current user. The ban lives on the admin-facing records.
  */
 
+const PALETTE: Record<string, { css: string; ink: string }> = {
+  Red: { css: "#C41031", ink: "#EFECE3" },
+  Orange: { css: "#FF4D00", ink: "#EFECE3" },
+  Yellow: { css: "#FFD400", ink: "#14110F" },
+  Lime: { css: "#C6F24E", ink: "#14110F" },
+  Blue: { css: "#1B3BFF", ink: "#EFECE3" },
+  Purple: { css: "#7B2DFF", ink: "#EFECE3" },
+  Pink: { css: "#FF3D9A", ink: "#14110F" },
+};
+
 export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const [{ data: profile }, { data: role }, { data: survey }] = await Promise.all([
+      supabase.from("profiles").select("display_name, avatar_color").eq("id", user.id).maybeSingle(),
+      supabase.from("user_roles").select("is_admin").eq("user_id", user.id).maybeSingle(),
+      supabase.from("surveys").select("user_id").eq("user_id", user.id).maybeSingle(),
+    ]);
+
+    const emailVerified = Boolean(user.email_confirmed_at);
+    const colour = PALETTE[profile?.avatar_color ?? "Blue"] ?? PALETTE.Blue;
+
+    return {
+      id: user.id,
+      displayName: profile?.display_name ?? "",
+      email: user.email ?? "",
+      avatarColor: colour.css,
+      avatarInk: colour.ink,
+      emailVerified,
+      isAdmin: Boolean(role?.is_admin),
+      onboardingStep: !profile?.display_name
+        ? "profile"
+        : !survey
+          ? "survey"
+          : !emailVerified
+            ? "verify"
+            : null,
+    };
+  }
+
+  // No real session. In development only, fall back to the fake persona
+  // so the switcher keeps working.
+  if (process.env.NODE_ENV === "production") return null;
+
   const store = await cookies();
   const id = store.get(SESSION_COOKIE)?.value as PersonaId | undefined;
   if (!id) return null;
