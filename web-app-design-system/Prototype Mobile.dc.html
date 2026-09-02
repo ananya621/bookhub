@@ -596,6 +596,8 @@
     </div>
   </sc-if>
 
+  <div class="mono" style="border-top: 3px solid var(--color-text); padding: 8px 16px; color: var(--color-neutral-700); font-weight: 700; line-height: 1.5;">SCHOOL PROJECT — A DESIGN EXERCISE FOR COURSEWORK, NOT A REAL SERVICE. NO REAL ACCOUNTS, EMAILS OR BOOK DATA.</div>
+
   <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
     <div class="tabs">
       <sc-for list="{{ tabBar }}" as="t" hint-placeholder-count="5">
@@ -780,18 +782,26 @@ class Component extends DCLogic {
     { name: 'Pink', css: '#FF3D9A', ink: '#14110F' }
   ];
   takenNames = ['maya', 'bookworm', 'reader', 'admin', 'librarian'];
-  alwaysBad = ['fuck', 'fck', 'bitch', 'wanker', 'twat', 'bollocks'];
-  wholeWords = ['shit', 'damn', 'crap', 'arse', 'ass', 'dick', 'cock', 'piss', 'prick', 'slag', 'whore', 'bastard'];
+  // Checked BEFORE the substring pass: real words that contain a banned string.
+  allowList = ['scunthorpe', 'penistone', 'therapist', 'therapists', 'therapy', 'pussycat', 'shiitake', 'assassin', 'assemble', 'assembly', 'classic', 'analysis', 'cockatoo', 'cockerel', 'peacock', 'shuttlecock', 'pedometer', 'grape', 'grapes'];
+  alwaysBad = ['fuck', 'fuk', 'fck', 'phuck', 'motherfuck', 'bitch', 'biatch', 'wanker', 'twat', 'twunt', 'bollocks', 'nigger', 'nigga', 'faggot', 'fagot', 'retard', 'spastic', 'chink', 'kike', 'wetback', 'tranny', 'whore', 'pedoph', 'paedoph', 'asshole', 'arsehole', 'dickhead', 'knobhead', 'bullshit', 'shithead', 'wanker', 'tosser', 'skank', 'douche', 'bastard', 'jizz', 'dumbass', 'jackass', 'bellend'];
+  wholeWords = ['shit', 'shite', 'crap', 'arse', 'ass', 'asses', 'dick', 'cock', 'piss', 'prick', 'slag', 'slut', 'git', 'knob', 'damn', 'goddamn', 'hoe', 'tit', 'tits', 'fanny', 'spic', 'paki', 'pedo', 'cum', 'wang', 'turd', 'prat', 'plonker', 'cunt', 'cnut', 'rapist', 'pussy', 'shag', 'shagging', 'wank', 'nonce', 'minger', 'bugger', 'buggered'];
 
   fold = (v) => (v || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[|!1l]/g, 'i').replace(/0/g, 'o').replace(/3/g, 'e').replace(/[4@]/g, 'a')
     .replace(/[5$]/g, 's').replace(/7/g, 't').replace(/8/g, 'b').replace(/vv/g, 'w')
+    .replace(/9/g, 'g').replace(/6/g, 'g').replace(/2/g, 'z').replace(/\+/g, 't').replace(/ph/g, 'f')
     .replace(/[^a-z]/g, '').replace(/(.)\1+/g, '$1');
   hasBanned = (t) => {
-    const joined = this.fold(t);
+    const allowed = this.allowList.map(w => this.fold(w));
+    const suspect = String(t || '').split(/[^A-Za-z0-9@$!|+*]+/).map(x => this.fold(x))
+      .filter(Boolean).filter(tok => allowed.indexOf(tok) === -1);
+    if (suspect.some(tok => this.alwaysBad.some(w => tok.includes(this.fold(w))))) return true;
+    // Separators are not a disguise: with the allow-listed words already removed,
+    // rejoin what is left so "f_u_c_k" and "f u c k" collapse back to one string.
+    const joined = suspect.join('');
     if (this.alwaysBad.some(w => joined.includes(this.fold(w)))) return true;
-    return String(t || '').split(/[^A-Za-z0-9@$!|]+/).map(x => this.fold(x)).filter(Boolean)
-      .some(tok => this.wholeWords.some(w => tok === this.fold(w)));
+    return suspect.some(tok => this.wholeWords.some(w => tok === this.fold(w)));
   };
 
   initial() {
@@ -813,7 +823,7 @@ class Component extends DCLogic {
       ],
       reqTitle: '', reqAuthor: '', reqError: '', requestSent: false,
       reportTarget: null, reportReason: '', reportOther: '', reportError: '', myReports: {}, reported: {},
-      confirm: null, notFoundKind: 'list'
+      confirm: null, notFoundKind: 'list', bannedEmails: []
     };
   }
   state = this.initial();
@@ -917,7 +927,7 @@ class Component extends DCLogic {
       title: ({ start: 'Welcome', signup: 'Sign up', profileSetup: 'Your name', survey: 'About you', verify: 'Verify', login: 'Log in', reset: 'Reset', newPassword: 'New password', home: 'Book Hub', recs: 'For you', search: 'Search', book: 'Book', review: 'Write a review', tracker: 'My shelves', lists: 'My lists', listDetail: 'List', shared: 'Shared list', requests: 'My requests', request: 'Ask for a book', profile: 'Profile', notFound: 'Not found' })[S] || 'Book Hub',
       back: () => this.setState({ screen: s.prev === S ? 'home' : s.prev, sheet: null }),
       go: {
-        landing: () => this.setState(Object.assign(this.initial(), { dark: s.dark })),
+        landing: () => this.setState(st => Object.assign(this.initial(), { dark: st.dark, bannedEmails: st.bannedEmails })),
         start: () => this.go('start'), signup: () => this.go('signup'), login: () => this.go('login'),
         reset: () => this.setState({ screen: 'reset', resetSent: false, prev: S, sheet: null }),
         newPassword: () => this.go('newPassword'), verify: () => this.go('verify'),
@@ -943,10 +953,13 @@ class Component extends DCLogic {
       signupError: s.signupError, loginError: s.loginError,
       submitSignup: () => {
         if (!s.email.includes('@')) return this.setState({ signupError: 'ENTER A VALID EMAIL ADDRESS' });
+        if (s.bannedEmails.includes(s.email.trim().toLowerCase())) return this.setState({ signupError: 'THIS EMAIL ADDRESS IS BANNED \u2014 IT CANNOT BE USED FOR A NEW ACCOUNT' });
         if (s.pw.length < 8) return this.setState({ signupError: 'PASSWORD NEEDS AT LEAST 8 CHARACTERS' });
         this.go('profileSetup');
       },
-      submitLogin: () => s.email.includes('@') && s.pw.length
+      submitLogin: () => s.bannedEmails.includes(s.email.trim().toLowerCase())
+        ? this.setState({ loginError: 'THIS ACCOUNT WAS BANNED \u2014 THIS EMAIL CAN NO LONGER BE USED' })
+        : s.email.includes('@') && s.pw.length
         ? this.setState({ guest: false, verified: true, screen: 'home', sheet: null })
         : this.setState({ loginError: 'EMAIL OR PASSWORD DIDN\u2019T MATCH' }),
       resetSent: s.resetSent, resetOpen: !s.resetSent,
@@ -1210,7 +1223,10 @@ class Component extends DCLogic {
         if (c.kind === 'myList') {
           return this.setState(st => ({ lists: st.lists.filter((l, i) => i !== c.id), listIdx: 0, sheet: null, confirm: null, screen: 'notFound' }));
         }
-        return this.setState(Object.assign(this.initial(), { dark: s.dark }));
+        return this.setState(st => Object.assign(this.initial(), {
+          dark: st.dark,
+          bannedEmails: st.bannedEmails.concat([(st.email || 'maya@school.uk').trim().toLowerCase()])
+        }));
       },
 
       gateTitle: 'Sign up to save what you read',
