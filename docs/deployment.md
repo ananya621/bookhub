@@ -245,7 +245,7 @@ password**. Copy the new one into the GitHub secret.
 
 ### What is *not* a secret
 
-The project reference `vzznwebsaielxpsscwlw` is written directly into the
+The project reference `thtboidylddpplzqknvs` is written directly into the
 workflow files. That is deliberate — it is the same string that appears in
 the Supabase dashboard URL and inside `NEXT_PUBLIC_SUPABASE_URL`, which
 every visitor's browser already receives. It is an address, not a key.

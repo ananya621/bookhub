@@ -16,7 +16,7 @@ permissions:
   pull-requests: write
 
 env:
-  SUPABASE_PROJECT_ID: vzznwebsaielxpsscwlw
+  SUPABASE_PROJECT_ID: thtboidylddpplzqknvs
   NODE_VERSION: "22"
 
 jobs:

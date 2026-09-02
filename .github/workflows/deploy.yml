@@ -15,10 +15,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Not a secret. This is the "vzznwebsaielxpsscwlw" in the Supabase
+  # Not a secret. This is the "thtboidylddpplzqknvs" in the Supabase
   # dashboard URL, and it is already part of NEXT_PUBLIC_SUPABASE_URL,
   # which is sent to every visitor's browser by design.
-  SUPABASE_PROJECT_ID: vzznwebsaielxpsscwlw
+  SUPABASE_PROJECT_ID: thtboidylddpplzqknvs
   # `vercel build` further down runs here, on this runner, not on Vercel's
   # machines. Keep this the same as the Node version in the Vercel project
   # settings, or the app is built with one version and run with another.

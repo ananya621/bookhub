@@ -318,7 +318,7 @@ requests), so these need enforcement at the database, not just the route.
 Cookie-based sessions, readable in Server Components, Route Handlers and
 middleware. Install `@supabase/supabase-js` + `@supabase/ssr`, add
 `.env.local` with the project URL and anon key (project ref
-`vzznwebsaielxpsscwlw`).
+`thtboidylddpplzqknvs`).
 
 Three clients: browser, server, middleware. Standard pattern.
 
