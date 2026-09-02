@@ -90,9 +90,9 @@ four. For each one, tick **Production** *and* **Preview**.
 
 | Name | Value | Where to get it |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **Data API** → **Project URL** |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **API Keys** → the publishable key |
-| `NEXT_PUBLIC_SITE_URL` | `https://www.litconnect.io` | Your domain — see Step 3 |
+| `SUPABASE_URL` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **Data API** → **Project URL** |
+| `SUPABASE_PUBLISHABLE_KEY` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **API Keys** → the publishable key |
+| `SITE_URL` | `https://www.litconnect.io` | Your domain — see Step 3 |
 | `GOOGLE_BOOKS_API_KEY` | Copy from your `.env.local` | Or: Google Cloud console → **APIs & Services** → **Credentials** |
 
 The first two are safe to expose. They are sent to every visitor's browser
@@ -106,12 +106,12 @@ rules in the database, not these keys. They still belong in Vercel rather
 than typed into the code, so the code works the same whichever project it
 points at.
 
-### `NEXT_PUBLIC_SITE_URL` — read this bit
+### `SITE_URL` — read this bit
 
 This one is easy to get wrong and the damage is not obvious.
 
 When someone signs up, the app asks Supabase to email them a confirmation
-link. The app builds that link out of `NEXT_PUBLIC_SITE_URL`. On your
+link. The app builds that link out of `SITE_URL`. On your
 laptop that value is `http://localhost:3000`, which is correct there.
 
 If you forget to set it on Vercel, the app falls back to
@@ -150,7 +150,7 @@ Then wait. DNS updates spread across the internet slowly; usually minutes,
 occasionally a couple of hours. Vercel's Domains page shows a tick when it
 has worked, and issues the certificate for `https://` on its own.
 
-**Do not set `NEXT_PUBLIC_SITE_URL` to the domain until that tick
+**Do not set `SITE_URL` to the domain until that tick
 appears.** Until then the domain does not answer, so confirmation emails
 would point somewhere that does not load. Use the `.vercel.app` address
 Vercel gave you in Step 1 in the meantime, and switch it over afterwards.
@@ -171,7 +171,7 @@ someone arrives at:
 
 Note the `www.` one is the important one. The bare domain redirects to it,
 so `www.` is where people actually end up, and it is what
-`NEXT_PUBLIC_SITE_URL` should be set to.
+`SITE_URL` should be set to.
 
 **Do not add `localhost` here.** Local development runs its own database
 with its own settings — see `docs/local-development.md`. This project is
@@ -275,7 +275,7 @@ password**. Copy the new one into the GitHub secret.
 
 The project reference `thtboidylddpplzqknvs` is written directly into the
 workflow files. That is deliberate — it is the same string that appears in
-the Supabase dashboard URL and inside `NEXT_PUBLIC_SUPABASE_URL`, which
+the Supabase dashboard URL and inside `SUPABASE_URL`, which
 every visitor's browser already receives. It is an address, not a key.
 
 ---

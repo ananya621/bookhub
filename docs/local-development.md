@@ -122,7 +122,7 @@ fake domains like `example.com`. Locally it does not. If you see this,
 you are pointed at the live database — check `.env.local`.
 
 **You are not sure which database you are on.** Look at
-`NEXT_PUBLIC_SUPABASE_URL` in `.env.local`. `127.0.0.1` is yours.
+`SUPABASE_URL` in `.env.local`. `127.0.0.1` is yours.
 Anything ending `.supabase.co` is the live one.
 
 ---

@@ -29,12 +29,12 @@ export type ActionResult = { error: string } | undefined;
  * easier to diagnose than a link that silently goes nowhere.
  */
 const siteUrl = () => {
-  const url = process.env.NEXT_PUBLIC_SITE_URL;
+  const url = process.env.SITE_URL;
   if (url) return url;
 
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "NEXT_PUBLIC_SITE_URL is not set. Confirmation emails would link to " +
+      "SITE_URL is not set. Confirmation emails would link to " +
         "localhost and nobody could finish signing up. Set it to the real " +
         "site address in the hosting environment."
     );

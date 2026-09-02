@@ -16,7 +16,7 @@ concurrency:
 
 env:
   # Not a secret. This is the "thtboidylddpplzqknvs" in the Supabase
-  # dashboard URL, and it is already part of NEXT_PUBLIC_SUPABASE_URL,
+  # dashboard URL, and it is already part of SUPABASE_URL,
   # which is sent to every visitor's browser by design.
   SUPABASE_PROJECT_ID: thtboidylddpplzqknvs
   # `vercel build` further down runs here, on this runner, not on Vercel's
@@ -124,7 +124,7 @@ jobs:
         run: npm install --global vercel@latest
 
       # Fetches the project's build settings and its Production
-      # environment variables, including NEXT_PUBLIC_SITE_URL. This is why
+      # environment variables, including SITE_URL. This is why
       # those variables are set in Vercel and not in this file.
       - name: Fetch the production settings
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
