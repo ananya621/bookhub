@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import Sheet from "@/components/Sheet";
 import { allGenres, allLengths, allLevels, lengthLabel } from "@/lib/mock";
+import type { CatalogueBook } from "@/lib/catalogue";
 
 /*
  * The search box, the filters and the results list. Split out from the
@@ -20,17 +21,7 @@ import { allGenres, allLengths, allLevels, lengthLabel } from "@/lib/mock";
  * dead end as finding none.
  */
 
-export type CatalogueBook = {
-  id: string;
-  title: string;
-  author: string;
-  pages: number | null;
-  summary: string | null;
-  coverUrl: string | null;
-  genres: string[];
-  readingLevel: string;
-  isSeries: boolean;
-};
+export type { CatalogueBook };
 
 const PER_PAGE = 5;
 
