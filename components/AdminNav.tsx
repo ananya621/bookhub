@@ -10,6 +10,11 @@ import { usePathname } from "next/navigation";
  * — a plain link to / here, rather than the export's admin.exit state
  * change.
  *
+ * The current prototype (Prototype Admin.dc.html) replaces "Back to
+ * site" with a static "OWNER" label and drops the exit link entirely.
+ * Decided to keep both rather than lose the only way out of admin —
+ * see the conversation this was flagged in.
+ *
  * Non-admins are redirected away from /admin/* in middleware.ts, so
  * this bar only ever renders for an admin.
  */
@@ -45,6 +50,9 @@ export default function AdminNav() {
           {l.label}
         </Link>
       ))}
+      <span className="mono" style={{ color: "var(--color-neutral-700)" }}>
+        OWNER
+      </span>
       <Link href="/" className="btn btn-secondary">
         Back to site
       </Link>
