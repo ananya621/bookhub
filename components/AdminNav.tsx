@@ -14,15 +14,18 @@ import { usePathname } from "next/navigation";
  * this bar only ever renders for an admin.
  */
 
+// Order and labels match the current admin prototype's nav bar exactly
+// (Prototype Admin.dc.html line 35-44). It has no separate "Accounts"
+// link — account moderation lives on /admin/users/[id] now, see the
+// commit that retired the standalone Accounts screen.
 const LINKS = [
   { href: "/admin", label: "Overview" },
-  { href: "/admin/reviews", label: "Reviews" },
-  { href: "/admin/accounts", label: "Accounts" },
-  { href: "/admin/users", label: "All users" },
   { href: "/admin/catalogue", label: "Catalogue" },
+  { href: "/admin/requests", label: "Requests" },
+  { href: "/admin/reviews", label: "Reviews" },
+  { href: "/admin/users", label: "Users" },
   { href: "/admin/safeguarding", label: "Safeguarding" },
   { href: "/admin/trash", label: "Trash" },
-  { href: "/admin/requests", label: "Requests" },
 ];
 
 export default function AdminNav() {

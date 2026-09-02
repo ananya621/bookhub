@@ -12,7 +12,7 @@ import TrashList, { type TrashRow } from "./TrashList";
  * pending_deletions and profiles both reference auth.users
  * independently (no direct FK between the two), so PostgREST can't
  * embed them — fetched separately and merged here, same as
- * /admin/accounts.
+ * /admin/users.
  */
 export default async function AdminTrashPage() {
   const supabase = await createClient();

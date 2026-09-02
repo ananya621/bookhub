@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
-import { useSessionData } from "@/components/AuthProvider";
+import { useCurrentUser, useSessionData } from "@/components/AuthProvider";
 import Nav from "@/components/Nav";
 import { books, avg, starStr, lengthLabel, steps, type Book } from "@/lib/mock";
 
@@ -32,12 +32,6 @@ import { books, avg, starStr, lengthLabel, steps, type Book } from "@/lib/mock";
 
 type Status = "read" | "reading" | "want" | "none";
 type StepKey = (typeof steps)[number]["key"];
-
-const READER_NAME = "Maya";
-
-
-
-
 const badgeStyles: Record<Exclude<Status, "none">, CSSProperties> = {
   read: { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" },
   reading: { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" },
@@ -77,6 +71,7 @@ function recommend(survey: Survey | null): Book[] {
 
 export default function HomePage() {
   const router = useRouter();
+  const user = useCurrentUser();
   const sessionData = useSessionData();
   const [statuses, setStatuses] = useState<Record<string, Status>>(sessionData.statuses);
   const [progress] = useState<Record<string, StepKey>>(sessionData.progress);
@@ -101,7 +96,7 @@ export default function HomePage() {
     <>
       <Nav />
       <div className="wrap">
-        <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>Welcome back, {READER_NAME}</h1>
+        <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>Welcome back, {user?.displayName || "Reader"}</h1>
         <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 8 }}>
           BASED ON: {basedOn} · <Link href="/survey" style={{ cursor: "pointer" }}>EDIT</Link>
         </div>

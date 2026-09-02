@@ -50,7 +50,7 @@ export async function deleteMyAccount(): Promise<ActionResult> {
   redirect("/");
 }
 
-/** An admin deleting someone else's account, from /admin/accounts. */
+/** An admin deleting someone else's account, from /admin/users/[id]. */
 export async function adminDeleteAccount(
   _prev: ActionResult,
   formData: FormData
@@ -72,7 +72,8 @@ export async function adminDeleteAccount(
   });
   if (error) return { error: error.message.toUpperCase() };
 
-  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
   revalidatePath("/admin/trash");
   return { ok: "deleted" };
 }
@@ -96,7 +97,8 @@ export async function adminRestoreAccount(
   const { error } = await supabase.rpc("restore_account", { p_user_id: userId });
   if (error) return { error: error.message.toUpperCase() };
 
-  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
   revalidatePath("/admin/trash");
   return { ok: "restored" };
 }
@@ -113,7 +115,8 @@ export async function adminPurgeAccountNow(
   const { error } = await supabase.rpc("purge_account_now", { p_user_id: userId });
   if (error) return { error: error.message.toUpperCase() };
 
-  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
   revalidatePath("/admin/trash");
   return { ok: "purged" };
 }
