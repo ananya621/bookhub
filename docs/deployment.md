@@ -31,7 +31,12 @@ Do the steps in order — later ones need answers from earlier ones.
 
 - The GitHub repo (`ananya621/bookhub`).
 - A Vercel account.
-- The Supabase project (`book hub`).
+- The live Supabase project (`book-hub-mumbai`).
+
+> This guide is about the **live** site. Working on your own machine is a
+> separate thing with its own database — see
+> [local-development.md](local-development.md). The two share nothing,
+> on purpose.
 
 You do not need to install anything, except in one optional step where
 `npx vercel link` is the easy way to find two ID numbers.
@@ -167,6 +172,10 @@ someone arrives at:
 Note the `www.` one is the important one. The bare domain redirects to it,
 so `www.` is where people actually end up, and it is what
 `NEXT_PUBLIC_SITE_URL` should be set to.
+
+**Do not add `localhost` here.** Local development runs its own database
+with its own settings — see `docs/local-development.md`. This project is
+the live one, and it should only ever send people to the live site.
 
 1. Go to your Supabase project.
 2. **Authentication** → **URL Configuration**.
