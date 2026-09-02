@@ -269,3 +269,44 @@ a:hover { color: var(--color-accent); }
 .seg-opt[data-state="reading"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
 .seg-opt[data-state="prog"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
 .seg-opt[data-state="want"]:has(input:checked) { background: #1B3BFF; color: #EFECE3; }
+
+/* ===================================================================
+   Mobile chrome, from Prototype Mobile.dc.html's own <style> block
+   (lines 12-33). That file mocks a phone frame (.phone/.statusbar/
+   .scroll) purely to show the screens in context — not copied, since
+   this is a real responsive site, not a device mockup. What IS real:
+   the app-bar (back + title + avatar + theme toggle) and the 5-item
+   bottom tab bar replace the desktop .wnav under 640px — see
+   components/MobileNav.tsx — and .sheet/.veil/.grab back the slide-up
+   panels used for the book page's reading-status picker and the
+   search page's filters on mobile. No breakpoint was specified
+   anywhere in the design system; 640px was a judgement call, decided
+   in the conversation this was built in.
+   =================================================================== */
+.appbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 3px solid var(--color-text); }
+.appbar b { font-family: var(--font-display); font-size: 18px; text-transform: uppercase; flex: 1; }
+.appbar button { min-height: 44px; min-width: 44px; }
+.tabs { display: flex; border-top: 3px solid var(--color-text); position: sticky; bottom: 0; background: var(--color-bg); }
+.tab { flex: 1; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; border: 0; background: transparent; font-family: var(--font-heading); font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--color-neutral-700); text-decoration: none; }
+.tab + .tab { border-left: 3px solid var(--color-text); }
+.tab.on { background: var(--color-accent); color: #EFECE3; }
+.tab i { font-style: normal; font-family: var(--font-display); font-size: 17px; line-height: 1; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 86vh; overflow-y: auto; background: var(--color-bg); border-top: 3px solid var(--color-text); padding: 16px 16px 22px; z-index: 101; }
+.veil { position: fixed; inset: 0; background: rgba(20,17,15,0.55); z-index: 100; }
+.grab { width: 54px; height: 5px; background: var(--color-text); margin: 0 auto 14px; }
+.chip { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 12px; font-weight: 700; text-transform: uppercase; border: 2px solid var(--color-text); min-height: 48px; padding: 10px 15px; cursor: pointer; background: transparent; color: var(--color-text); }
+.chip.on { background: var(--color-accent); color: var(--color-bg); }
+
+/* Swaps mobile chrome/sheets in and desktop chrome/inline controls out
+   at the same 640px breakpoint used above. A plain display toggle on a
+   wrapper, not on .wnav etc. directly, so their own internal flex
+   layout is untouched when shown. */
+.mobile-only { display: none; }
+@media (max-width: 640px) {
+  .mobile-only { display: block; }
+  .desktop-only { display: none; }
+  /* .desktop-only alone leaves a grid track reserved for the column it
+     hid (e.g. the search page's 200px filter rail) — this collapses it
+     to one column on mobile. */
+  .responsive-grid { grid-template-columns: 1fr !important; }
+}

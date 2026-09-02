@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Nav from "@/components/Nav";
+import Sheet from "@/components/Sheet";
 import { lengthLabel, starStr, steps } from "@/lib/mock";
 
 /*
@@ -54,6 +55,17 @@ import { lengthLabel, starStr, steps } from "@/lib/mock";
 type ReadingStatus = "none" | "read" | "reading" | "want";
 type LocalReview = { stars: number; text: string };
 
+const STATUS_LABEL: Record<Exclude<ReadingStatus, "none">, string> = {
+  read: "Read",
+  reading: "Currently Reading",
+  want: "Want to Read",
+};
+const STATUS_STYLE: Record<Exclude<ReadingStatus, "none">, React.CSSProperties> = {
+  read: { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" },
+  reading: { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" },
+  want: { background: "#1B3BFF", color: "#EFECE3", borderColor: "#14110f" },
+};
+
 const localReviewKey = (id: string) => `bookhub-review-${id}`;
 
 function readLocalReview(id: string): LocalReview | null {
@@ -87,6 +99,7 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
 
   const [status, setStatus] = useState<ReadingStatus>("none");
   const [progressKey, setProgressKey] = useState(steps[0].key);
+  const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [myReview, setMyReview] = useState<LocalReview | null>(() => readLocalReview(id));
 
   function deleteMyReview() {
@@ -104,7 +117,13 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
     <>
       <Nav />
       <div className="wrap">
-        <button type="button" className="btn btn-ghost" style={{ marginBottom: 16 }} onClick={() => router.back()}>
+        {/* Hidden on mobile — the app-bar's own back arrow already does this there. */}
+        <button
+          type="button"
+          className="btn btn-ghost desktop-only"
+          style={{ marginBottom: 16 }}
+          onClick={() => router.back()}
+        >
           ← Back
         </button>
         {justPosted && (
@@ -137,56 +156,127 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
               <i className="corner br" />
               <span className="mono">COVER FROM API</span>
             </div>
-            <div className="mono" style={{ margin: "16px 0 6px", color: "var(--color-accent-700)" }}>
-              READING STATUS
-            </div>
-            <div className="seg" style={{ width: "100%", flexDirection: "column" }}>
-              <label className="seg-opt" data-state="read" style={{ justifyContent: "center", minHeight: 44, borderLeft: 0 }}>
-                <input type="radio" name="st" checked={status === "read"} onChange={() => setStatus("read")} />
-                Read
-              </label>
-              <label
-                className="seg-opt"
-                data-state="reading"
-                style={{ justifyContent: "center", minHeight: 44, borderLeft: 0, borderTop: "3px solid var(--color-divider)" }}
-              >
-                <input type="radio" name="st" checked={status === "reading"} onChange={() => setStatus("reading")} />
-                Currently Reading
-              </label>
-              <label
-                className="seg-opt"
-                data-state="want"
-                style={{ justifyContent: "center", minHeight: 44, borderLeft: 0, borderTop: "3px solid var(--color-divider)" }}
-              >
-                <input type="radio" name="st" checked={status === "want"} onChange={() => setStatus("want")} />
-                Want to Read
-              </label>
-            </div>
-            {/* Local only — no lists feature/state available on this page. */}
-            <button type="button" className="btn btn-secondary btn-block" style={{ minHeight: 42 }}>
-              ＋ Add to a list
-            </button>
-            {status === "reading" && (
-              <div style={{ marginTop: 16 }}>
-                <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 6 }}>
-                  HOW FAR ARE YOU?
-                </div>
-                <div style={{ height: 12, border: "3px solid var(--color-text)", marginBottom: 8 }}>
-                  <div style={{ width: `${progressStep.pct}%`, background: "#ff3d9a", height: "100%" }} />
-                </div>
-                <div className="seg" style={{ width: "100%", flexDirection: "column" }}>
-                  {steps.map((s) => (
-                    <label key={s.key} className="seg-opt" data-state="prog" style={{ justifyContent: "center", minHeight: 42, borderLeft: 0 }}>
-                      <input type="radio" name="prog" checked={progressKey === s.key} onChange={() => setProgressKey(s.key)} />
-                      {s.label}
-                    </label>
-                  ))}
-                </div>
-                <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 8 }}>
-                  NO PAGE NUMBERS — WORKS FOR EBOOKS AND AUDIOBOOKS TOO
-                </div>
+            {/* Desktop: the existing inline segmented control, unchanged. */}
+            <div className="desktop-only">
+              <div className="mono" style={{ margin: "16px 0 6px", color: "var(--color-accent-700)" }}>
+                READING STATUS
               </div>
-            )}
+              <div className="seg" style={{ width: "100%", flexDirection: "column" }}>
+                <label className="seg-opt" data-state="read" style={{ justifyContent: "center", minHeight: 44, borderLeft: 0 }}>
+                  <input type="radio" name="st" checked={status === "read"} onChange={() => setStatus("read")} />
+                  Read
+                </label>
+                <label
+                  className="seg-opt"
+                  data-state="reading"
+                  style={{ justifyContent: "center", minHeight: 44, borderLeft: 0, borderTop: "3px solid var(--color-divider)" }}
+                >
+                  <input type="radio" name="st" checked={status === "reading"} onChange={() => setStatus("reading")} />
+                  Currently Reading
+                </label>
+                <label
+                  className="seg-opt"
+                  data-state="want"
+                  style={{ justifyContent: "center", minHeight: 44, borderLeft: 0, borderTop: "3px solid var(--color-divider)" }}
+                >
+                  <input type="radio" name="st" checked={status === "want"} onChange={() => setStatus("want")} />
+                  Want to Read
+                </label>
+              </div>
+              {/* Local only — no lists feature/state available on this page. */}
+              <button type="button" className="btn btn-secondary btn-block" style={{ minHeight: 42 }}>
+                ＋ Add to a list
+              </button>
+              {status === "reading" && (
+                <div style={{ marginTop: 16 }}>
+                  <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 6 }}>
+                    HOW FAR ARE YOU?
+                  </div>
+                  <div style={{ height: 12, border: "3px solid var(--color-text)", marginBottom: 8 }}>
+                    <div style={{ width: `${progressStep.pct}%`, background: "#ff3d9a", height: "100%" }} />
+                  </div>
+                  <div className="seg" style={{ width: "100%", flexDirection: "column" }}>
+                    {steps.map((s) => (
+                      <label key={s.key} className="seg-opt" data-state="prog" style={{ justifyContent: "center", minHeight: 42, borderLeft: 0 }}>
+                        <input type="radio" name="prog" checked={progressKey === s.key} onChange={() => setProgressKey(s.key)} />
+                        {s.label}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 8 }}>
+                    NO PAGE NUMBERS — WORKS FOR EBOOKS AND AUDIOBOOKS TOO
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile: a trigger that opens the same choice as a bottom
+                sheet, matching Prototype Mobile.dc.html's statusSheet
+                (lines 613-638) instead of the inline control above. */}
+            <div className="mobile-only">
+              <button
+                type="button"
+                className="btn btn-block"
+                style={{ minHeight: 44, ...(status !== "none" ? STATUS_STYLE[status] : {}) }}
+                onClick={() => setStatusSheetOpen(true)}
+              >
+                {status === "none" ? "Set reading status" : STATUS_LABEL[status]}
+              </button>
+            </div>
+            <Sheet
+              open={statusSheetOpen}
+              onClose={() => setStatusSheetOpen(false)}
+              title="Where are you with this?"
+              subtitle="TAP ONE — IT SAVES STRAIGHT AWAY"
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {(Object.keys(STATUS_LABEL) as Exclude<ReadingStatus, "none">[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className="btn"
+                    style={status === key ? STATUS_STYLE[key] : undefined}
+                    onClick={() => setStatus(key)}
+                  >
+                    {STATUS_LABEL[key]}
+                  </button>
+                ))}
+              </div>
+              {status === "reading" && (
+                <div style={{ borderTop: "3px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
+                  <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 8 }}>
+                    HOW FAR ARE YOU?
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {steps.map((s) => (
+                      <button
+                        key={s.key}
+                        type="button"
+                        className="btn"
+                        style={progressKey === s.key ? { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" } : undefined}
+                        onClick={() => setProgressKey(s.key)}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                {/* Local only — same limitation as the desktop button. */}
+                <button type="button" className="btn btn-secondary" style={{ flex: 1, minHeight: 48 }}>
+                  ＋ Add to a list
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ flex: "none", minHeight: 48 }}
+                  onClick={() => setStatusSheetOpen(false)}
+                >
+                  Done
+                </button>
+              </div>
+            </Sheet>
           </div>
           <div>
             <h1 style={{ fontSize: 42, margin: "0 0 4px" }}>{book.title}</h1>
