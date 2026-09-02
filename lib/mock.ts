@@ -111,10 +111,6 @@ export const catalogue = [
   { id: 'skellig', title: 'Skellig', author: 'David Almond', pages: 182, level: 'Middle Grade', genres: ['Realistic/Contemporary Fiction'], cover: null },
   { id: 'girlofink', title: 'The Girl of Ink and Stars', author: 'Kiran Millwood Hargrave', pages: 227, level: 'Middle Grade', genres: ['Adventure', 'Historical Fiction'], cover: null }
 ];
-export const trash = [
-  { id: 't1', kind: 'Review', name: '“this book is rubbish…” on Eragon', by: 'dragonlad_09', when: 'Deleted 2 days ago', daysLeft: 12 },
-  { id: 't2', kind: 'Account', name: 'spam_trainers_uk', by: '0 reviews', when: 'Deleted 5 days ago', daysLeft: 9 }
-];
 export const safeguarding = [
   { id: 's1', who: 'quiet_reader_11', target: 'a review on “A Long Way Down”', when: '4 HOURS AGO', text: 'they said something about not wanting to be here anymore and it scared me', status: 'open' },
   { id: 's2', who: 'zeni_reads', target: 'the reader kofi_a', when: 'YESTERDAY', text: 'he keeps asking people in reviews how old they are and where they go to school', status: 'open' }

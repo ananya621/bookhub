@@ -1,147 +1,69 @@
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
 import AdminNav from "@/components/AdminNav";
-import { adminAccounts } from "@/lib/mock";
-
-type AccountStatus = "pending" | "allowed" | "deleted" | "renamed";
+import { getCurrentUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import AccountsList, { type AccountRow } from "./AccountsList";
 
 /*
- * Ported from the `isAdminAccounts` block in Prototype with Admin.dc.html
- * (lines 523-557). Allow/Delete/Undo/Force rename have no moderation API
- * yet, so they update local state optimistically (see the export's
- * `allow` / `del` / `rename` / `undo` actions around line 2202).
+ * Rewritten from a pure-mock page (`useState(() => adminAccounts...)`,
+ * "no moderation API yet") into a server component reading real
+ * accounts, now that Delete/Undo have somewhere real to act on — see
+ * app/actions/accounts.ts and the migration it's built on.
  *
- * "Force rename" is simplified: the export opens a dialog that captures
- * a replacement display name (`renaming` / `renameValue` state); that
- * dialog isn't built here, so this just marks the row renamed directly.
+ * profiles, user_roles and pending_deletions all reference auth.users
+ * independently rather than each other, so PostgREST can't embed them
+ * in one query (there's no direct FK between any two of the three).
+ * Fetched separately and merged here instead.
  *
- * "Open profile" links to /admin/users/[id], matching the export's
- * `openUser` (line ~2213, `screen: 'adminUser'` keyed on the account id).
- *
- * Deviation: a4 (zeni_reads) has status "clean" in the mock data, not
- * "pending" — it's shown as a control row, per its `why`: "NO ACTION
- * NEEDED — SHOWN FOR CONTEXT". The export's own flagLabel/flagStyle/done
- * ternaries (line ~2206) have no branch for "clean", so run verbatim
- * they'd mislabel it "Reported" with a pink tag and a live Undo button.
- * That reads as a bug rather than an intended nuance, so this port adds
- * an explicit "clean" branch: a neutral tag, no action buttons.
+ * The report/flag/"why" columns the mock had (Reported, Name refused,
+ * etc.) are dropped — there's no reports table yet, so there was
+ * nothing real to show there. This page now shows what's actually real:
+ * who exists, who's admin, and who's pending deletion.
  */
-export default function AdminAccountsPage() {
-  const [rows, setRows] = useState(() =>
-    adminAccounts.map((a) => ({ ...a, status: a.status as AccountStatus | "clean" })),
-  );
+export default async function AdminAccountsPage() {
+  const me = await getCurrentUser();
+  const supabase = await createClient();
 
-  const setStatus = (id: string, status: AccountStatus) =>
-    setRows((rs) => rs.map((a) => (a.id === id ? { ...a, status } : a)));
+  const [{ data: profiles }, { data: roles }, { data: pending }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, display_name, avatar_color, created_at")
+      .order("created_at", { ascending: false }),
+    supabase.from("user_roles").select("user_id, is_admin"),
+    supabase.from("pending_deletions").select("user_id, deleted_by, deleted_at, purge_at"),
+  ]);
+
+  const adminById = new Map((roles ?? []).map((r) => [r.user_id as string, r.is_admin as boolean]));
+  const pendingById = new Map((pending ?? []).map((p) => [p.user_id as string, p]));
+
+  const accounts: AccountRow[] = (profiles ?? []).map((p) => {
+    const pend = pendingById.get(p.id as string);
+    return {
+      id: p.id as string,
+      displayName: p.display_name as string | null,
+      avatarColor: p.avatar_color as string,
+      joined: p.created_at as string,
+      isAdmin: adminById.get(p.id as string) ?? false,
+      isSelf: p.id === me?.id,
+      pending: pend
+        ? {
+            deletedBy: pend.deleted_by as "self" | "admin",
+            deletedAt: pend.deleted_at as string,
+            purgeAt: pend.purge_at as string,
+          }
+        : null,
+    };
+  });
 
   return (
     <>
       <AdminNav />
       <div className="wrap">
-        <h1 style={{ fontSize: 36, margin: "0 0 18px" }}>Accounts</h1>
-        <div style={{ borderTop: "3px solid var(--color-text)" }}>
-          {rows.map((a) => {
-            const clean = a.status === "clean";
-            const pending = a.status === "pending";
-            const done = a.status === "allowed" || a.status === "deleted" || a.status === "renamed";
-            const isName = a.flag === "name" && !done;
-            const flagLabel = clean
-              ? "No action needed"
-              : a.status === "allowed"
-                ? "Allowed"
-                : a.status === "deleted"
-                  ? "Deleted"
-                  : a.status === "renamed"
-                    ? "Rename forced"
-                    : a.flag === "name"
-                      ? "Name refused"
-                      : "Reported";
-            const flagStyle = clean
-              ? { background: "transparent", color: "var(--color-neutral-700)", borderColor: "var(--color-divider)" }
-              : a.status === "allowed" || a.status === "renamed"
-                ? { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" }
-                : a.status === "deleted"
-                  ? { background: "#C41031", color: "#EFECE3", borderColor: "#14110f" }
-                  : a.flag === "name"
-                    ? { background: "#C41031", color: "#EFECE3", borderColor: "#14110f" }
-                    : { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" };
-
-            return (
-              <div key={a.id} className="qrow" style={{ alignItems: "center" }}>
-                <div
-                  style={{
-                    display: "inline-grid",
-                    placeItems: "center",
-                    width: 46,
-                    height: 46,
-                    flex: "none",
-                    border: "3px solid var(--color-text)",
-                    background: a.colour,
-                    color: a.ink,
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 700,
-                    fontSize: 20,
-                  }}
-                >
-                  {a.name.slice(0, 1).toUpperCase()}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 18 }}>
-                      {a.name}
-                    </div>
-                    <span className="tag" style={flagStyle}>
-                      {flagLabel}
-                    </span>
-                  </div>
-                  <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 4 }}>
-                    JOINED {a.joined} · {a.meta}
-                  </div>
-                  <div
-                    className="mono"
-                    style={{ color: "var(--color-accent-700)", fontWeight: 700, marginTop: 4 }}
-                  >
-                    {a.why}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flex: "none", alignSelf: "center" }}>
-                  {pending && (
-                    <>
-                      <button className="btn btn-primary" onClick={() => setStatus(a.id, "allowed")}>
-                        Allow
-                      </button>
-                      {isName && (
-                        <button
-                          className="btn btn-secondary"
-                          onClick={() => setStatus(a.id, "renamed")}
-                        >
-                          Force rename
-                        </button>
-                      )}
-                      <button className="btn btn-secondary" onClick={() => setStatus(a.id, "deleted")}>
-                        Delete
-                      </button>
-                      <Link href={`/admin/users/${a.id}`} className="btn btn-secondary">
-                        Open profile
-                      </Link>
-                    </>
-                  )}
-                  {done && (
-                    <button className="btn btn-ghost" onClick={() => setStatus(a.id, "pending")}>
-                      Undo
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 16, lineHeight: 1.6 }}>
-          DELETING AN ACCOUNT TAKES ITS REVIEWS AND LISTS WITH IT. IN THE BUILD THIS ASKS YOU TO
-          TYPE THE DISPLAY NAME FIRST, AND SOFT-DELETES SO IT IS RECOVERABLE.
-        </div>
+        <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Accounts</h1>
+        <p style={{ fontSize: 14, marginBottom: 20 }}>
+          Everyone with an account. Deleting one bans it for 14 days — recoverable from Trash until
+          then, gone for good after.
+        </p>
+        <AccountsList accounts={accounts} />
       </div>
     </>
   );

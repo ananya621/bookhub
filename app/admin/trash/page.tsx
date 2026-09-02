@@ -1,24 +1,42 @@
-"use client";
-
-import { useState } from "react";
 import AdminNav from "@/components/AdminNav";
-import { trash } from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server";
+import TrashList, { type TrashRow } from "./TrashList";
 
 /*
- * Ported from the `isAdminTrash` block in Prototype with Admin.dc.html
- * (lines 240-266). A 14-day soft-delete list. In the source both
- * "Put it back" and "Delete for good" simply drop the item from
- * `trash` (source lines ~2233-2238) — there's no real distinction yet
- * between restoring and purging without a backend to restore *to*, so
- * that's kept as-is here rather than inventing different behaviour.
+ * Rewritten from the mock `trash` fixture into real pending_deletions
+ * rows. Accounts only, for now — the export's trash held reviews and
+ * requests too, but there's no soft-delete for those yet (no reviews
+ * table exists at all), so this shows what's actually real rather than
+ * inventing entries for features that don't exist.
+ *
+ * pending_deletions and profiles both reference auth.users
+ * independently (no direct FK between the two), so PostgREST can't
+ * embed them — fetched separately and merged here, same as
+ * /admin/accounts.
  */
+export default async function AdminTrashPage() {
+  const supabase = await createClient();
 
-export default function AdminTrashPage() {
-  const [items, setItems] = useState(trash);
+  const { data: pending } = await supabase
+    .from("pending_deletions")
+    .select("user_id, deleted_by, deleted_at, purge_at")
+    .order("deleted_at", { ascending: false });
 
-  function remove(id: string) {
-    setItems((ts) => ts.filter((x) => x.id !== id));
-  }
+  const ids = (pending ?? []).map((p) => p.user_id as string);
+  const { data: profiles } =
+    ids.length > 0
+      ? await supabase.from("profiles").select("id, display_name").in("id", ids)
+      : { data: [] as { id: string; display_name: string | null }[] };
+
+  const nameById = new Map((profiles ?? []).map((p) => [p.id as string, p.display_name as string | null]));
+
+  const rows: TrashRow[] = (pending ?? []).map((p) => ({
+    userId: p.user_id as string,
+    displayName: nameById.get(p.user_id as string) ?? null,
+    deletedBy: p.deleted_by as "self" | "admin",
+    deletedAt: p.deleted_at as string,
+    purgeAt: p.purge_at as string,
+  }));
 
   return (
     <>
@@ -26,10 +44,10 @@ export default function AdminTrashPage() {
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Trash</h1>
         <p style={{ fontSize: 14, marginBottom: 22 }}>
-          Everything you deleted or banned, kept for 14 days. Nothing here is visible to readers,
-          and anything can be put back.
+          Accounts deleted or banned, kept for 14 days. Nothing here is visible to readers, and
+          anything can be put back until it&apos;s gone for good.
         </p>
-        {items.length === 0 && (
+        {rows.length === 0 ? (
           <div style={{ border: "3px dashed var(--color-divider)", padding: 30, textAlign: "center" }}>
             <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 20 }}>
               Trash is empty
@@ -38,38 +56,12 @@ export default function AdminTrashPage() {
               NOTHING DELETED IN THE LAST 14 DAYS
             </p>
           </div>
+        ) : (
+          <TrashList rows={rows} />
         )}
-        <div style={{ borderTop: "3px solid var(--color-text)" }}>
-          {items.map((t) => (
-            <div key={t.id} className="qrow" style={{ alignItems: "center" }}>
-              <span className="tag tag-neutral" style={{ flex: "none" }}>
-                {t.kind}
-              </span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 16 }}>
-                  {t.name}
-                </div>
-                <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 3 }}>
-                  {t.by} · {t.when}
-                </div>
-              </div>
-              <span className="tag" style={{ flex: "none", background: "#FFD400", color: "#14110f" }}>
-                {t.daysLeft} {t.daysLeft === 1 ? "day left" : "days left"}
-              </span>
-              <div style={{ display: "flex", gap: 8, flex: "none" }}>
-                <button className="btn btn-primary" onClick={() => remove(t.id)}>
-                  Put it back
-                </button>
-                <button className="btn btn-secondary" onClick={() => remove(t.id)}>
-                  Delete for good
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
         <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 16, lineHeight: 1.7 }}>
-          AFTER 14 DAYS ITEMS ARE REMOVED AUTOMATICALLY. THAT WINDOW IS WHY DELETES ARE SOFT IN THE
-          DATABASE RATHER THAN DESTRUCTIVE.
+          AFTER 14 DAYS ACCOUNTS ARE REMOVED AUTOMATICALLY, BY A SCHEDULED JOB IN THE DATABASE. THAT
+          WINDOW IS WHY DELETES ARE SOFT (A BAN + A RECORD HERE) RATHER THAN DESTRUCTIVE.
         </div>
       </div>
     </>
