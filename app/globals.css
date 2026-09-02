@@ -238,9 +238,16 @@ body { margin: 0; }
 .cover { background-color: var(--color-link); background-image: repeating-linear-gradient(135deg, rgba(255,243,226,0.24) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; color: var(--color-bg); }
 .wnav { display: flex; align-items: center; gap: 18px; padding: 14px 28px; border-bottom: 3px solid var(--color-text); font-size: 14px; white-space: nowrap; }
 .wnav b { font-family: var(--font-display); font-size: 22px; text-transform: uppercase; margin-right: auto; cursor: pointer; }
-.wnav a { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 3px; border-bottom: 3px solid transparent; }
-.wnav a:hover { color: var(--color-accent-700); }
-.wnav a[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
+/* :not(.btn) — this underline treatment is for the plain nav links
+   only. Without it, any .btn-styled element in .wnav (the Admin link,
+   e.g.) falls under this selector too since it's still an <a>, and its
+   higher specificity than .btn's own border wins, forcing the button's
+   bottom border transparent — the same class of bug as the earlier
+   Get Started text-colour fix, just hitting border-bottom instead of
+   color. See the conversation this was found and fixed in. */
+.wnav a:not(.btn) { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 3px; border-bottom: 3px solid transparent; }
+.wnav a:not(.btn):hover { color: var(--color-accent-700); }
+.wnav a:not(.btn)[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
 .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 28px 72px; }
 .mode-seg { display: inline-flex; border: 3px solid var(--color-text); flex: none; }
 .mode-seg button { font-family: var(--font-heading); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 5px 11px; border: 0; cursor: pointer; }
@@ -261,9 +268,12 @@ a:hover { color: var(--color-accent); }
 .shell { flex: 1; display: flex; flex-direction: column; }
 .anav { display: flex; align-items: center; gap: 16px; padding: 13px 28px; border-bottom: 3px solid var(--color-text); font-size: 13px; white-space: nowrap; }
 .anav b { font-family: var(--font-display); font-size: 19px; text-transform: uppercase; margin-right: auto; }
-.anav a { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 2px; border-bottom: 3px solid transparent; }
-.anav a:hover { color: var(--color-accent-700); }
-.anav a[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
+/* :not(.btn) — same reason as .wnav a above: without it, "Back to
+   site" (a .btn inside this nav, still an <a>) loses its bottom border
+   to this rule's higher specificity. */
+.anav a:not(.btn) { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 2px; border-bottom: 3px solid transparent; }
+.anav a:not(.btn):hover { color: var(--color-accent-700); }
+.anav a:not(.btn)[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
 .qrow { display: flex; gap: 14px; padding: 16px 0; border-bottom: 3px solid var(--color-divider); align-items: flex-start; }
 .seg-opt[data-state="read"]:has(input:checked) { background: #c6f24e; color: #14110f; }
 .seg-opt[data-state="reading"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
