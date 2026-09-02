@@ -2,13 +2,28 @@
 
 How the site gets from your laptop to the internet.
 
-The short version: you push to `main`, GitHub checks the code, applies any
-new database changes, and then puts the new version live on Vercel. If any
-step fails, the steps after it don't run, so a broken build never reaches
-the live site.
+**There are two ways set up here. Read this bit first — it decides which
+steps you need.**
 
-Nothing in here happens until you do the setup below. Do the steps in
-order — later ones need answers from earlier ones.
+**The simple way, and the one currently switched on.** Push to `main` and
+Vercel builds and publishes it. Nothing to configure beyond the
+environment variables in Step 2, and no secrets at all. Database changes
+are applied by hand when you make them, which is how they have been done
+so far anyway.
+
+**The full pipeline**, in `.github/workflows/`. Push to `main`, and GitHub
+checks the code, applies any new database changes, then publishes. If a
+step fails the later ones do not run, so a broken build never reaches the
+live site. It needs five secrets adding to GitHub (Step 4) and one line
+putting back in `vercel.json` (see the end of this guide).
+
+For a coursework project the simple way is plenty. The pipeline is there
+for when the site has real users and applying a migration by hand starts
+to feel risky.
+
+Either way you need **Steps 1 to 4**. Step 5 is only for the pipeline.
+
+Do the steps in order — later ones need answers from earlier ones.
 
 ---
 
@@ -34,13 +49,10 @@ You do not need to install anything, except in one optional step where
 5. Leave the framework as **Next.js**. Don't change the build settings.
 6. Don't add environment variables here yet. Click **Deploy**.
 
-**Whatever that first deploy does, ignore it.** It may be skipped, it may
-fail, or it may succeed and give you a broken-looking site — none of that
-matters, because the settings it needs don't exist yet. The repo contains
-a `vercel.json` that tells Vercel not to deploy on its own; see
-[Why Vercel doesn't deploy by itself](#why-vercel-doesnt-deploy-by-itself)
-at the end. Deploying is GitHub's job now, and the real first deploy
-happens in Step 5.
+**Whatever that first deploy does, ignore it.** It may fail, or it may
+succeed and give you a broken-looking site — neither matters, because the
+settings it needs do not exist yet. You add those in Step 2, and deploy
+again afterwards.
 
 What you actually needed from this step is the project itself, and its
 web address.
@@ -75,7 +87,7 @@ four. For each one, tick **Production** *and* **Preview**.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **Data API** → **Project URL** |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **API Keys** → the publishable key |
-| `NEXT_PUBLIC_SITE_URL` | `https://litconnect.io` | Your domain — see Step 3a |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.litconnect.io` | Your domain — see Step 3 |
 | `GOOGLE_BOOKS_API_KEY` | Copy from your `.env.local` | Or: Google Cloud console → **APIs & Services** → **Credentials** |
 
 The first two are safe to expose. They are sent to every visitor's browser
@@ -109,7 +121,7 @@ signing up from a preview still ends up confirmed on the real site.
 
 ---
 
-## Step 3a — Point litconnect.io at the site
+## Step 3 — Point litconnect.io at the site
 
 You own the domain; this tells Vercel to answer for it.
 
@@ -140,14 +152,21 @@ Vercel gave you in Step 1 in the meantime, and switch it over afterwards.
 
 ---
 
-## Step 3 — Tell Supabase about the new address
+## Step 4 — Tell Supabase about the new address
 
 Supabase will not send people to an address it doesn't recognise. Right
 now it only knows about `localhost`.
 
-Add **both** the `.vercel.app` address and `https://litconnect.io`, so
-the site keeps working while the domain is still propagating and after it
-has finished.
+Add **all** of these, so the site keeps working from whichever address
+someone arrives at:
+
+- the `.vercel.app` address
+- `https://www.litconnect.io`
+- `https://litconnect.io`
+
+Note the `www.` one is the important one. The bare domain redirects to it,
+so `www.` is where people actually end up, and it is what
+`NEXT_PUBLIC_SITE_URL` should be set to.
 
 1. Go to your Supabase project.
 2. **Authentication** → **URL Configuration**.
@@ -177,7 +196,7 @@ an error instead of signing the person in.
 
 ---
 
-## Step 4 — Add the secrets in GitHub
+## Step 5 — Add the secrets in GitHub (pipeline only)
 
 These are the passwords and tokens the workflow needs. GitHub keeps them
 hidden and hides them from the logs.
@@ -252,7 +271,7 @@ every visitor's browser already receives. It is an address, not a key.
 
 ---
 
-## Step 5 — Do the first deploy
+## Step 6 — Do the first deploy
 
 Go to the repo → **Actions** tab → **Deploy** in the left sidebar → **Run
 workflow** → **Run workflow**.
@@ -447,31 +466,38 @@ above protects you from.
 
 ---
 
-## Why Vercel doesn't deploy by itself
+## How deploying is wired up
 
-Normally, connecting a repo to Vercel makes Vercel deploy every push by
-itself. We do not want that here, for one specific reason: Vercel's own
-deploys would not wait for the checks or the migrations. A push would race
-two deploys against each other, and the app could go live *before* the
-database changes it depends on.
-
-So `vercel.json` in the root of the repo contains:
+Connecting a repo to Vercel makes Vercel build and publish every push to
+`main` on its own. That is what is switched on now, and `vercel.json`
+holds only the region:
 
 ```json
 {
-  "git": {
-    "deploymentEnabled": false
-  }
+  "regions": ["bom1"]
 }
 ```
 
-That switches off Vercel's automatic deploys. Deploys still happen — they
-are just driven by GitHub Actions, in the right order. This is the only
-reason that file exists.
+`bom1` is Mumbai, which is where the database lives. Functions should run
+next to their data — see the region note further down.
 
-One side effect: you lose Vercel's own "Visit Preview" links on pull
-requests. The Preview workflow posts its own comment with the link
-instead.
+### If you switch to the pipeline later
+
+Add this back to `vercel.json`:
+
+```json
+"git": { "deploymentEnabled": false }
+```
+
+That stops Vercel deploying by itself, so the GitHub workflow can do it in
+the right order instead. The reason the order matters: Vercel's own deploy
+does not wait for the checks or the database changes, so the app could go
+live *before* the migration it depends on.
+
+One side effect of switching: you lose Vercel's own "Visit Preview" links
+on pull requests. The Preview workflow posts its own comment with the
+link instead.
+
 
 ---
 
