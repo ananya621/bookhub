@@ -1,16 +1,23 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { allGenres, allLevels } from "@/lib/mock";
-import { approveRequest, declineRequest, type ActionResult } from "@/app/actions/books";
+import Link from "next/link";
+import { declineRequest, type ActionResult } from "@/app/actions/books";
 
 /*
  * The rows and their actions. Split out from the page so the page can
  * stay a server component and read the queue from the database.
  *
- * Approving asks for genres and a reading level, because Google does not
- * supply ours and because picking the reading level is exactly where an
- * adult decides who a book is for. Deliberately not defaulted away.
+ * "Find & import" replaces what used to be an inline approve-with-
+ * genres form here — that called approve_book_request(), which built
+ * the book straight from the request's own stored fields with no
+ * chance to correct them. The updated design moves approval into the
+ * catalogue's Step 1/Step 2 flow instead (see ImportBook.tsx), so an
+ * admin can fix a wrong title, add a cover, correct genres, before it
+ * goes live — and the catalogue page settles the request afterwards via
+ * link_book_to_request(). approve_book_request() is left in the
+ * database unused rather than removed, in case something else still
+ * expects it.
  *
  * Decline reasons come from the export (line 2550). The reader is shown
  * whichever is picked, so it can never be left blank.
@@ -49,10 +56,6 @@ const STATUS_LABEL: Record<QueueRow["status"], string> = {
 };
 
 export default function RequestQueue({ rows }: { rows: QueueRow[] }) {
-  const [approveState, approveAction, approving] = useActionState<ActionResult, FormData>(
-    approveRequest,
-    undefined
-  );
   const [declineState, declineAction, declining] = useActionState<ActionResult, FormData>(
     declineRequest,
     undefined
@@ -68,10 +71,7 @@ export default function RequestQueue({ rows }: { rows: QueueRow[] }) {
     );
   }
 
-  const error =
-    (approveState && "error" in approveState && approveState.error) ||
-    (declineState && "error" in declineState && declineState.error) ||
-    null;
+  const error = (declineState && "error" in declineState && declineState.error) || null;
 
   return (
     <>
@@ -127,70 +127,21 @@ export default function RequestQueue({ rows }: { rows: QueueRow[] }) {
 
               {r.status === "pending" && (
                 <div style={{ marginTop: 12 }}>
-                  <form action={approveAction}>
-                    <input type="hidden" name="requestId" value={r.id} />
-
-                    <div
-                      className="mono"
-                      style={{ color: "var(--color-neutral-700)", marginBottom: 6 }}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Link
+                      href={`/admin/catalogue?q=${encodeURIComponent(r.title)}&requestId=${r.id}`}
+                      className="btn btn-primary"
                     >
-                      GENRES
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-                        gap: 6,
-                        marginBottom: 12,
-                      }}
+                      Find &amp; import
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setOpenDecline(openDecline === r.id ? null : r.id)}
                     >
-                      {allGenres.map((g) => (
-                        <label
-                          key={g}
-                          className="radio"
-                          style={{ border: "1px solid var(--color-divider)", padding: "6px 8px" }}
-                        >
-                          <input type="checkbox" name="genres" value={g} />
-                          <span className="dot" />
-                          {g}
-                        </label>
-                      ))}
-                    </div>
-
-                    <div
-                      className="mono"
-                      style={{ color: "var(--color-neutral-700)", marginBottom: 6 }}
-                    >
-                      WHO IS IT FOR?
-                    </div>
-                    <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                      {allLevels.map((l, i) => (
-                        <label key={l} className="seg-opt" style={{ minHeight: 38 }}>
-                          <input
-                            type="radio"
-                            name="readingLevel"
-                            value={l}
-                            defaultChecked={i === 0}
-                          />
-                          <span className="dot" />
-                          {l}
-                        </label>
-                      ))}
-                    </div>
-
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button type="submit" className="btn btn-primary" disabled={approving}>
-                        {approving ? "Adding…" : "Approve and add"}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setOpenDecline(openDecline === r.id ? null : r.id)}
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </form>
+                      Decline
+                    </button>
+                  </div>
 
                   {openDecline === r.id && (
                     <form

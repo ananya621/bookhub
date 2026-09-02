@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { searchGoogleBooks, type GoogleBook, type SearchOutcome } from "@/lib/google-books";
+import { storeCoverFromFile, storeCoverFromUrl } from "@/lib/storage";
 
 /*
  * Searching for books, asking for missing ones, and the admin side of
@@ -80,23 +81,6 @@ export async function requestBook(_prev: ActionResult, formData: FormData): Prom
 
 /* --- Admin: settling requests ---------------------------------------- */
 
-export async function approveRequest(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient();
-
-  const { error } = await supabase.rpc("approve_book_request", {
-    p_request_id: String(formData.get("requestId") ?? ""),
-    p_genres: formData.getAll("genres").map(String),
-    p_reading_level: String(formData.get("readingLevel") ?? "Middle Grade"),
-  });
-
-  if (error) return { error: error.message.toUpperCase() };
-
-  revalidatePath("/admin/requests");
-  revalidatePath("/admin/catalogue");
-  revalidatePath("/search");
-  return { ok: "approved" };
-}
-
 export async function declineRequest(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const reason = String(formData.get("reason") ?? "").trim();
   // The reader is shown this, so make them pick something.
@@ -115,39 +99,67 @@ export async function declineRequest(_prev: ActionResult, formData: FormData): P
   return { ok: "declined" };
 }
 
-/* --- Admin: adding a book directly ----------------------------------- */
+/* --- Admin: importing a book (Step 2 of the catalogue screen) -------- */
 
 /**
- * Straight into the catalogue, no request and no queue. For when an
- * admin already knows what they want to add.
+ * Saves a book from the catalogue's Step 2 form — every field is
+ * whatever the admin left in the form, not necessarily what Google or
+ * the original request said, since the whole point of Step 2 is
+ * reviewing and correcting that before it goes live.
  *
- * Only admins get here — the insert policy on `books` checks it, so
- * this cannot be worked around by calling the action directly.
+ * Doubles as request approval: if `requestId` is present and
+ * `fulfilRequest` is checked, the newly-created book is linked to that
+ * request via link_book_to_request() (see the migration of the same
+ * name). A book with no matching request just skips that step.
+ *
+ * Only admins get here — the insert policy on `books` and the admin
+ * check inside link_book_to_request() both enforce that independently,
+ * so this cannot be worked around by calling the action directly.
  */
-export async function addBookDirectly(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+export async function importBook(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return { error: "A TITLE IS REQUIRED" };
 
   const pages = Number.parseInt(String(formData.get("pages") ?? ""), 10);
-  const externalId = String(formData.get("externalId") ?? "").trim();
+  const externalId = String(formData.get("externalId") ?? "").trim() || null;
+  const requestId = String(formData.get("requestId") ?? "").trim() || null;
+  const fulfilRequest = formData.get("fulfilRequest") === "on";
+
+  // The cover is stored once, here, at save time — not on every click
+  // while the admin is still deciding. "api" re-hosts Google's image so
+  // the link never rots; "upload" stores whatever file they picked.
+  const coverMode = String(formData.get("coverMode") ?? "none");
+  let coverUrl: string | null = null;
+  if (coverMode === "api") {
+    const apiCoverUrl = String(formData.get("apiCoverUrl") ?? "").trim();
+    if (apiCoverUrl) coverUrl = await storeCoverFromUrl(apiCoverUrl);
+  } else if (coverMode === "upload") {
+    const file = formData.get("coverFile");
+    if (file instanceof File) coverUrl = await storeCoverFromFile(file);
+  }
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { error } = await supabase.from("books").insert({
-    source: externalId ? "google" : "manual",
-    external_id: externalId || null,
-    title,
-    author: String(formData.get("author") ?? "").trim(),
-    pages: Number.isFinite(pages) ? pages : null,
-    summary: String(formData.get("summary") ?? "") || null,
-    cover_url: String(formData.get("coverUrl") ?? "") || null,
-    genres: formData.getAll("genres").map(String),
-    reading_level: String(formData.get("readingLevel") ?? "Middle Grade"),
-    added_by: user?.id ?? null,
-  });
+  const { data: inserted, error } = await supabase
+    .from("books")
+    .insert({
+      source: externalId ? "google" : "manual",
+      external_id: externalId,
+      title,
+      author: String(formData.get("author") ?? "").trim(),
+      pages: Number.isFinite(pages) ? pages : null,
+      summary: String(formData.get("summary") ?? "") || null,
+      cover_url: coverUrl,
+      genres: formData.getAll("genres").map(String),
+      reading_level: String(formData.get("readingLevel") ?? "Middle Grade"),
+      is_series: formData.get("isSeries") === "on",
+      added_by: user?.id ?? null,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     // The unique index on external_id means "already imported".
@@ -157,5 +169,20 @@ export async function addBookDirectly(_prev: ActionResult, formData: FormData): 
 
   revalidatePath("/admin/catalogue");
   revalidatePath("/search");
+
+  if (requestId && fulfilRequest) {
+    const { error: linkError } = await supabase.rpc("link_book_to_request", {
+      p_request_id: requestId,
+      p_book_id: inserted.id as string,
+    });
+    revalidatePath("/admin/requests");
+    revalidatePath("/requests");
+    // The book is safely in the catalogue either way by this point — a
+    // failure here (someone else already settled the request) shouldn't
+    // read as the whole import having failed.
+    if (linkError) return { ok: "added-unlinked" };
+    return { ok: "added-and-fulfilled" };
+  }
+
   return { ok: "added" };
 }

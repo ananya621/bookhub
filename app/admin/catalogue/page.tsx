@@ -1,23 +1,28 @@
 import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { createClient } from "@/lib/supabase/server";
-import AddBook from "./AddBook";
+import ImportBook from "./ImportBook";
 
 /*
- * Ported from the `isAdminCatalogue` block in Prototype with Admin.dc.html
- * (lines 274-423), now reading the real catalogue.
+ * Ported from the `isAdminCatalogue` block in Prototype Admin.dc.html
+ * (the STEP 1 / STEP 2 import flow), now reading the real catalogue.
  *
  * A server component: the list comes from the database, and the
- * add-a-book form is a client component beside it.
+ * import form is a client component beside it.
  *
- * The export's import flow searched a fake API and mapped its subject
- * words onto genres. The real thing splits in two: readers ask through
- * /requests/new and an admin approves in the request queue, or an admin
- * adds one straight from here. Both paths still make a person choose
- * the genres and the reading level, which is where someone decides who
- * a book is for.
+ * Also the landing spot for "Find & import" from the requests queue
+ * (?q=<title>&requestId=<id>&askedBy=<n>) — see the export's note on
+ * that screen: "the request closes when the book lands, not before."
+ * When requestId is present we look the request up (title + how many
+ * people asked) so ImportBook can show the "N people asked for this"
+ * banner without re-deriving it client-side.
  */
-export default async function AdminCataloguePage() {
+export default async function AdminCataloguePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; requestId?: string }>;
+}) {
+  const { q, requestId } = await searchParams;
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -26,6 +31,29 @@ export default async function AdminCataloguePage() {
     .order("created_at", { ascending: false });
 
   const books = data ?? [];
+
+  let initialQuery = q ?? "";
+  let requestContext: { requestId: string; askedBy: number } | null = null;
+
+  if (requestId) {
+    const { data: request } = await supabase
+      .from("book_requests")
+      .select("title, status")
+      .eq("id", requestId)
+      .single();
+
+    if (request?.status === "pending") {
+      const { count } = await supabase
+        .from("book_request_voters")
+        .select("*", { count: "exact", head: true })
+        .eq("request_id", requestId);
+
+      initialQuery = initialQuery || request.title;
+      requestContext = { requestId, askedBy: count ?? 1 };
+    }
+    // A request that's already settled (or doesn't exist) is treated as
+    // a plain search — no banner, nothing to fulfil.
+  }
 
   return (
     <>
@@ -38,7 +66,7 @@ export default async function AdminCataloguePage() {
           one was approved from a request, or added here by hand.
         </p>
 
-        <AddBook />
+        <ImportBook initialQuery={initialQuery} requestContext={requestContext} />
 
         <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 10 }}>
           {books.length === 0
