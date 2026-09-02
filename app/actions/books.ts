@@ -186,3 +186,46 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
 
   return { ok: "added" };
 }
+
+/* --- Admin: the "In the catalogue" list ------------------------------- */
+
+/**
+ * "Add a cover" on an already-catalogued book that has none — the
+ * counterpart to importBook()'s cover handling, for a book that's
+ * already live. Only ever a file upload here: there's no Google result
+ * still in hand for an existing row to re-fetch from.
+ */
+export async function addBookCover(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const bookId = String(formData.get("bookId") ?? "");
+  const file = formData.get("coverFile");
+  if (!bookId) return { error: "NO BOOK SPECIFIED" };
+  if (!(file instanceof File) || file.size === 0) return { error: "PICK A FILE FIRST" };
+
+  const coverUrl = await storeCoverFromFile(file);
+  if (!coverUrl) return { error: "COULDN'T STORE THAT FILE — TRY A DIFFERENT IMAGE" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("books").update({ cover_url: coverUrl }).eq("id", bookId);
+  if (error) return { error: error.message.toUpperCase() };
+
+  revalidatePath("/admin/catalogue");
+  revalidatePath("/admin");
+  revalidatePath("/search");
+  revalidatePath(`/book/${bookId}`);
+  return { ok: "cover-added" };
+}
+
+/** "Remove" on the catalogue list — takes the book off the shelf entirely. */
+export async function removeBook(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const bookId = String(formData.get("bookId") ?? "");
+  if (!bookId) return { error: "NO BOOK SPECIFIED" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("books").delete().eq("id", bookId);
+  if (error) return { error: error.message.toUpperCase() };
+
+  revalidatePath("/admin/catalogue");
+  revalidatePath("/admin");
+  revalidatePath("/search");
+  return { ok: "removed" };
+}

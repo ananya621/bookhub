@@ -297,6 +297,12 @@ a:hover { color: var(--color-accent); }
 .chip { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 12px; font-weight: 700; text-transform: uppercase; border: 2px solid var(--color-text); min-height: 48px; padding: 10px 15px; cursor: pointer; background: transparent; color: var(--color-text); }
 .chip.on { background: var(--color-accent); color: var(--color-bg); }
 
+/* From Prototype Admin.dc.html's own <style> block (line 24) — the
+   missing-cover placeholder on the admin catalogue list, distinct from
+   the ordinary blue .cover placeholder used for a book that just
+   hasn't loaded its image yet. */
+.nocover { background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; border: 3px dashed var(--color-neutral-600); }
+
 /* Swaps mobile chrome/sheets in and desktop chrome/inline controls out
    at the same 640px breakpoint used above. A plain display toggle on a
    wrapper, not on .wnav etc. directly, so their own internal flex

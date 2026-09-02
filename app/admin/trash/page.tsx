@@ -42,7 +42,7 @@ export default async function AdminTrashPage() {
     <>
       <AdminNav />
       <div className="wrap">
-        <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Trash</h1>
+        <h1 style={{ fontSize: 38, margin: "0 0 6px" }}>Trash</h1>
         <p style={{ fontSize: 14, marginBottom: 22 }}>
           Accounts deleted or banned, kept for 14 days. Nothing here is visible to readers, and
           anything can be put back until it&apos;s gone for good.

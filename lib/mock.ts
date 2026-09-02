@@ -146,3 +146,40 @@ export const lengthLabel = (p: number): string =>
 
 export const bookById = (id: string): Book | undefined =>
   books.find((b) => b.id === id);
+
+export type Survey = { genres: string[]; level: string; length: string };
+
+/*
+ * Shared by /home ("picked for you", top 5) and /recs ("see all
+ * recommendations", the full ranked list) — extracted from /home so
+ * both use one real implementation instead of /recs having its own
+ * stand-in. Same scoring the export uses: genre overlap + level match +
+ * length match, falling back to highest-rated first if nothing scores
+ * (or there's no survey at all — a guest, or an account that skipped
+ * it). Callers slice to however many they want to show.
+ */
+export function rankBooks(survey: Survey | null): Book[] {
+  if (!survey) return books.slice().sort((a, c) => avg(c) - avg(a));
+  const scored = books
+    .map((b) => ({
+      book: b,
+      hits:
+        b.genres.filter((g) => survey.genres.includes(g)).length +
+        (b.level === survey.level ? 1 : 0) +
+        (lengthLabel(b.pages) === survey.length ? 1 : 0),
+    }))
+    .filter((o) => o.hits > 0)
+    .sort((a, c) => c.hits - a.hits || avg(c.book) - avg(a.book));
+  return scored.length ? scored.map((o) => o.book) : books.slice().sort((a, c) => avg(c) - avg(a));
+}
+
+/* The "MATCHED ON: ..." label /home and /recs both show. */
+export function matchedOnLabel(survey: Survey | null): string {
+  if (!survey) return "YOUR SURVEY ANSWERS";
+  return (
+    (survey.genres.length ? survey.genres.join(" · ") + " · " : "") +
+    survey.level +
+    " · " +
+    survey.length
+  );
+}

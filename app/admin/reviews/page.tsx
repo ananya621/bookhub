@@ -63,7 +63,7 @@ export default function AdminReviewsPage() {
     <>
       <AdminNav />
       <div className="wrap">
-        <h1 style={{ fontSize: 36, margin: "0 0 18px" }}>Reviews</h1>
+        <h1 style={{ fontSize: 38, margin: "0 0 18px" }}>Reviews</h1>
         <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
           <input
             className="input"

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
 import { useCurrentUser, useSessionData } from "@/components/AuthProvider";
 import Nav from "@/components/Nav";
-import { books, avg, starStr, lengthLabel, steps, type Book } from "@/lib/mock";
+import { books, avg, starStr, rankBooks, matchedOnLabel, steps } from "@/lib/mock";
 
 /*
  * Ported from the `isHome` block in Prototype with Admin.dc.html
@@ -44,31 +44,6 @@ const badgeLabels: Record<Exclude<Status, "none">, string> = {
   want: "Want to read",
 };
 
-// Same scoring the export uses: genre overlap + level match + length
-// match, falling back to highest-rated first if nothing scores. Takes
-// the survey as an argument because it belongs to the signed-in reader
-// now — an account that skipped the survey scores nothing and gets the
-// highest-rated fallback, which is what the export does too.
-type Survey = { genres: string[]; level: string; length: string };
-
-function recommend(survey: Survey | null): Book[] {
-  if (!survey) return books.slice().sort((a, c) => avg(c) - avg(a)).slice(0, 5);
-  const scored = books
-    .map((b) => ({
-      book: b,
-      hits:
-        b.genres.filter((g) => survey.genres.includes(g)).length +
-        (b.level === survey.level ? 1 : 0) +
-        (lengthLabel(b.pages) === survey.length ? 1 : 0),
-    }))
-    .filter((o) => o.hits > 0)
-    .sort((a, c) => c.hits - a.hits || avg(c.book) - avg(a.book));
-  const ranked = scored.length
-    ? scored.map((o) => o.book)
-    : books.slice().sort((a, c) => avg(c) - avg(a));
-  return ranked.slice(0, 5);
-}
-
 export default function HomePage() {
   const router = useRouter();
   const user = useCurrentUser();
@@ -76,7 +51,7 @@ export default function HomePage() {
   const [statuses, setStatuses] = useState<Record<string, Status>>(sessionData.statuses);
   const [progress] = useState<Record<string, StepKey>>(sessionData.progress);
   const survey = sessionData.survey;
-  const homeRecs = recommend(survey);
+  const homeRecs = rankBooks(survey).slice(0, 5);
 
   const statusOf = (id: string): Status => statuses[id] ?? "none";
   const markRead = (id: string) => setStatuses((s) => ({ ...s, [id]: "read" }));
@@ -85,12 +60,7 @@ export default function HomePage() {
   const readCount = books.filter((b) => statusOf(b.id) === "read").length;
   const wantCount = books.filter((b) => statusOf(b.id) === "want").length;
 
-  const basedOn = survey
-    ? (survey.genres.length ? survey.genres.join(" · ") + " · " : "") +
-      survey.level +
-      " · " +
-      survey.length
-    : "YOUR SURVEY ANSWERS";
+  const basedOn = matchedOnLabel(survey);
 
   return (
     <>

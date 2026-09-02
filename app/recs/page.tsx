@@ -1,34 +1,35 @@
+"use client";
+
 import Link from "next/link";
 import Nav from "@/components/Nav";
-import { books, avg, starStr, reviewsFor } from "@/lib/mock";
+import { useSessionData } from "@/components/AuthProvider";
+import { avg, starStr, reviewsFor, rankBooks, matchedOnLabel } from "@/lib/mock";
 
 /*
  * Ported from the `isRecs` block in Prototype with Admin.dc.html
  * (lines 859-886).
  *
- * The source scores every book against the reader's survey answers
- * (genres/level/length) and falls back to the whole catalogue sorted
- * by rating when nothing scores above zero (renderVals(), ~line 1847
- * and the `recBooks` assignment at ~line 1849). Survey answers live in
- * the survey screen's own local state and aren't shared across pages
- * in this port, so there's nothing here to score against — this page
- * always takes that same fallback path: every book, best-rated first.
- * "MATCHED ON" shows a generic label instead of inventing specific
- * survey answers; wire it to real answers once survey state is shared
- * across routes.
+ * Previously always fell back to "every book, best-rated first" — it
+ * had no access to survey data and its own comment said so. /home
+ * genuinely scores against the survey; this now shares that same
+ * function (lib/mock.ts's rankBooks/matchedOnLabel, extracted from what
+ * used to be /home's own local recommend()) instead of duplicating a
+ * second, fake version of it. The only real difference from /home:
+ * this shows the full ranked list, not just the top 5.
  *
- * No interactivity on this screen beyond navigation, so it stays a
- * server component.
+ * A client component now (it wasn't before) because survey data comes
+ * from useSessionData(), the same fixture-context hook every other
+ * reader page reads it from — this page just hadn't been wired to it.
  */
 export default function RecsPage() {
-  const recs = books
-    .slice()
-    .sort((a, b) => avg(b) - avg(a))
-    .map((book) => ({
-      book,
-      starStr: starStr(avg(book)),
-      ratingStr: `${avg(book).toFixed(1)} · ${reviewsFor(book).length} REVIEWS`,
-    }));
+  const sessionData = useSessionData();
+  const survey = sessionData.survey;
+
+  const recs = rankBooks(survey).map((book) => ({
+    book,
+    starStr: starStr(avg(book)),
+    ratingStr: `${avg(book).toFixed(1)} · ${reviewsFor(book).length} REVIEWS`,
+  }));
   const noRecs = recs.length === 0;
 
   return (
@@ -37,7 +38,7 @@ export default function RecsPage() {
       <div className="wrap">
         <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>Recommendations</h1>
         <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 24 }}>
-          MATCHED ON: YOUR SURVEY ANSWERS ·{" "}
+          MATCHED ON: {matchedOnLabel(survey)} ·{" "}
           <Link href="/survey" style={{ cursor: "pointer" }}>
             EDIT MY ANSWERS
           </Link>

@@ -49,7 +49,7 @@ export default async function AdminUsersPage() {
     <>
       <AdminNav />
       <div className="wrap">
-        <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>All users</h1>
+        <h1 style={{ fontSize: 38, margin: "0 0 6px" }}>Users</h1>
         <p style={{ fontSize: 14, marginBottom: 20 }}>
           Every account, not just the reported ones. Open anyone to see their reviews and act on
           them.
