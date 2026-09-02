@@ -39,11 +39,14 @@ const REPORTERS = [
  * text is innocuous. The `why` line under each review is there so both
  * are judgeable rather than auto-actioned.
  */
+const PAGE_SIZE = 5;
+
 export default function AdminReviewsPage() {
   const [rows, setRows] = useState(() =>
     adminReviews.map((r) => ({ ...r, status: r.status as ReviewStatus })),
   );
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [openReporters, setOpenReporters] = useState<string | null>(null);
 
   const setStatus = (id: string, status: ReviewStatus) =>
@@ -59,22 +62,44 @@ export default function AdminReviewsPage() {
       )
     : rows;
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageRows = filtered.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
+
   return (
     <>
       <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 38, margin: "0 0 18px" }}>Reviews</h1>
-        <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 18 }}>
           <input
             className="input"
             style={{ flex: 1, minHeight: 44 }}
             placeholder="Search reviews, books or readers"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
           />
+          <span className="mono" style={{ color: "var(--color-neutral-700)" }}>
+            PAGE {currentPage + 1} OF {pageCount}
+          </span>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            ←
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+          >
+            →
+          </button>
         </div>
         <div style={{ borderTop: "3px solid var(--color-text)" }}>
-          {filtered.map((r) => {
+          {pageRows.map((r) => {
             const pending = r.status === "pending";
             const done = !pending;
             const flagLabel =

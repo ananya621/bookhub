@@ -126,6 +126,9 @@ export default function UserDetail({
               </form>
             ) : (
               <>
+                <button className="btn btn-secondary" title="Not built yet — flags a display name as impersonation/refused and forces a new one" disabled>
+                  Force rename
+                </button>
                 <button className="btn btn-secondary" title="Not built yet — a separate, temporary restriction, distinct from Delete" disabled>
                   Ban account
                 </button>
