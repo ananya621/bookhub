@@ -21,13 +21,34 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("books")
-    .select("id, title, author, pages, summary, cover_url, genres, reading_level, is_series")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data }, { data: userData }] = await Promise.all([
+    supabase
+      .from("books")
+      .select("id, title, author, pages, summary, cover_url, genres, reading_level, is_series")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase.auth.getUser(),
+  ]);
 
   if (!data) notFound();
+
+  // Only fetched when signed in — reading_status is RLS'd to the
+  // caller's own rows anyway, but there's no point querying for a
+  // guest, who can't have one.
+  let initialStatus: "none" | "want" | "reading" | "read" = "none";
+  let initialProgress: string | null = null;
+  if (userData.user) {
+    const { data: status } = await supabase
+      .from("reading_status")
+      .select("status, progress")
+      .eq("user_id", userData.user.id)
+      .eq("book_id", id)
+      .maybeSingle();
+    if (status) {
+      initialStatus = status.status as "want" | "reading" | "read";
+      initialProgress = status.progress as string | null;
+    }
+  }
 
   const book: DetailBook = {
     id: data.id as string,
@@ -43,5 +64,13 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
 
   // Keyed on the id so moving straight from one book to another resets
   // the per-book state instead of carrying the last one's over.
-  return <BookDetail key={book.id} id={book.id} book={book} />;
+  return (
+    <BookDetail
+      key={book.id}
+      id={book.id}
+      book={book}
+      initialStatus={initialStatus}
+      initialProgress={initialProgress}
+    />
+  );
 }

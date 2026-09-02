@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Nav from "@/components/Nav";
 import Sheet from "@/components/Sheet";
 import { lengthLabel, starStr, steps } from "@/lib/mock";
+import { setReadingStatus } from "@/app/actions/reading";
 
 /*
  * Ported from the `isBook` block in Prototype with Admin.dc.html
@@ -18,11 +19,17 @@ import { lengthLabel, starStr, steps } from "@/lib/mock";
  *
  * Deviations from the source, and why:
  *
- * - Reading status (`st.read/reading/want`) and reading progress are
- *   local `useState` — there's no shared tracker state across pages in
- *   this port (the tracker screen is a separate agent's scope), so the
- *   status picked here doesn't persist or show up on /tracker. It's a
- *   comment-flagged local-only stand-in per the porting rules.
+ * - Reading status and progress are real now (reading_status table,
+ *   app/actions/reading.ts) — the page fetches the signed-in reader's
+ *   current status server-side and passes it in as initialStatus/
+ *   initialProgress; picking a new one here saves it for real and does
+ *   show up on /tracker and /home. `useState` still holds it
+ *   client-side for instant feedback (optimistic — set locally, then
+ *   confirmed/corrected by the server action's result), not because
+ *   it's fake.
+ * - A guest picking a status gets the server action's error message
+ *   rather than a sign-up prompt — there's no gate-dialog component in
+ *   this port yet (see docs/auth-states.md).
  * - "＋ Add to a list" has no lists data or list-picker UI available on
  *   this page (the lists screen that owns that state is out of scope),
  *   so the button is inert rather than faking a list. `st.listedIn` is
@@ -92,15 +99,43 @@ export type DetailBook = {
   isSeries: boolean;
 };
 
-export default function BookDetail({ id, book }: { id: string; book: DetailBook }) {
+export default function BookDetail({
+  id,
+  book,
+  initialStatus,
+  initialProgress,
+}: {
+  id: string;
+  book: DetailBook;
+  initialStatus: ReadingStatus;
+  initialProgress: string | null;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justPosted = searchParams.get("posted") === "1";
 
-  const [status, setStatus] = useState<ReadingStatus>("none");
-  const [progressKey, setProgressKey] = useState(steps[0].key);
+  const [status, setStatus] = useState<ReadingStatus>(initialStatus);
+  const [progressKey, setProgressKey] = useState(
+    (initialProgress as (typeof steps)[number]["key"] | null) ?? steps[0].key
+  );
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [myReview, setMyReview] = useState<LocalReview | null>(() => readLocalReview(id));
+
+  // Optimistic: the UI updates immediately, then the server action's
+  // result either confirms it silently or surfaces an error (a guest,
+  // most likely) without reverting the click — same feel as the
+  // radios/sheet buttons had when this was local-only.
+  async function saveStatus(newStatus: Exclude<ReadingStatus, "none">, newProgress?: string) {
+    setStatus(newStatus);
+    if (newProgress) setProgressKey(newProgress as (typeof steps)[number]["key"]);
+    const formData = new FormData();
+    formData.set("bookId", id);
+    formData.set("status", newStatus);
+    if (newStatus === "reading") formData.set("progress", newProgress ?? progressKey);
+    const result = await setReadingStatus(undefined, formData);
+    setStatusError(result && "error" in result ? result.error : null);
+  }
 
   function deleteMyReview() {
     window.localStorage.removeItem(localReviewKey(id));
@@ -163,7 +198,7 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
               </div>
               <div className="seg" style={{ width: "100%", flexDirection: "column" }}>
                 <label className="seg-opt" data-state="read" style={{ justifyContent: "center", minHeight: 44, borderLeft: 0 }}>
-                  <input type="radio" name="st" checked={status === "read"} onChange={() => setStatus("read")} />
+                  <input type="radio" name="st" checked={status === "read"} onChange={() => saveStatus("read")} />
                   Read
                 </label>
                 <label
@@ -171,7 +206,7 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
                   data-state="reading"
                   style={{ justifyContent: "center", minHeight: 44, borderLeft: 0, borderTop: "3px solid var(--color-divider)" }}
                 >
-                  <input type="radio" name="st" checked={status === "reading"} onChange={() => setStatus("reading")} />
+                  <input type="radio" name="st" checked={status === "reading"} onChange={() => saveStatus("reading")} />
                   Currently Reading
                 </label>
                 <label
@@ -179,10 +214,15 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
                   data-state="want"
                   style={{ justifyContent: "center", minHeight: 44, borderLeft: 0, borderTop: "3px solid var(--color-divider)" }}
                 >
-                  <input type="radio" name="st" checked={status === "want"} onChange={() => setStatus("want")} />
+                  <input type="radio" name="st" checked={status === "want"} onChange={() => saveStatus("want")} />
                   Want to Read
                 </label>
               </div>
+              {statusError && (
+                <div className="mono" style={{ color: "var(--color-problem-text)", marginTop: 8 }}>
+                  {statusError}
+                </div>
+              )}
               {/* Local only — no lists feature/state available on this page. */}
               <button type="button" className="btn btn-secondary btn-block" style={{ minHeight: 42 }}>
                 ＋ Add to a list
@@ -198,7 +238,7 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
                   <div className="seg" style={{ width: "100%", flexDirection: "column" }}>
                     {steps.map((s) => (
                       <label key={s.key} className="seg-opt" data-state="prog" style={{ justifyContent: "center", minHeight: 42, borderLeft: 0 }}>
-                        <input type="radio" name="prog" checked={progressKey === s.key} onChange={() => setProgressKey(s.key)} />
+                        <input type="radio" name="prog" checked={progressKey === s.key} onChange={() => saveStatus("reading", s.key)} />
                         {s.label}
                       </label>
                     ))}
@@ -236,12 +276,17 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
                     type="button"
                     className="btn"
                     style={status === key ? STATUS_STYLE[key] : undefined}
-                    onClick={() => setStatus(key)}
+                    onClick={() => saveStatus(key)}
                   >
                     {STATUS_LABEL[key]}
                   </button>
                 ))}
               </div>
+              {statusError && (
+                <div className="mono" style={{ color: "var(--color-problem-text)", marginTop: 10 }}>
+                  {statusError}
+                </div>
+              )}
               {status === "reading" && (
                 <div style={{ borderTop: "3px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
                   <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 8 }}>
@@ -254,7 +299,7 @@ export default function BookDetail({ id, book }: { id: string; book: DetailBook 
                         type="button"
                         className="btn"
                         style={progressKey === s.key ? { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" } : undefined}
-                        onClick={() => setProgressKey(s.key)}
+                        onClick={() => saveStatus("reading", s.key)}
                       >
                         {s.label}
                       </button>
