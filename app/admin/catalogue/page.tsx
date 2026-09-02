@@ -1,4 +1,3 @@
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { createClient } from "@/lib/supabase/server";
 import ImportBook from "./ImportBook";
@@ -67,7 +66,6 @@ export default async function AdminCataloguePage({
 
   return (
     <>
-      <Nav />
       <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 38, margin: "0 0 6px" }}>Catalogue</h1>

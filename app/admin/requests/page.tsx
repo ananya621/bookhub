@@ -1,4 +1,3 @@
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { createClient } from "@/lib/supabase/server";
 import RequestQueue, { type QueueRow } from "./RequestQueue";
@@ -42,7 +41,6 @@ export default async function AdminRequestsPage() {
 
   return (
     <>
-      <Nav />
       <AdminNav />
       <div className="wrap">
         <h1 style={{ fontSize: 38, margin: "0 0 6px" }}>Book requests</h1>
