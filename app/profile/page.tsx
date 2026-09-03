@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { countLabel } from "@/lib/plural";
 import { redirect } from "next/navigation";
 import Nav from "@/components/Nav";
 import { getCurrentUser } from "@/lib/auth";
@@ -125,7 +126,7 @@ export default async function ProfilePage() {
               >
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>{l.name}</div>
                 <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  {l.list_books.length + " BOOKS"}
+                  {countLabel(l.list_books.length, "book")}
                 </div>
               </Link>
             ))}

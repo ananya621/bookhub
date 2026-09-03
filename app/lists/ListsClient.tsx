@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
+import { countLabel } from "@/lib/plural";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -166,7 +167,7 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
             >
               <div style={{ fontSize: 14, fontFamily: "var(--font-heading)" }}>{l.name}</div>
               <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                {(l.isPublic ? "PUBLIC" : "PRIVATE") + " · " + l.books.length + " BOOKS"}
+                {(l.isPublic ? "PUBLIC" : "PRIVATE") + " · " + countLabel(l.books.length, "book")}
               </div>
             </div>
           ))}
@@ -195,7 +196,7 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
               <div>
                 <h2 style={{ margin: "0 0 4px" }}>{curList.name}</h2>
                 <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  {curList.books.length + " BOOKS · UPDATED " + curList.updatedLabel.toUpperCase()}
+                  {countLabel(curList.books.length, "book") + " · UPDATED " + curList.updatedLabel.toUpperCase()}
                 </div>
               </div>
               {/* Board C2 also shows a "Rename" button here. Left out on
