@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { useCurrentUser, useSessionData } from "@/components/AuthProvider";
-import { matchedOnLabel, steps } from "@/lib/mock";
+import { useCurrentUser } from "@/components/AuthProvider";
+import { matchedOnLabel, steps, type Survey } from "@/lib/mock";
 import { rankCatalogueBooks, type CatalogueBook } from "@/lib/catalogue";
 import { setReadingStatus } from "@/app/actions/reading";
 import type { ShelfBook } from "@/app/tracker/TrackerShelves";
@@ -14,11 +14,12 @@ import type { ShelfBook } from "@/app/tracker/TrackerShelves";
  * (lines 787-858). Split out of page.tsx (a server component now, see
  * there) so this can stay a client component for the interactive bits.
  *
- * "Picked for you" reads the real catalogue (catalogueBooks). "Currently
- * reading", the shelf counts (readCount/wantCount/reading) and "MY
- * LISTS" (listsCount) all read real tables now, fetched by page.tsx —
- * all were showing fixture data that didn't reflect what's actually
- * tracked, same bug class as the recommendations issue.
+ * "Picked for you" reads the real catalogue (catalogueBooks) scored
+ * against the reader's real survey now too. "Currently reading", the
+ * shelf counts (readCount/wantCount/reading) and "MY LISTS"
+ * (listsCount) all read real tables, fetched by page.tsx — all were
+ * showing fixture data that didn't reflect what's actually tracked or
+ * answered.
  */
 
 export default function HomeContent({
@@ -27,18 +28,18 @@ export default function HomeContent({
   wantCount,
   reading,
   listsCount,
+  survey,
 }: {
   catalogueBooks: CatalogueBook[];
   readCount: number;
   wantCount: number;
   reading: ShelfBook[];
   listsCount: number;
+  survey: Survey | null;
 }) {
   const router = useRouter();
   const user = useCurrentUser();
-  const sessionData = useSessionData();
   const [pending, startTransition] = useTransition();
-  const survey = sessionData.survey;
   const homeRecs = rankCatalogueBooks(catalogueBooks, survey).slice(0, 5);
 
   function markRead(bookId: string) {

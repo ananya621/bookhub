@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import HomeContent from "./HomeContent";
 import type { CatalogueBook } from "@/lib/catalogue";
 import type { ShelfBook } from "@/app/tracker/TrackerShelves";
+import type { Survey } from "@/lib/mock";
 
 /*
  * Split out of what used to be a single client component so "Picked
@@ -15,18 +16,34 @@ import type { ShelfBook } from "@/app/tracker/TrackerShelves";
  * fetched here the same way /tracker does, for the same reason: a
  * server component so it comes from the database, not the persona
  * fixture. "MY LISTS" now reads the real lists table too.
+ *
+ * The survey used to score "Picked for you" is real now too — it was
+ * still reading useSessionData().survey (the dev-persona fixture), so
+ * every real signed-in reader was getting recommendations scored
+ * against the fixture's fake answers instead of their own, same bug
+ * class as the rest of this list. Matches /profile's own real
+ * surveys query.
  */
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const [{ data: books }, { data: statusRows }, { count: listsCount }] = await Promise.all([
+  const [{ data: books }, { data: statusRows }, { count: listsCount }, { data: surveyRow }] = await Promise.all([
     supabase
       .from("books")
       .select("id, title, author, pages, cover_url, genres, reading_level")
       .order("created_at", { ascending: false }),
     supabase.from("reading_status").select("status, progress, books(id, title, author, cover_url)"),
     supabase.from("lists").select("*", { count: "exact", head: true }),
+    supabase.from("surveys").select("genres, reading_level, preferred_length").maybeSingle(),
   ]);
+
+  const survey: Survey | null = surveyRow
+    ? {
+        genres: surveyRow.genres as string[],
+        level: surveyRow.reading_level as string,
+        length: surveyRow.preferred_length as string,
+      }
+    : null;
 
   const catalogueBooks: CatalogueBook[] = (books ?? []).map((b) => ({
     id: b.id as string,
@@ -66,6 +83,7 @@ export default async function HomePage() {
           wantCount={wantCount}
           reading={reading}
           listsCount={listsCount ?? 0}
+          survey={survey}
         />
       </div>
     </>

@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useSessionData } from "@/components/AuthProvider";
-import { matchedOnLabel } from "@/lib/mock";
+import { matchedOnLabel, type Survey } from "@/lib/mock";
 import { rankCatalogueBooks, type CatalogueBook } from "@/lib/catalogue";
 
-export default function RecsList({ books }: { books: CatalogueBook[] }) {
-  const { survey } = useSessionData();
+export default function RecsList({ books, survey }: { books: CatalogueBook[]; survey: Survey | null }) {
   const recs = rankCatalogueBooks(books, survey);
   const emptyCatalogue = books.length === 0;
   const nothingMatched = !emptyCatalogue && recs.length === 0;
