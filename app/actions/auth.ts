@@ -53,6 +53,14 @@ export async function signUp(_prev: ActionResult, formData: FormData): Promise<A
   if (password.length < 8) return { error: "PASSWORD NEEDS AT LEAST 8 CHARACTERS" };
 
   const supabase = await createClient();
+
+  // A permanent effect of a real (non-warning) admin ban — see
+  // supabase/migrations/20260903000100_account_bans.sql. Checked before
+  // Supabase even creates the auth user, so a banned email never gets
+  // that far.
+  const { data: banned } = await supabase.rpc("is_email_banned", { p_email: email });
+  if (banned) return { error: "THIS EMAIL ADDRESS CAN’T BE USED TO SIGN UP" };
+
   const { error } = await supabase.auth.signUp({
     email,
     password,

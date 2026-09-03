@@ -14,18 +14,18 @@ import type { ShelfBook } from "@/app/tracker/TrackerShelves";
  * reading_status table too (see /tracker, built alongside this) —
  * fetched here the same way /tracker does, for the same reason: a
  * server component so it comes from the database, not the persona
- * fixture. "MY LISTS" is the one count still fixture-based — there is
- * still no lists table at all.
+ * fixture. "MY LISTS" now reads the real lists table too.
  */
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const [{ data: books }, { data: statusRows }] = await Promise.all([
+  const [{ data: books }, { data: statusRows }, { count: listsCount }] = await Promise.all([
     supabase
       .from("books")
       .select("id, title, author, pages, cover_url, genres, reading_level")
       .order("created_at", { ascending: false }),
     supabase.from("reading_status").select("status, progress, books(id, title, author, cover_url)"),
+    supabase.from("lists").select("*", { count: "exact", head: true }),
   ]);
 
   const catalogueBooks: CatalogueBook[] = (books ?? []).map((b) => ({
@@ -65,6 +65,7 @@ export default async function HomePage() {
           readCount={readCount}
           wantCount={wantCount}
           reading={reading}
+          listsCount={listsCount ?? 0}
         />
       </div>
     </>

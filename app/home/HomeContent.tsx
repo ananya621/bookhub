@@ -15,11 +15,10 @@ import type { ShelfBook } from "@/app/tracker/TrackerShelves";
  * there) so this can stay a client component for the interactive bits.
  *
  * "Picked for you" reads the real catalogue (catalogueBooks). "Currently
- * reading" and the shelf counts (readCount/wantCount/reading) now read
- * the real reading_status table too, fetched by page.tsx — both were
- * showing fixture data that didn't reflect what's actually tracked,
- * same bug class as the recommendations issue. "MY LISTS" is the one
- * count still from useSessionData() — there's still no lists table.
+ * reading", the shelf counts (readCount/wantCount/reading) and "MY
+ * LISTS" (listsCount) all read real tables now, fetched by page.tsx —
+ * all were showing fixture data that didn't reflect what's actually
+ * tracked, same bug class as the recommendations issue.
  */
 
 export default function HomeContent({
@@ -27,11 +26,13 @@ export default function HomeContent({
   readCount,
   wantCount,
   reading,
+  listsCount,
 }: {
   catalogueBooks: CatalogueBook[];
   readCount: number;
   wantCount: number;
   reading: ShelfBook[];
+  listsCount: number;
 }) {
   const router = useRouter();
   const user = useCurrentUser();
@@ -201,7 +202,7 @@ export default function HomeContent({
               <div className="mono" style={{ fontWeight: 700 }}>WANT TO READ</div>
             </div>
             <div className="card rowlink" style={{ gap: 2 }} onClick={() => router.push("/lists")}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{sessionData.lists.length}</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{listsCount}</div>
               <div className="mono" style={{ fontWeight: 700, color: "var(--color-neutral-700)" }}>MY LISTS</div>
             </div>
           </div>

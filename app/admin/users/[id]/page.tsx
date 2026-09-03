@@ -16,18 +16,11 @@ const TYPE_LABEL: Record<string, string> = {
  * current, updated file — lines 385-443), which is where account
  * moderation lives now instead of a standalone Accounts screen.
  *
- * Real: identity, admin/self badges, the delete/restore actions (see
- * app/actions/accounts.ts), and now "Their reviews" too — reading real
- * reviews and reports the same way app/admin/reviews/page.tsx does
- * (see that file for why openCount, not review status, decides whether
- * Allow/Delete show).
- *
- * Still mock, on purpose: two buttons the design has here that this
- * port doesn't build — "Ban account" (a separate, temporary,
- * arbitrary-duration restriction with its own confirm dialog in the
- * design — a distinct feature from the 14-day recoverable deletion
- * this session built, not a stand-in for it) and "Force rename". Both
- * stay local-only, same as before this rewrite.
+ * Real: identity, admin/self badges, the delete/restore actions, Force
+ * rename and Ban account too now (see app/actions/accounts.ts), and
+ * "Their reviews" — reading real reviews and reports the same way
+ * app/admin/reviews/page.tsx does (see that file for why openCount,
+ * not review status, decides whether Allow/Delete show).
  */
 export default async function AdminUserPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,10 +28,11 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   const me = await getCurrentUser();
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: role }, { data: pending }] = await Promise.all([
+  const [{ data: profile }, { data: role }, { data: pending }, { data: ban }] = await Promise.all([
     supabase.from("profiles").select("id, display_name, avatar_color, created_at").eq("id", id).maybeSingle(),
     supabase.from("user_roles").select("is_admin").eq("user_id", id).maybeSingle(),
     supabase.from("pending_deletions").select("deleted_by, deleted_at, purge_at").eq("user_id", id).maybeSingle(),
+    supabase.from("account_bans").select("reason, banned_at, banned_until").eq("user_id", id).maybeSingle(),
   ]);
 
   if (!profile) notFound();
@@ -114,6 +108,13 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                   deletedBy: pending.deleted_by as "self" | "admin",
                   deletedAt: pending.deleted_at as string,
                   purgeAt: pending.purge_at as string,
+                }
+              : null,
+            ban: ban
+              ? {
+                  reason: ban.reason as string,
+                  bannedAt: ban.banned_at as string,
+                  bannedUntil: ban.banned_until as string | null,
                 }
               : null,
           }}

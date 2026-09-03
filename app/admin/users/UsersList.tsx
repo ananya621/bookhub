@@ -11,6 +11,8 @@ export type UserRow = {
   isAdmin: boolean;
   isSelf: boolean;
   pending: { deletedBy: "self" | "admin"; purgeAt: string } | null;
+  isBanned: boolean;
+  reportCount: number;
 };
 
 const PAGE_SIZE = 3;
@@ -97,6 +99,16 @@ export default function UsersList({ users }: { users: UserRow[] }) {
               {u.pending && (
                 <span className="tag" style={{ background: "#FFD400", color: "#14110f" }}>
                   Pending deletion · {daysLeft(u.pending.purgeAt)}d left
+                </span>
+              )}
+              {u.isBanned && (
+                <span className="tag" style={{ background: "#C41031", color: "#EFECE3" }}>
+                  Banned
+                </span>
+              )}
+              {u.reportCount > 0 && (
+                <span className="tag" style={{ background: "#ff3d9a", color: "#14110f" }}>
+                  Reported ×{u.reportCount}
                 </span>
               )}
               <button

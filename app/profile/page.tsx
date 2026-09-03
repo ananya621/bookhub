@@ -21,8 +21,7 @@ import DeleteAccountButton from "./DeleteAccountButton";
  * still read the persona fixture. That's a deliberate, temporary
  * mismatch (see the conversation this was decided in), not an oversight.
  *
- * Public lists still read the local seedLists fixture: there is no
- * lists table yet, so there is nothing real to read.
+ * Public lists now read the real `lists` table too.
  */
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -30,7 +29,7 @@ export default async function ProfilePage() {
 
   const supabase = await createClient();
 
-  const [{ data: survey }, { data: voterRows }] = await Promise.all([
+  const [{ data: survey }, { data: voterRows }, { data: listRows }] = await Promise.all([
     supabase
       .from("surveys")
       .select("genres, reading_level, preferred_length")
@@ -39,6 +38,10 @@ export default async function ProfilePage() {
     supabase
       .from("book_request_voters")
       .select("book_requests(id, status)")
+      .eq("user_id", user.id),
+    supabase
+      .from("lists")
+      .select("name, is_public, list_books(book_id)")
       .eq("user_id", user.id),
   ]);
 
@@ -51,10 +54,13 @@ export default async function ProfilePage() {
     .filter((r): r is { id: string; status: string } => r !== null);
   const pendingRequests = myRequests.filter((r) => r.status === "pending").length;
 
-  // Still local: there is no lists table yet, so nothing real to show.
-  const { seedLists } = await import("@/app/lists/data");
-  const publicLists = seedLists.filter((l) => l.isPublic);
-  const privateCount = seedLists.filter((l) => !l.isPublic).length;
+  const lists = (listRows ?? []) as unknown as {
+    name: string;
+    is_public: boolean;
+    list_books: { book_id: string }[];
+  }[];
+  const publicLists = lists.filter((l) => l.is_public);
+  const privateCount = lists.filter((l) => !l.is_public).length;
 
   return (
     <>
@@ -112,7 +118,7 @@ export default async function ProfilePage() {
               >
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>{l.name}</div>
                 <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  {l.bookIds.length + " BOOKS"}
+                  {l.list_books.length + " BOOKS"}
                 </div>
               </Link>
             ))}

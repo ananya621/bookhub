@@ -86,6 +86,20 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
     alreadyReported = new Set((myReports ?? []).map((r) => `${r.target_type as string}:${r.target_id as string}`));
   }
 
+  // The reader's own lists, and which already hold this book — for the
+  // "＋ Add to a list" picker.
+  let myLists: { id: string; name: string; hasBook: boolean }[] = [];
+  if (me) {
+    const { data: listRows } = await supabase
+      .from("lists")
+      .select("id, name, list_books(book_id)")
+      .eq("user_id", me.id)
+      .order("created_at", { ascending: true });
+    myLists = ((listRows ?? []) as unknown as { id: string; name: string; list_books: { book_id: string }[] }[]).map(
+      (l) => ({ id: l.id, name: l.name, hasBook: l.list_books.some((lb) => lb.book_id === id) })
+    );
+  }
+
   let myReview: DetailReview | null = null;
   const reviews: DetailReview[] = [];
   for (const r of reviewRows ?? []) {
@@ -134,6 +148,7 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
       isGuest={!me}
       myReview={myReview}
       reviews={reviews}
+      myLists={myLists}
     />
   );
 }

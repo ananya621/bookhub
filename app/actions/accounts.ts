@@ -103,6 +103,125 @@ export async function adminRestoreAccount(
   return { ok: "restored" };
 }
 
+/*
+ * Force rename and Ban account — see the plain-English design covering
+ * both, and supabase/migrations/20260903000000_profiles_admin_update.sql
+ * / 20260903000100_account_bans.sql.
+ */
+
+const BAN_DURATIONS: Record<string, { supabaseDuration: string; ms: number }> = {
+  "6 hours": { supabaseDuration: "6h", ms: 6 * 60 * 60 * 1000 },
+  "1 day": { supabaseDuration: "24h", ms: 24 * 60 * 60 * 1000 },
+  "1 week": { supabaseDuration: "168h", ms: 7 * 24 * 60 * 60 * 1000 },
+  "1 month": { supabaseDuration: "720h", ms: 30 * 24 * 60 * 60 * 1000 },
+};
+
+/** Always available — nothing in the real, filter-at-signup system ever flags a name automatically, so this isn't gated behind that. */
+export async function adminForceRename(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = String(formData.get("userId") ?? "");
+  const newName = String(formData.get("newName") ?? "").trim();
+  if (!userId || !newName) return { error: "TYPE A NAME FIRST" };
+
+  const supabase = await createClient();
+
+  const { data: verdict } = await supabase.rpc("check_display_name", { candidate: newName });
+  const MESSAGE: Record<string, string> = {
+    short: "AT LEAST 2 CHARACTERS",
+    banned: "THAT NAME ISN’T ALLOWED HERE",
+    reserved: "THAT ONE’S RESERVED — PICK ANOTHER",
+    taken: "TAKEN ALREADY — PICK ANOTHER",
+  };
+  if (verdict !== "available") return { error: MESSAGE[verdict as string] ?? "SOMETHING WENT WRONG" };
+
+  const { error } = await supabase.from("profiles").update({ display_name: newName }).eq("id", userId);
+  if (error) return { error: error.message.toUpperCase() };
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+  return { ok: "renamed" };
+}
+
+/**
+ * "Warning only" (duration === "warning") records the warning and stops
+ * there — no Supabase ban, no content removed, no email blocked. A real
+ * ban does all three: temporary sign-in block (Supabase's own
+ * banned_until, same mechanism account deletion already uses), their
+ * reviews and lists removed, and their email permanently blocked from
+ * signing up again — see the design note above account_bans.
+ */
+export async function adminBanAccount(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = String(formData.get("userId") ?? "");
+  const duration = String(formData.get("duration") ?? "");
+  if (!userId || (duration !== "warning" && !BAN_DURATIONS[duration])) {
+    return { error: "SOMETHING WENT WRONG" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user: me },
+  } = await supabase.auth.getUser();
+  if (!me) return { error: "NOT SIGNED IN" };
+
+  let bannedUntil: string | null = null;
+
+  if (duration !== "warning") {
+    const picked = BAN_DURATIONS[duration];
+    const admin = createAdminClient();
+
+    const { error: banError } = await admin.auth.admin.updateUserById(userId, {
+      ban_duration: picked.supabaseDuration,
+    });
+    if (banError) return { error: banError.message.toUpperCase() };
+
+    const { data: target } = await admin.auth.admin.getUserById(userId);
+    const email = target.user?.email?.toLowerCase().trim();
+    if (email) {
+      await supabase.from("banned_emails").insert({ email, banned_by: me.id });
+    }
+
+    await supabase.from("lists").delete().eq("user_id", userId);
+    await supabase.from("reviews").update({ status: "deleted" }).eq("user_id", userId);
+
+    bannedUntil = new Date(Date.now() + picked.ms).toISOString();
+  }
+
+  const { error } = await supabase
+    .from("account_bans")
+    .upsert({ user_id: userId, banned_by: me.id, reason: duration, banned_until: bannedUntil });
+  if (error) return { error: error.message.toUpperCase() };
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+  return { ok: duration === "warning" ? "warned" : "banned" };
+}
+
+/** Lifts the temporary sign-in block early. Doesn't undo the content removal or the email block — those are the permanent part of a real ban, same as the design says a warning does neither. */
+export async function adminLiftBan(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) return { error: "NO ACCOUNT SPECIFIED" };
+
+  const admin = createAdminClient();
+  const { error: unbanError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "none" });
+  if (unbanError) return { error: unbanError.message.toUpperCase() };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("account_bans").delete().eq("user_id", userId);
+  if (error) return { error: error.message.toUpperCase() };
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+  return { ok: "unbanned" };
+}
+
 /** "Delete for good" on the Trash screen — purges immediately rather than waiting out the 14 days. */
 export async function adminPurgeAccountNow(
   _prev: ActionResult,

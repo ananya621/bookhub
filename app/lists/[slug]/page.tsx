@@ -1,55 +1,41 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { bookById } from "@/lib/mock";
-import { seedLists, slugify } from "@/app/lists/data";
-import { getCurrentUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 /*
  * Ported from the `isShared` block in Prototype with Admin.dc.html
  * (lines 1197-1221) — the public, read-only view of a reading list, as
- * a visitor (not necessarily logged in) sees it via its share link.
+ * a visitor (not necessarily signed in) sees it via its share link.
+ *
+ * Now backed by the real get_shared_list() database function (see
+ * supabase/migrations/20260903000200_lists.sql) instead of the
+ * hand-seeded `seedLists` fixture — that function is the only way to
+ * read a list by slug from outside its owner, since the `lists` table
+ * itself is owner-only. An unknown slug (including a deleted list)
+ * still 404s, same as before.
  *
  * The export keeps this screen out of its `chrome` list (no nav bar),
  * and its wrapper is a plain centered div rather than `.wrap` — same
  * as the other chrome-less screens (login, request, etc.) — so neither
  * is added here.
- *
- * The list is looked up by slugifying `seedLists` from `app/lists/data`
- * (the same two lists shown on /lists, from the export's state at
- * source line ~1690). An unknown slug — including a list deleted on
- * the /lists screen, which only removes it from that page's local
- * state — 404s via `notFound()`, since there's no dedicated not-found
- * screen in scope here.
- *
- * `params` is a Promise in this Next.js version — see
- * node_modules/next/dist/docs/01-app/api-reference/03-file-conventions/dynamic-routes.md.
- *
- * Unlike the /home and /profile "Maya" bugs, this one has no real fix
- * available yet: seedLists has no owner field at all (there's no lists
- * table, so nothing to own a list yet), and this page is public — a
- * true anonymous visitor has no signed-in user to read a name from
- * either. Best available: show the current visitor's own name if
- * they're signed in (right in the common case, since the same demo
- * account "owns" every seeded list everywhere else in this port), and
- * a generic fallback rather than a specific wrong person's name
- * otherwise.
  */
-
 export default async function SharedListPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const user = await getCurrentUser();
-  const readerName = user?.displayName || "a reader";
-  const list = seedLists.find((l) => slugify(l.name) === slug);
-  // "Private" only means the list is hidden from the owner's public
-  // profile — per the source copy ("PRIVATE — LINK ONLY"), anyone with
-  // the share link can still open it, so visibility isn't gated here.
-  if (!list) notFound();
 
-  const listBooks = list.bookIds.map((id) => bookById(id)).filter((b) => b !== undefined);
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("get_shared_list", { p_slug: slug }).maybeSingle();
+  if (!data) notFound();
+
+  const list = data as {
+    name: string;
+    owner_display_name: string | null;
+    books: { id: string; title: string; author: string; coverUrl: string | null }[];
+  };
+  const readerName = list.owner_display_name || "a reader";
 
   return (
     <div style={{ maxWidth: 620, margin: "0 auto", padding: "40px 24px 60px" }}>
@@ -58,10 +44,10 @@ export default async function SharedListPage({
       </div>
       <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>{list.name}</h1>
       <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 24 }}>
-        {listBooks.length + " BOOKS · VIEW ONLY"}
+        {list.books.length + " BOOKS · VIEW ONLY"}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
-        {listBooks.map((b) => (
+        {list.books.map((b) => (
           <div key={b.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div className="cover" style={{ aspectRatio: "2/3" }}>
               <span className="mono">COVER</span>

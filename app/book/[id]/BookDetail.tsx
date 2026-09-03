@@ -9,6 +9,7 @@ import { lengthLabel, starStr, steps } from "@/lib/mock";
 import { setReadingStatus } from "@/app/actions/reading";
 import { deleteOwnReview } from "@/app/actions/reviews";
 import { submitReport } from "@/app/actions/reports";
+import { addBookToList, createList, removeBookFromList } from "@/app/actions/lists";
 
 /*
  * Ported from the `isBook` block in Prototype with Admin.dc.html
@@ -32,10 +33,15 @@ import { submitReport } from "@/app/actions/reports";
  * - A guest picking a status gets the server action's error message
  *   rather than a sign-up prompt — there's no gate-dialog component in
  *   this port yet (see docs/auth-states.md).
- * - "＋ Add to a list" has no lists data or list-picker UI available on
- *   this page (the lists screen that owns that state is out of scope),
- *   so the button is inert rather than faking a list. `st.listedIn` is
- *   dropped for the same reason.
+ * - "＋ Add to a list" opens a real picker now (the reader's own lists,
+ *   fetched by the page, each a toggle button) with a "new list" field
+ *   at the bottom — same list-picker dialog reused for both the
+ *   desktop button and the mobile sheet's copy of it. `st.listedIn`
+ *   (the "IN LIST: ..." line under the reading-status control) is
+ *   still dropped: the source only ever shows the reader's *current*
+ *   list, singular, but a book can be on several lists at once here,
+ *   so one line can't say which — the picker itself is the source of
+ *   truth for that instead.
  * The book, and now its reviews, come from the database, passed in by
  * the page — `myReview` and `reviews` are real rows (real, RLS'd),
  * matching the source's `r.mine`/`r.notMine` split by comparing
@@ -125,6 +131,7 @@ export default function BookDetail({
   isGuest,
   myReview: initialMyReview,
   reviews,
+  myLists,
 }: {
   id: string;
   book: DetailBook;
@@ -133,6 +140,7 @@ export default function BookDetail({
   isGuest: boolean;
   myReview: DetailReview | null;
   reviews: DetailReview[];
+  myLists: { id: string; name: string; hasBook: boolean }[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -152,6 +160,44 @@ export default function BookDetail({
   const [reportNote, setReportNote] = useState("");
   const [reportError, setReportError] = useState("");
   const [justReported, setJustReported] = useState<Set<string>>(new Set());
+
+  const [listPickerOpen, setListPickerOpen] = useState(false);
+  // Overrides layered on top of the `myLists` prop rather than a copy of
+  // it, so a newly created list (which only exists once the page
+  // re-fetches after router.refresh()) shows up without this state
+  // going stale relative to the prop.
+  const [listOverrides, setListOverrides] = useState<Record<string, boolean>>({});
+  const [newListName, setNewListName] = useState("");
+  const [listError, setListError] = useState("");
+  const [listPending, setListPending] = useState(false);
+
+  const lists = myLists.map((l) => ({ ...l, hasBook: listOverrides[l.id] ?? l.hasBook }));
+
+  async function toggleList(listId: string, hasBook: boolean) {
+    setListOverrides((o) => ({ ...o, [listId]: !hasBook }));
+    const formData = new FormData();
+    formData.set("listId", listId);
+    formData.set("bookId", id);
+    const result = await (hasBook ? removeBookFromList : addBookToList)(undefined, formData);
+    if (result && "error" in result) {
+      setListOverrides((o) => ({ ...o, [listId]: hasBook }));
+      setListError(result.error);
+    }
+  }
+
+  async function addNewList() {
+    const name = newListName.trim();
+    if (!name) return;
+    setListPending(true);
+    const formData = new FormData();
+    formData.set("name", name);
+    const result = await createList(undefined, formData);
+    setListPending(false);
+    if (result && "error" in result) return setListError(result.error);
+    setNewListName("");
+    setListError("");
+    startTransition(() => router.refresh());
+  }
 
   // Optimistic: the UI updates immediately, then the server action's
   // result either confirms it silently or surfaces an error (a guest,
@@ -290,8 +336,12 @@ export default function BookDetail({
                   {statusError}
                 </div>
               )}
-              {/* Local only — no lists feature/state available on this page. */}
-              <button type="button" className="btn btn-secondary btn-block" style={{ minHeight: 42 }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-block"
+                style={{ minHeight: 42 }}
+                onClick={() => setListPickerOpen(true)}
+              >
                 ＋ Add to a list
               </button>
               {status === "reading" && (
@@ -375,8 +425,15 @@ export default function BookDetail({
                 </div>
               )}
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                {/* Local only — same limitation as the desktop button. */}
-                <button type="button" className="btn btn-secondary" style={{ flex: 1, minHeight: 48 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1, minHeight: 48 }}
+                  onClick={() => {
+                    setStatusSheetOpen(false);
+                    setListPickerOpen(true);
+                  }}
+                >
                   ＋ Add to a list
                 </button>
                 <button
@@ -602,6 +659,65 @@ export default function BookDetail({
               </button>
               <button type="button" className="btn btn-secondary" onClick={cancelReport}>
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {listPickerOpen && (
+        <div className="dialog-backdrop">
+          <div className="dialog blueprint" style={{ width: "min(420px, 100%)" }}>
+            <i className="corner tl" />
+            <i className="corner tr" />
+            <i className="corner bl" />
+            <i className="corner br" />
+            <div className="card-kicker">Lists</div>
+            <div className="dialog-title">Add &ldquo;{book.title}&rdquo; to a list</div>
+            {lists.length === 0 ? (
+              <p className="dialog-body" style={{ margin: 0 }}>
+                You don&apos;t have any lists yet — start one below.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {lists.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    className="btn"
+                    style={l.hasBook ? { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" } : undefined}
+                    onClick={() => toggleList(l.id, l.hasBook)}
+                  >
+                    {l.hasBook ? "✓ " : ""}
+                    {l.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="field">
+              <label>New list</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  className="input"
+                  placeholder="e.g. Scary but not too scary"
+                  value={newListName}
+                  onChange={(e) => {
+                    setNewListName(e.target.value);
+                    setListError("");
+                  }}
+                />
+                <button type="button" className="btn btn-secondary" onClick={addNewList} disabled={listPending}>
+                  Add
+                </button>
+              </div>
+            </div>
+            {listError && (
+              <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
+                {listError}
+              </div>
+            )}
+            <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setListPickerOpen(false)}>
+                Done
               </button>
             </div>
           </div>

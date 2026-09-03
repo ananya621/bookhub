@@ -26,12 +26,22 @@ import { createClient } from "@/lib/supabase/server";
  * missing-cover count are real too, using the same tables
  * /admin/requests and /admin/catalogue already read from.
  *
- * The "last seven days" table stays static numbers, matching the
- * prototype's own literal values — there's no import/search history
- * being recorded yet to compute them for real.
+ * The "last seven days" table used to be 4 static numbers straight
+ * from the prototype, unconnected to anything real. Two of those rows
+ * had nothing real to wire up to (there's no word-filter feature to
+ * count refusals from, and no search history being recorded), so
+ * they're dropped rather than left showing numbers nothing produced.
+ * The other two — books imported, and requests an import closed — are
+ * real, from the same `books`/`book_requests` tables the tiles above
+ * already read.
  */
+function sevenDaysAgoISO(): string {
+  return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+}
+
 export default async function AdminHomePage() {
   const supabase = await createClient();
+  const sevenDaysAgo = sevenDaysAgoISO();
 
   const [
     { count: pendingRequests },
@@ -40,6 +50,8 @@ export default async function AdminHomePage() {
     { count: safeguardingCount },
     { data: reportedReviewRows },
     { data: reportedUserRows },
+    { count: booksImported },
+    { count: requestsClosed },
   ] = await Promise.all([
     supabase.from("book_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("books").select("*", { count: "exact", head: true }),
@@ -61,6 +73,12 @@ export default async function AdminHomePage() {
       .eq("target_type", "user")
       .neq("type", "safety_concern")
       .eq("status", "open"),
+    supabase.from("books").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
+    supabase
+      .from("book_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "approved")
+      .gte("resolved_at", sevenDaysAgo),
   ]);
 
   const pendingReviews = new Set((reportedReviewRows ?? []).map((r) => r.target_id as string)).size;
@@ -184,19 +202,15 @@ export default async function AdminHomePage() {
               <tbody>
                 <tr>
                   <td>Books imported</td>
-                  <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700 }}>12</td>
+                  <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                    {booksImported ?? 0}
+                  </td>
                 </tr>
                 <tr>
                   <td>Requests closed by an import</td>
-                  <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700 }}>5</td>
-                </tr>
-                <tr>
-                  <td>Reviews auto-blocked by the filter</td>
-                  <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700 }}>9</td>
-                </tr>
-                <tr>
-                  <td>Searches with no results</td>
-                  <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700 }}>41</td>
+                  <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                    {requestsClosed ?? 0}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -204,12 +218,12 @@ export default async function AdminHomePage() {
           <div>
             <h4 style={{ margin: "0 0 10px" }}>The number that matters</h4>
             <p style={{ fontSize: 14 }}>
-              &ldquo;Searches with no results&rdquo; tells you what to import next, and it beats the
-              request queue as a signal — most readers search, find nothing, and never bother asking.
+              Requests closed by an import is the catalogue keeping up with demand — every one of
+              those was a reader who asked for something specific and got it.
             </p>
             <p style={{ fontSize: 14, margin: 0 }}>
-              If refusals by the word filter spike, the list is too aggressive. If reports spike, it
-              is too loose.
+              If it stays well behind books imported, readers are asking for things that aren&apos;t
+              what gets added.
             </p>
           </div>
         </div>

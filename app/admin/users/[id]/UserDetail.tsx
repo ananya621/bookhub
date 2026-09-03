@@ -3,7 +3,14 @@
 import { useActionState, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { adminDeleteAccount, adminRestoreAccount, type ActionResult } from "@/app/actions/accounts";
+import {
+  adminBanAccount,
+  adminDeleteAccount,
+  adminForceRename,
+  adminLiftBan,
+  adminRestoreAccount,
+  type ActionResult,
+} from "@/app/actions/accounts";
 import { adminModerateReview, type ActionResult as ReviewActionResult } from "@/app/actions/reviews";
 
 export type UserReview = {
@@ -25,7 +32,16 @@ type Account = {
   isAdmin: boolean;
   isSelf: boolean;
   pending: { deletedBy: "self" | "admin"; deletedAt: string; purgeAt: string } | null;
+  ban: { reason: string; bannedAt: string; bannedUntil: string | null } | null;
 };
+
+const BAN_OPTIONS: { label: string; caption: string; rec?: boolean }[] = [
+  { label: "warning", caption: "NO BAN. RIGHT FOR A FIRST OFFENCE." },
+  { label: "6 hours", caption: "A COOLING-OFF PERIOD. INTERRUPTS AN ARGUMENT WITHOUT ENDING ANYONE’S EVENING.", rec: true },
+  { label: "1 day", caption: "A SECOND OFFENCE AFTER A WARNING, OR UNKINDNESS AIMED AT ANOTHER READER." },
+  { label: "1 week", caption: "REPEAT OFFENDER, OR SOMETHING DELIBERATELY NASTY." },
+  { label: "1 month", caption: "EFFECTIVELY A GOODBYE AT THIS AGE. FOR SPAM ACCOUNTS OR TARGETED BULLYING." },
+];
 
 const REVIEW_STATE_STYLE: Record<string, CSSProperties> = {
   allowed: { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" },
@@ -36,6 +52,10 @@ const REVIEW_STATE_STYLE: Record<string, CSSProperties> = {
 function daysLeft(purgeAt: string): number {
   const ms = new Date(purgeAt).getTime() - Date.now();
   return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
+function isInFuture(iso: string): boolean {
+  return new Date(iso).getTime() > Date.now();
 }
 
 export default function UserDetail({
@@ -57,14 +77,56 @@ export default function UserDetail({
     adminModerateReview,
     undefined
   );
+  const [liftBanState, liftBanAction] = useActionState<ActionResult, FormData>(adminLiftBan, undefined);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameError, setRenameError] = useState("");
+  const [renamePending, setRenamePending] = useState(false);
+
+  const [banOpen, setBanOpen] = useState(false);
+  const [banDuration, setBanDuration] = useState("6 hours");
+  const [banError, setBanError] = useState("");
+  const [banPending, setBanPending] = useState(false);
+
   const reviews = initialReviews;
+
+  const isBanned = Boolean(account.ban?.bannedUntil && isInFuture(account.ban.bannedUntil));
+  const isWarned = Boolean(account.ban && !account.ban.bannedUntil);
+
+  async function doRename() {
+    const v = renameValue.trim();
+    if (v.length < 2) return setRenameError("AT LEAST 2 CHARACTERS");
+    setRenamePending(true);
+    const formData = new FormData();
+    formData.set("userId", account.id);
+    formData.set("newName", v);
+    const result = await adminForceRename(undefined, formData);
+    setRenamePending(false);
+    if (result && "error" in result) return setRenameError(result.error);
+    setRenameOpen(false);
+    setRenameValue("");
+    setRenameError("");
+  }
+
+  async function doBan() {
+    setBanPending(true);
+    const formData = new FormData();
+    formData.set("userId", account.id);
+    formData.set("duration", banDuration);
+    const result = await adminBanAccount(undefined, formData);
+    setBanPending(false);
+    if (result && "error" in result) return setBanError(result.error);
+    setBanOpen(false);
+    setBanError("");
+  }
 
   const error =
     (deleteState && "error" in deleteState && deleteState.error) ||
     (restoreState && "error" in restoreState && restoreState.error) ||
     (reviewState && "error" in reviewState && reviewState.error) ||
+    (liftBanState && "error" in liftBanState && liftBanState.error) ||
     null;
 
   return (
@@ -109,6 +171,11 @@ export default function UserDetail({
                 Pending deletion · {daysLeft(account.pending.purgeAt)}d left
               </span>
             )}
+            {isWarned && (
+              <span className="tag" style={{ background: "#FFD400", color: "#14110f" }}>
+                Warned
+              </span>
+            )}
           </div>
         </div>
         {!account.isSelf && (
@@ -132,12 +199,21 @@ export default function UserDetail({
               </form>
             ) : (
               <>
-                <button className="btn btn-secondary" title="Not built yet — flags a display name as impersonation/refused and forces a new one" disabled>
+                <button className="btn btn-secondary" onClick={() => setRenameOpen(true)}>
                   Force rename
                 </button>
-                <button className="btn btn-secondary" title="Not built yet — a separate, temporary restriction, distinct from Delete" disabled>
-                  Ban account
-                </button>
+                {isBanned ? (
+                  <form action={liftBanAction}>
+                    <input type="hidden" name="userId" value={account.id} />
+                    <button type="submit" className="btn btn-primary">
+                      Lift the ban
+                    </button>
+                  </form>
+                ) : (
+                  <button className="btn btn-secondary" onClick={() => setBanOpen(true)}>
+                    Ban account
+                  </button>
+                )}
                 <button className="btn btn-secondary" onClick={() => setConfirmingDelete(true)}>
                   Delete account
                 </button>
@@ -146,6 +222,167 @@ export default function UserDetail({
           </div>
         )}
       </div>
+
+      {isBanned && account.ban && (
+        <div
+          style={{
+            background: "#C41031",
+            color: "#EFECE3",
+            border: "3px solid var(--color-text)",
+            boxShadow: "4px 4px 0 var(--color-text)",
+            padding: "12px 16px",
+            margin: "12px 0 6px",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 16 }}>
+            Banned for {account.ban.reason}
+          </div>
+          <p style={{ fontSize: 13, margin: "4px 0 0" }}>
+            Their reviews and lists have been removed, and their email is blocked from signing up
+            again. They cannot post, share or request anything until the ban lifts.
+          </p>
+        </div>
+      )}
+
+      {renameOpen && (
+        <div className="dialog-backdrop">
+          <div className="dialog blueprint">
+            <i className="corner tl" />
+            <i className="corner tr" />
+            <i className="corner bl" />
+            <i className="corner br" />
+            <div className="card-kicker">Force rename</div>
+            <div className="dialog-title">Rename {account.displayName || "this reader"}</div>
+            <p className="dialog-body" style={{ margin: 0 }}>
+              Pick the name they will be given. They can choose their own again later, as long as
+              it passes the same checks anyone else&apos;s does.
+            </p>
+            <div className="field">
+              <label>New display name</label>
+              <input
+                className="input"
+                style={{ minHeight: 42 }}
+                placeholder="e.g. reader_4821"
+                value={renameValue}
+                onChange={(e) => {
+                  setRenameValue(e.target.value);
+                  setRenameError("");
+                }}
+              />
+            </div>
+            {renameError && (
+              <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
+                {renameError}
+              </div>
+            )}
+            <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
+              <button type="button" className="btn btn-primary" onClick={doRename} disabled={renamePending}>
+                {renamePending ? "Renaming…" : "Rename"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setRenameOpen(false);
+                  setRenameValue("");
+                  setRenameError("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {banOpen && (
+        <div className="dialog-backdrop">
+          <div className="dialog blueprint" style={{ width: "min(500px, 100%)" }}>
+            <i className="corner tl" />
+            <i className="corner tr" />
+            <i className="corner bl" />
+            <i className="corner br" />
+            <div className="card-kicker">Check before you act</div>
+            <div className="dialog-title">Ban {account.displayName || "this reader"}?</div>
+            <p className="dialog-body" style={{ margin: 0 }}>
+              A ban stops them posting reviews, sharing lists and requesting books. Their reviews
+              and lists are removed, and their email address can never be used to sign up again —
+              a warning does neither.
+            </p>
+            <div>
+              <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 8 }}>
+                HOW LONG? PICK THE SMALLEST THING THAT WILL WORK
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {BAN_OPTIONS.map((o) => (
+                  <label
+                    key={o.label}
+                    className="radio"
+                    style={{ alignItems: "flex-start", border: "3px solid var(--color-divider)", padding: "10px 12px" }}
+                  >
+                    <input
+                      type="radio"
+                      name="ban"
+                      checked={banDuration === o.label}
+                      onChange={() => setBanDuration(o.label)}
+                    />
+                    <span className="dot" style={{ marginTop: 2 }} />
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>
+                          {o.label === "warning" ? "Warning only" : o.label}
+                        </span>
+                        {o.rec && (
+                          <span className="tag" style={{ background: "#c6f24e", color: "#14110f" }}>
+                            Start here
+                          </span>
+                        )}
+                      </span>
+                      <span className="mono" style={{ display: "block", color: "var(--color-neutral-700)", lineHeight: 1.6, marginTop: 3 }}>
+                        {o.caption}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 10, lineHeight: 1.6 }}>
+                YOU CAN ALWAYS EXTEND A BAN. YOU CANNOT UN-LOSE A READER WHO DECIDED THE SITE WAS
+                UNFAIR.
+              </div>
+            </div>
+            {banError && (
+              <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
+                {banError}
+              </div>
+            )}
+            <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
+              <button
+                type="button"
+                className="btn"
+                style={{ background: "#C41031", color: "#EFECE3" }}
+                onClick={doBan}
+                disabled={banPending}
+              >
+                {banPending
+                  ? "Working…"
+                  : banDuration === "warning"
+                    ? "Send the warning"
+                    : `Ban for ${banDuration}`}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setBanOpen(false);
+                  setBanError("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {account.pending && (
         <div
