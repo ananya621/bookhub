@@ -58,7 +58,23 @@ export async function signUp(_prev: ActionResult, formData: FormData): Promise<A
   // supabase/migrations/20260903000100_account_bans.sql. Checked before
   // Supabase even creates the auth user, so a banned email never gets
   // that far.
-  const { data: banned } = await supabase.rpc("is_email_banned", { p_email: email });
+  const { data: banned, error: banCheckError } = await supabase.rpc("is_email_banned", {
+    p_email: email,
+  });
+
+  if (banCheckError) {
+    // This is the check that makes a real ban's email block permanent.
+    // If we can't ask it, we don't get to assume "not banned" — that
+    // silent assumption is the exact bug this pass exists to remove,
+    // just on the sign-up path instead of sign-in. Signing up is not
+    // urgent: refusing and asking someone to try again shortly costs a
+    // legitimate person a minor delay, which is far cheaper than a
+    // permanently-banned email getting back in because a query failed
+    // at the wrong moment.
+    console.error("[auth-actions] is_email_banned failed, refusing the signup:", banCheckError.message);
+    return { error: "SOMETHING WENT WRONG — TRY AGAIN IN A MOMENT" };
+  }
+
   if (banned) return { error: "THIS EMAIL ADDRESS CAN’T BE USED TO SIGN UP" };
 
   const { error } = await supabase.auth.signUp({
