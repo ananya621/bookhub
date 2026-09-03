@@ -480,7 +480,7 @@ export default function ImportBook({
                       <button
                         key={g}
                         type="button"
-                        className={on ? "tag tag-accent" : "tag tag-outline"}
+                        className={on ? "tag tag-select" : "tag tag-outline"}
                         onClick={() => toggleGenre(g)}
                       >
                         {g}
@@ -499,7 +499,7 @@ export default function ImportBook({
                         <button
                           key={l}
                           type="button"
-                          className={draft.readingLevel === l ? "tag tag-accent" : "tag tag-outline"}
+                          className={draft.readingLevel === l ? "tag tag-select" : "tag tag-outline"}
                           onClick={() => setDraft({ ...draft, readingLevel: l })}
                         >
                           {l}

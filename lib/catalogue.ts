@@ -9,9 +9,13 @@ import { lengthLabel, type Survey } from "@/lib/mock";
  * the real catalogue even after it's genuinely empty).
  *
  * Not merged into lib/mock.ts's rankBooks(): the shapes differ enough
- * (readingLevel vs level, no reviews to rate a fallback sort by) that
- * forcing them through one function would need awkward renaming at
- * every call site for no real benefit.
+ * (readingLevel vs level) that forcing them through one function would
+ * need awkward renaming at every call site for no real benefit. Reviews
+ * exist for real books too (supabase/migrations/20260902180000_
+ * reviews.sql) — an earlier version of this comment said they didn't,
+ * which was already false when it was written. See avgStars/
+ * reviewCount below and the comment on rankCatalogueBooks() for where
+ * that stands today.
  */
 export type CatalogueBook = {
   id: string;
@@ -23,13 +27,37 @@ export type CatalogueBook = {
   genres: string[];
   readingLevel: string;
   isSeries?: boolean;
+  /**
+   * Average of the book's 'allowed' reviews' star ratings, from the
+   * book_review_stats view (see supabase/migrations/
+   * 20260903150000_book_review_stats.sql) — null when there are no
+   * reviews yet, not zero, so "no reviews" and "reviewed badly" don't
+   * look the same. Optional because not every page that builds a
+   * CatalogueBook fetches it yet.
+   */
+  avgStars?: number | null;
+  reviewCount?: number;
+  /**
+   * The signed-in reader's own reading status for this book, if any —
+   * shown as a badge on search results so a reader browsing can see at
+   * a glance what they've already read, are reading, or saved.
+   * Undefined/null for a guest, who has none.
+   */
+  myStatus?: "read" | "reading" | "want" | null;
 };
 
 /**
  * Genre overlap + level match + length match, same scoring rankBooks()
- * uses. No rating to fall back to (real books have no reviews table
- * yet), so with no survey — or nothing scoring above zero — this just
- * keeps the catalogue's own order (newest-first, same as /search).
+ * uses. With no survey — or nothing scoring above zero — this keeps
+ * the catalogue's own order (newest-first, same as /search).
+ *
+ * A rating fallback (like rankBooks()'s highest-rated-first) would fit
+ * naturally now: every caller populates avgStars from the
+ * book_review_stats view, so it would work rather than silently doing
+ * nothing. Deliberately not added here — it changes which books get
+ * recommended, which deserves its own thinking about whether "popular"
+ * should outrank "matches what you said you like", rather than being
+ * slipped in as a tie-breaker.
  */
 export function rankCatalogueBooks(books: CatalogueBook[], survey: Survey | null): CatalogueBook[] {
   if (!survey) return books;

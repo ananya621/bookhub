@@ -15,7 +15,14 @@ import { submitReview } from "@/app/actions/reviews";
  * app/actions/reviews.ts) and returns `{ blocked: true }` rather than
  * an error when it trips, which is what shows this banner instead of
  * the plain error line. The text is never cleared either way, same as
- * the design.
+ * the design. Its copy matches D2 in the wireframes word for word.
+ *
+ * D2's "TAP TARGETS 44PX — SPACE THE STARS OUT" line is a build note,
+ * not copy to show a reader — it's a spec for the star row below,
+ * matching how the board treats "COVER FROM API" elsewhere in this
+ * design system as a placeholder instruction rather than literal text.
+ * Followed here (each star button is sized and spaced to 44px) instead
+ * of rendered.
  */
 export default function ReviewForm({
   id,
@@ -66,12 +73,18 @@ export default function ReviewForm({
       </div>
       <div className="field" style={{ marginBottom: 18 }}>
         <label>Your rating</label>
-        <div style={{ display: "flex", gap: 2, marginLeft: -6 }}>
+        {/* .starbtn (globals.css) isn't quite 44px on its own, and its
+            default gap is tight — both sized/spaced up here rather
+            than in the shared class, which other star displays (e.g.
+            the read-only stars on a posted review) don't need touched
+            the same way. */}
+        <div style={{ display: "flex", gap: 6, marginLeft: -8 }}>
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
               className={`starbtn ${n <= stars ? "on" : ""}`}
+              style={{ minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
               onClick={() => {
                 setStars(n);
                 setError("");

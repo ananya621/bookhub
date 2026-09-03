@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/dates";
 import BookDetail, { type DetailBook, type DetailReview } from "./BookDetail";
 
 /*
@@ -111,7 +112,7 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
       avatarColor: (profile?.avatar_color as string) ?? "#c6f24e",
       stars: r.stars as number,
       text: r.text as string,
-      date: new Date(r.created_at as string).toLocaleDateString(),
+      date: formatDate(r.created_at as string),
       mine: me ? r.user_id === me.id : false,
       // Combined, matching the design: reporting either the review or
       // its author retires both buttons on this card at once, behind

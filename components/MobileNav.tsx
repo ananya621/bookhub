@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCurrentUser } from "@/components/AuthProvider";
-import { initialsOf } from "@/lib/personas";
+import { initialsOf } from "@/lib/avatar";
 import { useTheme } from "@/lib/useTheme";
 
 /*

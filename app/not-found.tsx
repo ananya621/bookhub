@@ -59,8 +59,8 @@ export default function NotFound() {
           className="mono"
           style={{ color: "var(--color-neutral-700)", marginTop: 34, lineHeight: 1.7 }}
         >
-          THIS PAGE ALSO SHOWS FOR A DELETED ACCOUNT, A LIST SET BACK TO PRIVATE, OR A BOOK
-          REMOVED FROM THE CATALOGUE.
+          ALSO SHOWN FOR: A DELETED ACCOUNT, A LIST SET BACK TO PRIVATE, A BOOK REMOVED FROM THE
+          CATALOGUE.
         </div>
       </div>
     </>

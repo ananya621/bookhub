@@ -1,16 +1,15 @@
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/dates";
 import ListsClient, { type ListRow } from "./ListsClient";
 
 /*
- * Ported from the `isLists` block in Prototype with Admin.dc.html
- * (lines 1119-1196), now a server component reading the real `lists` /
- * `list_books` tables (see supabase/migrations/20260903000200_lists.sql)
- * instead of the persona fixture (lib/personas.ts's PersonaData.lists —
- * that fixture only ever fed the dev-only persona switcher's fake
- * session anyway; a real signed-in reader was seeing it regardless,
- * same bug class the reviews/reading-status work fixed elsewhere this
- * session).
+ * Ported from the `isLists` block in Prototype with Admin.dc.html,
+ * now a server component reading the real `lists` / `list_books`
+ * tables (see supabase/migrations/20260903000200_lists.sql). It used to
+ * read a hardcoded fixture belonging to a dev-only "persona" fake-login
+ * system, which a real signed-in reader was being shown too. Both the
+ * fixture and that whole system have since been deleted.
  *
  * The reader's own reading_status is fetched too, purely to drive each
  * book's "ALSO IN: ..." line the same way the original mock version
@@ -40,6 +39,7 @@ export default async function ListsPage() {
     name: string;
     slug: string;
     is_public: boolean;
+    created_at: string;
     list_books: {
       book_id: string;
       added_at: string;
@@ -52,6 +52,18 @@ export default async function ListsPage() {
     name: l.name,
     slug: l.slug,
     isPublic: l.is_public,
+    // Board C2 shows "9 BOOKS · UPDATED 2 DAYS AGO" under the list name.
+    // There's no updated_at column on `lists` itself (a visibility flip
+    // doesn't bump anything), so this uses the most recent book added
+    // to the list as the honest stand-in, falling back to when the list
+    // was created if it's still empty. Shown as a plain date rather
+    // than a relative "2 days ago" string — every other real timestamp
+    // in this app (reviews, admin's "joined"/"deleted") is formatted
+    // the same way, and adding a relative-time formatter just for this
+    // one field would be a new convention for no real gain.
+    updatedLabel: formatDate(
+      l.list_books.reduce((max, lb) => (lb.added_at > max ? lb.added_at : max), l.created_at)
+    ),
     books: l.list_books
       .slice()
       .sort((a, b) => new Date(a.added_at).getTime() - new Date(b.added_at).getTime())

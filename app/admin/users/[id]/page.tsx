@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import AdminNav from "@/components/AdminNav";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/dates";
+import { createAdminClient } from "@/lib/supabase/admin";
 import UserDetail, { type UserReview, type UserReport } from "./UserDetail";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -36,14 +38,31 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   const { id } = await params;
 
   const me = await getCurrentUser();
+
+  // Checked here, not left to proxy.ts. Everything else on this page goes
+  // through the RLS-scoped client, where an admin-only policy is the real
+  // gate and a routing mistake costs nothing. The email below does not —
+  // it is read with the service-role client, which bypasses RLS entirely,
+  // so the redirect would be the ONLY thing standing in front of it. As
+  // proxy.ts says of its own redirects: convenience, not security.
+  if (!me?.isAdmin) notFound();
+
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: role }, { data: pending }, { data: ban }] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, avatar_color, created_at").eq("id", id).maybeSingle(),
-    supabase.from("user_roles").select("is_admin").eq("user_id", id).maybeSingle(),
-    supabase.from("pending_deletions").select("deleted_by, deleted_at, purge_at").eq("user_id", id).maybeSingle(),
-    supabase.from("account_bans").select("reason, banned_at, banned_until").eq("user_id", id).maybeSingle(),
-  ]);
+  // auth.users.email isn't reachable through the normal RLS-scoped
+  // client — nothing in this app grants a select on that table, on
+  // purpose. The service-role client is the same one accounts.ts already
+  // uses for banning.
+  const admin = createAdminClient();
+
+  const [{ data: profile }, { data: role }, { data: pending }, { data: ban }, { data: authUser }] =
+    await Promise.all([
+      supabase.from("profiles").select("id, display_name, avatar_color, created_at").eq("id", id).maybeSingle(),
+      supabase.from("user_roles").select("is_admin").eq("user_id", id).maybeSingle(),
+      supabase.from("pending_deletions").select("deleted_by, deleted_at, purge_at").eq("user_id", id).maybeSingle(),
+      supabase.from("account_bans").select("reason, banned_at, banned_until").eq("user_id", id).maybeSingle(),
+      admin.auth.admin.getUserById(id),
+    ]);
 
   if (!profile) notFound();
 
@@ -76,7 +95,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
     id: r.id as string,
     who: reporterNameById.get(r.reporter_id as string) ?? "(no name set yet)",
     reason: TYPE_LABEL[r.type as string] ?? (r.type as string).toUpperCase(),
-    when: new Date(r.created_at as string).toLocaleDateString(),
+    when: formatDate(r.created_at as string),
     note: (r.note as string | null) ?? "",
     status: r.status as "open" | "actioned",
   }));
@@ -125,7 +144,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       book: bookTitleById.get(r.book_id as string) ?? "(deleted book)",
       stars: r.stars as number,
       text: r.text as string,
-      when: new Date(r.created_at as string).toLocaleDateString(),
+      when: formatDate(r.created_at as string),
       status: r.status as "allowed" | "deleted",
       openCount: openTypes.length,
       why: topType ? `${TYPE_LABEL[topType] ?? topType.toUpperCase()} ×${topCount}` : "",
@@ -140,6 +159,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           account={{
             id: profile.id as string,
             displayName: profile.display_name as string | null,
+            email: authUser.user?.email ?? null,
             avatarColor: profile.avatar_color as string,
             joined: profile.created_at as string,
             isAdmin: role?.is_admin ?? false,

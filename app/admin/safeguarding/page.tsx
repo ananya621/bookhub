@@ -1,5 +1,6 @@
 import AdminNav from "@/components/AdminNav";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/dates";
 import SafeguardingQueue, { type CaseRow } from "./SafeguardingQueue";
 
 /*
@@ -63,7 +64,7 @@ export default async function AdminSafeguardingPage() {
       r.target_type === "user"
         ? `the reader ${nameById.get(r.target_id as string) ?? "(no name set yet)"}`
         : `a review on “${bookTitleByReviewId.get(r.target_id as string) ?? "(deleted book)"}”`,
-    when: new Date(r.created_at as string).toLocaleDateString(),
+    when: formatDate(r.created_at as string),
     text: (r.note as string | null) ?? "(no further detail given)",
     status: r.status as "open" | "actioned",
   }));

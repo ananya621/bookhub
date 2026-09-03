@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { daysLeft } from "@/lib/dates";
+import { daysLeft, formatDate } from "@/lib/dates";
 
 export type UserRow = {
   id: string;
@@ -93,7 +93,7 @@ export default function UsersList({ users }: { users: UserRow[] }) {
                   {u.isSelf && <span className="tag tag-neutral">You</span>}
                 </div>
                 <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 3 }}>
-                  JOINED {new Date(u.joined).toLocaleDateString()}
+                  JOINED {formatDate(u.joined)}
                 </div>
               </div>
               {u.pending && (

@@ -13,20 +13,35 @@ import TrackerShelves, { type ShelfBook } from "./TrackerShelves";
  * can embed the book row in one query (unlike the profiles/user_roles/
  * pending_deletions situation elsewhere in the admin panel, which have
  * no direct FK between them and need separate queries merged by hand).
+ *
+ * The Read column also needs each book's own-review star rating (board
+ * C1: "★★★★☆ REVIEWED" vs "＋ WRITE A REVIEW"), so the signed-in
+ * reader's reviews come along too. `.eq("user_id", user.id)` is doing
+ * real work here, not just belt-and-braces: reviews' RLS also has a
+ * "public can read anything allowed" policy, and Postgres ORs
+ * permissive policies together, so leaving that filter off would
+ * return every reader's public reviews, not just this reader's own.
  */
 export default async function TrackerPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data } = await supabase
-    .from("reading_status")
-    .select("status, progress, books(id, title, author, cover_url)")
-    .order("updated_at", { ascending: false });
+  const [{ data }, { data: reviewRows }] = await Promise.all([
+    supabase
+      .from("reading_status")
+      .select("status, progress, books(id, title, author, cover_url)")
+      .order("updated_at", { ascending: false }),
+    user ? supabase.from("reviews").select("book_id, stars").eq("user_id", user.id) : Promise.resolve({ data: [] }),
+  ]);
 
   const rows = (data ?? []) as unknown as {
     status: "want" | "reading" | "read";
     progress: string | null;
     books: { id: string; title: string; author: string; cover_url: string | null } | null;
   }[];
+  const myStarsByBook = new Map((reviewRows ?? []).map((r) => [r.book_id as string, r.stars as number]));
 
   const shelves: { name: string; key: "reading" | "want" | "read"; emptyMsg: string; books: ShelfBook[] }[] = [
     { name: "Currently Reading", key: "reading", emptyMsg: "MARK A BOOK AS CURRENTLY READING", books: [] },
@@ -43,6 +58,7 @@ export default async function TrackerPage() {
       author: row.books.author,
       coverUrl: row.books.cover_url,
       progress: row.progress,
+      myStars: myStarsByBook.get(row.books.id) ?? null,
     });
   }
 

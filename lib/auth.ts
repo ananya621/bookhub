@@ -1,14 +1,10 @@
-import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { PERSONAS, type PersonaId } from "@/lib/personas";
 
 /*
  * The single place that answers "who is signed in".
  *
- * A real Supabase session always wins. If there isn't one, and we are in
- * development, we fall back to the fake persona cookie so the persona
- * switcher still works for walking the UI. In production there is no
- * fallback: no session means signed out.
+ * A real Supabase session always wins. If there isn't one, the answer is
+ * signed out — in every environment, with no fallback.
  *
  * Note there is no `emailVerified` here. Supabase is set to require a
  * confirmed email before anyone can sign in at all, so every signed-in
@@ -25,8 +21,6 @@ import { PERSONAS, type PersonaId } from "@/lib/personas";
  * Nothing else in the app should read session cookies or decide what
  * logged-in means. Everything imports from here.
  */
-
-export const SESSION_COOKIE = "bookhub-session";
 
 export type CurrentUser = {
   id: string;
@@ -105,14 +99,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     };
   }
 
-  // No real session. In development only, fall back to the fake persona
-  // so the switcher keeps working.
-  if (process.env.NODE_ENV === "production") return null;
-
-  const store = await cookies();
-  const id = store.get(SESSION_COOKIE)?.value as PersonaId | undefined;
-  if (!id) return null;
-  return PERSONAS[id]?.user ?? null;
+  // No real session. No fallback, in any environment: signed out.
+  return null;
 }
 
 /** Convenience wrappers so pages don't re-derive these rules. */

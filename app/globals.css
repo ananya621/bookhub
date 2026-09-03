@@ -9,16 +9,30 @@
   --color-accent: #ff4d00;      /* go — the one primary action */
   --color-accent-2: #ff3d9a;    /* live / yours */
   --color-problem: #c41031;     /* the fifth role: errors only, never decorative */
-  --color-problem-text: #c41031; /* standalone red TEXT — the dark theme lifts this */
+  --color-problem-text: #c41031; /* standalone red TEXT — lifted for dark, see the [data-theme="dark"] block below */
   --color-link: #1b3bff;        /* navigates */
   --color-done: #c6f24e;        /* finished */
   --color-divider: #14110f;
+
+  /* Text-on-accent-fill colours. --color-text and --color-bg are the
+     page's own ink/paper pair, and they deliberately invert in dark mode
+     (see the [data-theme="dark"] block). But some text sits ON an accent
+     fill rather than on the page — a lime "done" tag, an orange primary
+     button — and that text must NOT invert with the theme: "Pulp
+     Theme.dc.html" (plates P7-P9) and this file's own RULES plate both
+     show lime/pink fills keeping ink text and orange/blue fills keeping
+     cream text in both themes. These two tokens are that fixed pair —
+     use them for text sitting on a filled accent, never --color-text or
+     --color-bg for that job. #efece3 matches the cream already
+     hard-coded across the ported screens (Admin button, danger fills,
+     the palette in lib/auth.ts) rather than introducing a second cream. */
+  --color-ink-fixed: #14110f;
+  --color-cream-fixed: #efece3;
 
   --color-neutral-100: #fff8ee;
   --color-neutral-200: #f6e8d2;
   --color-neutral-300: #e9dcc6;
   --color-neutral-400: #cdbda3;
-  --color-neutral-500: #a89madd;
   --color-neutral-500: #a89a82;
   --color-neutral-600: #8a7c64;
   --color-neutral-700: #6b5b48;
@@ -98,7 +112,7 @@ figcaption { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; co
 .text-muted { color: var(--color-neutral-700); }
 :focus { outline: none; }
 :focus-visible { outline: 3px solid var(--color-link); outline-offset: 2px; }
-::selection { background: var(--color-done); color: var(--color-text); }
+::selection { background: var(--color-done); color: var(--color-ink-fixed); }
 
 .hr { height: 3px; border: 0; margin: var(--space-4) 0; background: var(--color-text); }
 
@@ -113,7 +127,17 @@ figcaption { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; co
 }
 .btn svg { display: block; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary { background: var(--color-accent); color: var(--color-bg); box-shadow: 4px 4px 0 var(--color-text); }
+/* Border and shadow both come from var(--color-text) rather than a fixed
+   ink value, so the primary button automatically gets the cream outline
+   and cream shadow the dark boards call for (F1/F2: "orange dims
+   noticeably [on ink], so it keeps a cream outline and cream shadow to
+   hold its edge") — --color-text is cream in [data-theme="dark"] below,
+   no per-screen override needed. The fill colour itself doesn't need to
+   change; only the edge does. Text stays --color-cream-fixed rather than
+   --color-bg because --color-bg *does* flip dark-to-ink, and a primary
+   button's text must not follow it there (P7-P9 keep it cream in both
+   themes). */
+.btn-primary { background: var(--color-accent); color: var(--color-cream-fixed); box-shadow: 4px 4px 0 var(--color-text); }
 .btn-primary:hover { background: var(--color-accent-600); }
 .btn-primary:active { box-shadow: 1px 1px 0 var(--color-text); transform: translate(3px, 3px); }
 .btn-secondary:hover { background: var(--color-accent-100); }
@@ -122,6 +146,11 @@ figcaption { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; co
 .btn-ghost:hover { color: var(--color-accent); }
 .btn-icon { width: 40px; height: 40px; padding: 0; }
 .btn-block { width: 100%; margin-top: var(--space-2); }
+/* Red's own button and tag, matching the fill+text pair already
+   hand-rolled as background:#C41031 / color:#EFECE3 all over app/ —
+   named here so that repetition doesn't need to keep happening. */
+.btn-danger { background: var(--color-problem); color: var(--color-cream-fixed); }
+.btn-danger:hover { background: var(--color-problem-text); }
 
 /* — forms — */
 .field > label { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; color: var(--color-neutral-700); }
@@ -143,7 +172,7 @@ textarea.input { min-height: 92px; resize: vertical; }
 .seg { display: inline-flex; border: 3px solid var(--color-text); border-radius: 0; }
 .seg-opt { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .seg-opt + .seg-opt { border-left: 3px solid var(--color-text); }
-.seg-opt:has(input:checked) { background: var(--color-link); color: var(--color-bg); }
+.seg-opt:has(input:checked) { background: var(--color-link); color: var(--color-cream-fixed); }
 .seg-opt:not(:has(input:checked)):hover { background: var(--color-accent-100); }
 .seg-opt:has(input:focus-visible) { outline: 3px solid var(--color-link); outline-offset: -3px; }
 
@@ -168,11 +197,27 @@ textarea.input { min-height: 92px; resize: vertical; }
   padding: 3px 9px; border: 2px solid var(--color-text); border-radius: 0;
 }
 .tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
-.tag-accent-2 { background: var(--color-accent-2); color: var(--color-text); }
+.tag-accent-2 { background: var(--color-accent-2); color: var(--color-ink-fixed); }
 .tag-neutral { background: transparent; color: var(--color-neutral-700); }
 .tag-outline { border-color: var(--color-link); color: var(--color-link); }
-.tag-done { background: var(--color-done); color: var(--color-text); }
-.tag-live { background: var(--color-accent-2); color: var(--color-text); }
+/* Genre tags specifically — the RULES plate is explicit that these never
+   take an accent fill ("that is what keeps the four accents meaningful"),
+   so they get their own name rather than leaving pages to reach for the
+   bare, unmodified .tag class and hope the next reader knows that was on
+   purpose. Same look as plain .tag; the point is the name. */
+.tag-genre { background: transparent; color: var(--color-text); }
+/* A chosen tag-sized option. Blue because picking one is a SELECTION, not
+   the screen's primary action — the same reason .chip.on is blue. Kept
+   separate from .chip only because these sit in tag-sized rows; the colour
+   pairing is deliberately identical. */
+.tag-select { background: var(--color-link); color: var(--color-cream-fixed); }
+/* Lime/pink fills always take ink text, in both themes — RULES plate
+   ("always ink text on lime, never cream") and the dark boards agree.
+   --color-ink-fixed rather than --color-text because --color-text flips
+   to cream in dark, which would break that rule right when it matters. */
+.tag-done { background: var(--color-done); color: var(--color-ink-fixed); }
+.tag-live { background: var(--color-accent-2); color: var(--color-ink-fixed); }
+.tag-danger { background: var(--color-problem); color: var(--color-cream-fixed); }
 
 /* — navigation — */
 .nav { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 3px solid var(--color-text); }
@@ -222,6 +267,13 @@ textarea.input { min-height: 92px; resize: vertical; }
   --shadow-sm: 3px 3px 0 #fff3e2;
   --shadow-md: 5px 5px 0 #fff3e2;
   --shadow-lg: 8px 8px 0 #fff3e2;
+  /* Red at full strength (#C41031) is only ~3:1 against the ink ground —
+     well under the 4.5:1 body-text minimum, because both are dark
+     colours. Lifted toward white so standalone red error text stays
+     readable; --color-problem itself (used as a fill, e.g. .tag-danger)
+     is untouched, since a fill pairs with --color-cream-fixed text
+     rather than relying on the red itself being legible. */
+  --color-problem-text: color-mix(in srgb, #c41031 70%, white);
 }
 
 /* ===================================================================
@@ -275,10 +327,10 @@ a:hover { color: var(--color-accent); }
 .anav a:not(.btn):hover { color: var(--color-accent-700); }
 .anav a:not(.btn)[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
 .qrow { display: flex; gap: 14px; padding: 16px 0; border-bottom: 3px solid var(--color-divider); align-items: flex-start; }
-.seg-opt[data-state="read"]:has(input:checked) { background: #c6f24e; color: #14110f; }
-.seg-opt[data-state="reading"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
-.seg-opt[data-state="prog"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
-.seg-opt[data-state="want"]:has(input:checked) { background: #1B3BFF; color: #EFECE3; }
+.seg-opt[data-state="read"]:has(input:checked) { background: var(--color-done); color: var(--color-ink-fixed); }
+.seg-opt[data-state="reading"]:has(input:checked) { background: var(--color-accent-2); color: var(--color-ink-fixed); }
+.seg-opt[data-state="prog"]:has(input:checked) { background: var(--color-accent-2); color: var(--color-ink-fixed); }
+.seg-opt[data-state="want"]:has(input:checked) { background: var(--color-link); color: var(--color-cream-fixed); }
 
 /* ===================================================================
    Mobile chrome, from Prototype Mobile.dc.html's own <style> block
@@ -299,13 +351,18 @@ a:hover { color: var(--color-accent); }
 .tabs { display: flex; border-top: 3px solid var(--color-text); position: sticky; bottom: 0; background: var(--color-bg); }
 .tab { flex: 1; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; border: 0; background: transparent; font-family: var(--font-heading); font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--color-neutral-700); text-decoration: none; }
 .tab + .tab { border-left: 3px solid var(--color-text); }
-.tab.on { background: var(--color-accent); color: #EFECE3; }
+.tab.on { background: var(--color-accent); color: var(--color-cream-fixed); }
 .tab i { font-style: normal; font-family: var(--font-display); font-size: 17px; line-height: 1; }
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 86vh; overflow-y: auto; background: var(--color-bg); border-top: 3px solid var(--color-text); padding: 16px 16px 22px; z-index: 101; }
 .veil { position: fixed; inset: 0; background: rgba(20,17,15,0.55); z-index: 100; }
 .grab { width: 54px; height: 5px; background: var(--color-text); margin: 0 auto 14px; }
 .chip { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 12px; font-weight: 700; text-transform: uppercase; border: 2px solid var(--color-text); min-height: 48px; padding: 10px 15px; cursor: pointer; background: transparent; color: var(--color-text); }
-.chip.on { background: var(--color-accent); color: var(--color-bg); }
+/* Blue, not orange: a chip is a chosen filter or a picked reading
+   status, i.e. selection, which the RULES plate gives to blue. Matches
+   the chip() helper in Prototype Mobile.dc.html, which this
+   class was ported from — background: var(--color-link). Orange stays
+   reserved for the one primary action on the screen the chips sit on. */
+.chip.on { background: var(--color-link); color: var(--color-cream-fixed); }
 
 /* From Prototype Admin.dc.html's own <style> block (line 24) — the
    missing-cover placeholder on the admin catalogue list, distinct from

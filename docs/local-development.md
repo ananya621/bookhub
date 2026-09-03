@@ -97,6 +97,59 @@ separate step — see `docs/deployment.md`.
 
 ---
 
+## Filling it with something to look at
+
+A fresh database is empty, which makes it hard to actually look at the
+site. Run:
+
+```bash
+node scripts/seed-local.mjs
+```
+
+It creates two real accounts to sign in as -- an admin and an ordinary
+reader -- plus a small catalogue and some activity to go with them:
+reviews, reading-tracker entries, a couple of lists, a couple of book
+requests, and a couple of reports (including one on the Safeguarding
+queue, so that isn't empty either). It prints both logins when it's
+done; by default they're `admin@bookhub.test` / `bookhub-admin-pw` and
+`reader@bookhub.test` / `bookhub-reader-pw`.
+
+These are real Supabase accounts, made the same way signing up through
+the app makes one, not rows inserted by hand. That matters: there is no
+dev "fake login" any more, so this script is how you get a signed-in
+admin and a signed-in reader to test as, without typing a survey out by
+hand every time.
+
+Run it as often as you like. It reuses the two accounts if they already
+exist, and wipes and rebuilds everything else -- the catalogue, reviews,
+lists, requests, reports -- so you always get back to the same known
+state rather than a pile-up of old test data.
+
+**If everything comes back "permission denied for table ..."**, see the
+`auto_expose_new_tables` note in `supabase/config.toml` just below.
+
+---
+
+## Why `auto_expose_new_tables` is set in `supabase/config.toml`
+
+Supabase used to expose every table in `public` to the API automatically.
+It doesn't any more -- a table now has to opt in, or nothing can read or
+write it, and every request comes back "permission denied". Our
+migrations were written for the old behaviour and never grant table
+access themselves, so a database built from nothing -- a fresh
+`supabase db reset`, or anyone setting the project up for the first
+time -- would hit that wall on every table, seed script included.
+`auto_expose_new_tables = true` turns the old behaviour back on so that
+keeps working.
+
+That setting is temporary -- Supabase has said it will stop reading it
+on **2026-10-30**. The real fix is a migration that grants the tables
+explicitly, the way production will eventually need to. We're deferring
+that on purpose: it's a production-affecting change, worth doing
+carefully and not as a side effect of a local dev fix.
+
+---
+
 ## Stopping
 
 ```bash

@@ -23,19 +23,33 @@ import type { Survey } from "@/lib/mock";
  * against the fixture's fake answers instead of their own, same bug
  * class as the rest of this list. Matches /profile's own real
  * surveys query.
+ *
+ * "Picked for you" cards used to always say "NO REVIEWS YET" — that was
+ * true of every book because nothing fetched the real reviews table to
+ * say otherwise (see supabase/migrations/20260902180000_reviews.sql,
+ * used properly for the first time on /book/[id]). The ratings come
+ * from the book_review_stats view, which averages in Postgres, so this
+ * reads one row per book rather than every review ever written. The
+ * search page reads the same view — one definition of "a book's
+ * rating", not three.
  */
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const [{ data: books }, { data: statusRows }, { count: listsCount }, { data: surveyRow }] = await Promise.all([
-    supabase
-      .from("books")
-      .select("id, title, author, pages, cover_url, genres, reading_level")
-      .order("created_at", { ascending: false }),
-    supabase.from("reading_status").select("status, progress, books(id, title, author, cover_url)"),
-    supabase.from("lists").select("*", { count: "exact", head: true }),
-    supabase.from("surveys").select("genres, reading_level, preferred_length").maybeSingle(),
-  ]);
+  const [{ data: books }, { data: statusRows }, { count: listsCount }, { data: surveyRow }, { data: reviewRows }] =
+    await Promise.all([
+      supabase
+        .from("books")
+        .select("id, title, author, pages, cover_url, genres, reading_level")
+        .order("created_at", { ascending: false }),
+      supabase.from("reading_status").select("status, progress, books(id, title, author, cover_url)"),
+      supabase.from("lists").select("*", { count: "exact", head: true }),
+      supabase.from("surveys").select("genres, reading_level, preferred_length").maybeSingle(),
+      // book_review_stats, not the raw reviews: the database has already
+      // done the averaging, so this reads one row per book instead of
+      // every review ever written. See the view's own migration.
+      supabase.from("book_review_stats").select("book_id, avg_stars"),
+    ]);
 
   const survey: Survey | null = surveyRow
     ? {
@@ -71,7 +85,16 @@ export default async function HomePage() {
       author: r.books!.author,
       coverUrl: r.books!.cover_url,
       progress: r.progress,
+      // Home's "Currently reading" rows never show a rating (only the
+      // tracker's Read shelf does, per ShelfBook's own comment) — always
+      // null here rather than fetching a review that nothing displays.
+      myStars: null,
     }));
+
+  const ratingByBookId = new Map(
+    (reviewRows ?? []).map((r) => [r.book_id as string, Number(r.avg_stars)])
+  );
+  for (const b of catalogueBooks) b.avgStars = ratingByBookId.get(b.id) ?? null;
 
   return (
     <>

@@ -206,7 +206,15 @@ export default function NewRequestPage() {
                           </span>
                         </span>
                         {isPicked && (
-                          <span className="tag tag-done" style={{ flex: "none" }}>
+                          // Blue, not lime: this is a chosen search result,
+                          // not a finished/confirmed one — the request
+                          // itself isn't sent until "Send request" below,
+                          // so lime (done) would be premature. Same blue
+                          // fill as "Want to Read" on the book page.
+                          <span
+                            className="tag tag-select"
+                            style={{ flex: "none" }}
+                          >
                             Picked
                           </span>
                         )}

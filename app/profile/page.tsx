@@ -16,12 +16,13 @@ import DeleteAccountButton from "./DeleteAccountButton";
  * session cookie in place. `/profile` is in proxy.ts's protected-route
  * list, so getCurrentUser() here is never null.
  *
- * Preferences and requests now come from the real `surveys` and
- * `book_requests` tables — ahead of /survey, /home and /requests, which
- * still read the persona fixture. That's a deliberate, temporary
- * mismatch (see the conversation this was decided in), not an oversight.
+ * Preferences and requests come from the real `surveys` and
+ * `book_requests` tables — /survey, /home and /requests read the same
+ * real tables now too, so this page's numbers actually match what
+ * those screens show (they used to read the persona fixture instead,
+ * a leftover from before real auth existed).
  *
- * Public lists now read the real `lists` table too.
+ * Public lists read the real `lists` table too.
  */
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -45,9 +46,12 @@ export default async function ProfilePage() {
       .eq("user_id", user.id),
   ]);
 
-  const prefTags = survey
-    ? [...(survey.genres as string[]), survey.reading_level as string, survey.preferred_length as string]
-    : [];
+  // D1 colours these two groups differently: genres are the accent
+  // tag, reading level and length are the plain neutral one — so the
+  // genres (the thing survey answers are mostly about) read as the
+  // headline and the other two as supporting detail.
+  const genreTags = survey ? (survey.genres as string[]) : [];
+  const otherTags = survey ? [survey.reading_level as string, survey.preferred_length as string] : [];
 
   const myRequests = (voterRows ?? [])
     .map((v) => v.book_requests as unknown as { id: string; status: string } | null)
@@ -91,10 +95,13 @@ export default async function ProfilePage() {
 
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="card-kicker">Reading preferences</div>
-          {prefTags.length > 0 ? (
+          {genreTags.length > 0 || otherTags.length > 0 ? (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "4px 0 10px" }}>
-              {prefTags.map((t) => (
-                <span key={t} className="tag tag-accent">{t}</span>
+              {genreTags.map((t) => (
+                <span key={t} className="tag tag-genre">{t}</span>
+              ))}
+              {otherTags.map((t) => (
+                <span key={t} className="tag tag-neutral">{t}</span>
               ))}
             </div>
           ) : (

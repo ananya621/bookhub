@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -28,6 +28,7 @@ export type ListRow = {
   name: string;
   slug: string;
   isPublic: boolean;
+  updatedLabel: string;
   books: { id: string; title: string; author: string; coverUrl: string | null; status: string | null }[];
 };
 
@@ -41,6 +42,21 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(lists[0]?.id ?? null);
   const [listDeleted, setListDeleted] = useState<{ slug: string } | null>(null);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // The share link needs the real host (localhost while developing,
+  // the deployed domain in prod) — window.location.origin gives that,
+  // but window isn't available during the server render. Same
+  // hydration-safe trick lib/useTheme.ts uses for the same reason:
+  // useSyncExternalStore's server snapshot ("") is what gets rendered
+  // (and hydrated against), then the real origin takes over on the
+  // client. There's nothing to subscribe to — the origin can't change
+  // without a full page load — so the subscribe function is a no-op.
+  const origin = useSyncExternalStore(
+    () => () => {},
+    () => window.location.origin,
+    () => ""
+  );
 
   const curList = lists.find((l) => l.id === selectedId) ?? lists[0] ?? null;
 
@@ -49,6 +65,21 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
   function selectAndClearNotice(id: string) {
     setSelectedId(id);
     setListDeleted(null);
+    setCopied(false);
+  }
+
+  async function copyLink() {
+    if (!curList) return;
+    try {
+      await navigator.clipboard.writeText(`${origin}/lists/${curList.slug}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be blocked (an insecure context, browser
+      // settings) — the link is still sitting right there in the input
+      // for a manual copy, so this just quietly gives up rather than
+      // showing an alarming error for something so low-stakes.
+    }
   }
 
   async function doDelete() {
@@ -124,7 +155,12 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
               style={{
                 padding: "10px 12px",
                 border: "1px solid var(--color-divider)",
-                background: l.id === selectedId ? "var(--color-accent-100)" : undefined,
+                // Blue, not orange — per the accent rules, blue is the
+                // colour for navigation/selection (this is literally
+                // "which list is selected"), and orange is reserved for
+                // the one primary action on the screen (Copy link,
+                // below). The old version used the orange tint here.
+                background: l.id === selectedId ? "color-mix(in srgb, var(--color-link) 12%, var(--color-bg))" : undefined,
               }}
               onClick={() => selectAndClearNotice(l.id)}
             >
@@ -159,10 +195,18 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
               <div>
                 <h2 style={{ margin: "0 0 4px" }}>{curList.name}</h2>
                 <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  {curList.books.length + " BOOKS · " + (curList.isPublic ? "PUBLIC" : "PRIVATE")}
+                  {curList.books.length + " BOOKS · UPDATED " + curList.updatedLabel.toUpperCase()}
                 </div>
               </div>
-              <button className="btn btn-ghost" onClick={doDelete}>
+              {/* Board C2 also shows a "Rename" button here. Left out on
+                  purpose: the lists table comment (see
+                  supabase/migrations/20260903000200_lists.sql) is
+                  explicit that the design doesn't offer renaming, since
+                  a list's slug is generated once from its name and
+                  never changes — that's a deliberate, reasoned choice
+                  already made in this codebase, not a gap. Flagged to
+                  the design lead rather than building it. */}
+              <button className="btn btn-ghost" style={{ color: "var(--color-problem-text)" }} onClick={doDelete}>
                 Delete list
               </button>
             </div>
@@ -193,12 +237,26 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
                 </label>
               </div>
             </div>
+            {/* Board C2's share row is "Copy link", not a link that
+                navigates away — copying is the actual sharing action;
+                the URL is /lists/[slug] here rather than the board's
+                /l/[slug], since that's the app's real route and this
+                pass isn't churning routing for a cosmetic match. */}
             <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
-              <input className="input" value={`bookhub.example/lists/${curList.slug}`} readOnly />
-              <Link href={`/lists/${curList.slug}`} className="btn btn-primary">
-                Open share link
-              </Link>
+              <input className="input" value={`${origin}/lists/${curList.slug}`} readOnly />
+              <button className="btn btn-primary" onClick={copyLink}>
+                {copied ? "Copied!" : "Copy link"}
+              </button>
             </div>
+            {/* Board C2 shows a ⇅ drag handle on each row for manual
+                reordering. Not built: list_books has no ordering column
+                to persist a custom order into (it's stored by
+                added_at), so this would need its own migration — a
+                separate, non-trivial feature from the rest of this
+                visual-fidelity pass. Books stay in the order they were
+                added rather than showing a handle that doesn't do
+                anything. Flagged to the design lead to decide whether
+                it's worth its own pass. */}
             <div style={{ borderTop: "1px solid var(--color-divider)" }}>
               {curList.books.map((b, i) => (
                 <div
@@ -229,7 +287,7 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
                   <Link href={`/book/${b.id}`} className="rowlink" style={{ flex: 1 }}>
                     <div style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>{b.title}</div>
                     <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                      {b.status ? alsoInLabel[b.status] : "NOT ON A SHELF"}
+                      {b.status ? alsoInLabel[b.status] : "NOT IN A SHELF"}
                     </div>
                   </Link>
                   <button className="btn btn-ghost" onClick={() => removeBook(b.id)}>
@@ -257,8 +315,13 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                background: "#C41031",
-                color: "#EFECE3",
+                // A red fill pairs with fixed cream text, not the
+                // theme's own --color-text/--color-bg, the same reason
+                // globals.css gives .tag-danger the same pair (see its
+                // comment there) — this is a red block, not standalone
+                // red text, so --color-problem-text doesn't apply here.
+                background: "var(--color-problem)",
+                color: "var(--color-cream-fixed)",
                 border: "3px solid var(--color-text)",
                 padding: "12px 14px",
               }}
@@ -267,7 +330,7 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
                 <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>List deleted.</span>{" "}
                 <span className="mono" style={{ fontWeight: 700 }}>ITS SHARE LINK NOW SHOWS A NOT-FOUND PAGE.</span>
               </div>
-              <button className="btn btn-ghost" style={{ color: "#EFECE3" }} onClick={() => setListDeleted(null)}>
+              <button className="btn btn-ghost" style={{ color: "var(--color-cream-fixed)" }} onClick={() => setListDeleted(null)}>
                 Dismiss
               </button>
             </div>

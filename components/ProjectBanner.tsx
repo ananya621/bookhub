@@ -8,9 +8,9 @@
  * someone is being asked for an email and a password, and so exactly
  * where the notice matters most.
  *
- * Unlike the dev persona switcher this is NOT development-only. It
- * matters most in production, where someone could find the site without
- * any of the context a marker gets.
+ * NOT development-only — it renders in every environment. It matters
+ * most in production, where someone could find the site without any of
+ * the context a marker gets.
  *
  * Not dismissible: it is one line, and a notice that can be closed
  * before the signup form is a notice that will be.

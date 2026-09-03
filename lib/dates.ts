@@ -16,3 +16,20 @@ export function daysLeft(purgeAt: string): number {
 export function isInFuture(iso: string): boolean {
   return new Date(iso).getTime() > Date.now();
 }
+
+/*
+ * A date the reader can read, formatted the same way everywhere.
+ *
+ * The locale is pinned on purpose. A bare toLocaleDateString() asks the
+ * machine it runs on, and a client component runs on BOTH — Node during
+ * the server render, then the browser during hydration. When the two
+ * disagree React throws away the tree and re-renders it: the admin's
+ * user page really did this, rendering "03/09/2026" on the server and
+ * "3/9/2026" in the browser.
+ *
+ * en-GB because that is where this is used — the design writes dates as
+ * day/month/year throughout.
+ */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB");
+}

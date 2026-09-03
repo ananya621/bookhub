@@ -5,8 +5,9 @@ import { setNewPassword, type ActionResult } from "@/app/actions/auth";
 
 /*
  * Ported from the `isNewPassword` block in Prototype with Admin.dc.html
- * (lines 197-206). Chrome-less screen, no <Nav /> — see app/start for
- * why.
+ * (search for `{{ isNewPassword }}` — the anchor, not the line number,
+ * since that shifts on every design export). Chrome-less screen, no
+ * <Nav /> — see app/start for why.
  *
  * The two checks (8+ characters, both fields matching) are the export's
  * own. They now run in the setNewPassword server action, which changes

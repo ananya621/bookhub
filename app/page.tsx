@@ -2,29 +2,57 @@ import Nav from "@/components/Nav";
 
 /*
  * Ported from the `isLanding` block in Prototype with Admin.dc.html
- * (lines 606-632). Structure and classes are taken directly from there.
- * The "Why this exists" copy is the site owner's own words, not the
- * source's placeholder text. The hero is a placeholder box in the
- * source too ("HERO — COLLAGE OF WELL-KNOWN COVERS"); real book cover
- * images aren't in the export, they come later from the Google Books
- * API, so this stays a placeholder for now rather than inventing images.
+ * (lines 606-632), and now the real A1/E1 boards in the wireframes
+ * (Wireframes Pulp-print.dc.html). Structure and classes are taken
+ * directly from there. The "Why this exists" copy is the site owner's
+ * own words, not the source's placeholder text. The hero is a
+ * placeholder box in the source too ("HERO — COLLAGE OF WELL-KNOWN
+ * COVERS"); real book cover images aren't in the export, they come
+ * later from the Google Books API, so this stays a placeholder for now
+ * rather than inventing images.
+ *
+ * A1 shows "Why this exists" and "Why is reading important?" side by
+ * side as two columns, not stacked — fixed here (it was rendering as
+ * one column at every width, which is the E1 mobile layout, not A1's).
+ * `.responsive-grid` (globals.css) collapses it back to one column
+ * under 640px, so E1's stacked mobile layout still happens, just from
+ * the same markup instead of a duplicate block.
+ *
+ * The hero, headline, subhead and CTAs do need a real mobile/desktop
+ * split though — E1's subhead drops a sentence and its CTAs go
+ * full-width and stacked, which isn't a matter of a grid collapsing,
+ * so those are two small `.mobile-only`/`.desktop-only` blocks (same
+ * pattern the search page uses for its filters).
  */
 export default function Home() {
   return (
     <>
       <Nav />
       <div className="wrap">
-        <div className="cover" style={{ height: 220, marginBottom: 28 }}>
+        <div className="cover desktop-only" style={{ height: 220, marginBottom: 28 }}>
+          <span className="mono">HERO — COLLAGE OF WELL-KNOWN COVERS</span>
+        </div>
+        <div className="cover mobile-only" style={{ height: 130, marginBottom: 18 }}>
           <span className="mono">HERO — COLLAGE OF WELL-KNOWN COVERS</span>
         </div>
 
-        <h1 style={{ fontSize: 52, margin: "0 0 10px" }}>Find Your Next Book!</h1>
-        <p style={{ fontSize: 16, maxWidth: 500 }}>
+        <h1 className="desktop-only" style={{ fontSize: 52, margin: "0 0 10px" }}>
+          Find Your Next Book!
+        </h1>
+        <h1 className="mobile-only" style={{ fontSize: 32, margin: "0 0 6px" }}>
+          Find Your Next Book!
+        </h1>
+
+        <p className="desktop-only" style={{ fontSize: 16, maxWidth: 500 }}>
           Tell us what you like and we&apos;ll line up books you&apos;ll actually
           want to read. Free, no adverts, takes a minute.
         </p>
+        <p className="mobile-only" style={{ fontSize: 14 }}>
+          Tell us what you like and we&apos;ll line up books you&apos;ll actually
+          want to read.
+        </p>
 
-        <div style={{ display: "flex", gap: 12, margin: "22px 0 40px" }}>
+        <div className="desktop-only" style={{ display: "flex", gap: 12, margin: "22px 0 40px" }}>
           <a
             href="/start"
             className="btn btn-primary blueprint"
@@ -44,14 +72,30 @@ export default function Home() {
             Browse books as a guest
           </a>
         </div>
+        <div className="mobile-only" style={{ display: "flex", flexDirection: "column", gap: 10, margin: "18px 0 32px" }}>
+          <a href="/start" className="btn btn-primary btn-block blueprint" style={{ minHeight: 46, fontSize: 15 }}>
+            Get Started
+            <i className="corner tl" />
+            <i className="corner tr" />
+            <i className="corner bl" />
+            <i className="corner br" />
+          </a>
+          <a href="/search" className="btn btn-secondary btn-block" style={{ minHeight: 46 }}>
+            Browse books as a guest
+          </a>
+        </div>
 
         <div
+          className="responsive-grid"
           style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 28,
             borderTop: "1px solid var(--color-divider)",
             paddingTop: 28,
           }}
         >
-          <div style={{ marginBottom: 32 }}>
+          <div>
             <h3 style={{ margin: "0 0 8px" }}>Why this exists</h3>
             <p style={{ fontSize: 14 }}>
               If someone says they don&apos;t like reading, I think it&apos;s

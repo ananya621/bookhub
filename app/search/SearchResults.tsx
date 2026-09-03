@@ -1,29 +1,46 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Sheet from "@/components/Sheet";
-import { allGenres, allLengths, allLevels, lengthLabel } from "@/lib/mock";
+import { allGenres, allLengths, allLevels, lengthLabel, starStr } from "@/lib/mock";
 import type { CatalogueBook } from "@/lib/catalogue";
 
 /*
- * The search box, the filters and the results list. Split out from the
- * page so the page can stay a server component and read the catalogue
+ * The search box, the filters, the sort and the results list. Split
+ * out from the page so the page can stay a server component and read
+ * the catalogue (with each book's rating and the reader's own status)
  * from the database.
  *
- * Filtering happens here rather than in the query because the whole
- * catalogue is already loaded — every book was approved by hand, so
- * there are not many — and this keeps typing instant.
+ * Filtering and sorting both happen here rather than in the query
+ * because the whole catalogue is already loaded — every book was
+ * approved by hand, so there are not many — and this keeps typing
+ * instant. The rating and review count themselves are still computed
+ * in the database (see app/search/page.tsx); only the ordering of the
+ * already-fetched numbers happens client-side.
  *
- * "Suggest a book" appears in two places on purpose. Once in the empty
- * state, which is obvious, and once permanently at the bottom, because
- * finding five books that are not the one you wanted is just as much a
- * dead end as finding none.
+ * "Suggest a book" / "Request it" appears in two places on purpose.
+ * Once in the empty state, which is obvious, and once permanently at
+ * the bottom, because finding five books that are not the one you
+ * wanted is just as much a dead end as finding none.
  */
 
 export type { CatalogueBook };
 
 const PER_PAGE = 5;
+
+type SortOrder = "reviews" | "newest";
+
+/* Short badge labels for a reader's own reading status on a result
+   row — shorter than the book page's ("Want to Read", "Currently
+   Reading") because this is a compact list row, not the full detail
+   page. Same three colours everywhere in the app: lime for done, pink
+   for live/in progress, blue for saved-to-read. */
+const STATUS_BADGE: Record<"read" | "reading" | "want", { label: string; className: string }> = {
+  read: { label: "Read", className: "tag tag-done" },
+  reading: { label: "Reading", className: "tag tag-live" },
+  want: { label: "Want to read", className: "tag tag-select" },
+};
 
 export default function SearchResults({ books }: { books: CatalogueBook[] }) {
   const [query, setQuery] = useState("");
@@ -32,6 +49,11 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
   const [fLevels, setFLevels] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  // "Most reviewed" is the board's default (see A2 in the wireframes).
+  // "Newest first" is what this list used to be sorted by unconditionally
+  // — kept as the other option rather than dropped, since it's still a
+  // reasonable way to browse and someone may want it back.
+  const [sort, setSort] = useState<SortOrder>("reviews");
 
   function toggle(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((x) => x !== value) : list.concat(value));
@@ -39,7 +61,7 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
   }
 
   const q = query.trim().toLowerCase();
-  const results = books.filter(
+  const filtered = books.filter(
     (b) =>
       (!q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)) &&
       (!fGenres.length || b.genres.some((g) => fGenres.includes(g))) &&
@@ -47,6 +69,15 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
       // placed in one, so it drops out rather than being guessed at.
       (!fLengths.length || (b.pages !== null && fLengths.includes(lengthLabel(b.pages)))) &&
       (!fLevels.length || fLevels.includes(b.readingLevel))
+  );
+
+  // The book list arrives newest-first (see app/search/page.tsx's
+  // query), so "Newest first" needs no re-sort — only "Most reviewed"
+  // does. Array.prototype.sort is stable, so books tied on review
+  // count keep that newest-first order as the tiebreak.
+  const results = useMemo(
+    () => (sort === "reviews" ? filtered.slice().sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0)) : filtered),
+    [filtered, sort]
   );
 
   const pageResults = results.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
@@ -223,9 +254,30 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
             >
               {resultCount}
             </span>
-            <span className="mono" style={{ color: "var(--color-accent-700)" }}>
-              SORT: NEWEST FIRST
-            </span>
+            {/* A real <select>, styled to read like the mono "SORT: ..."
+                label the board shows rather than a boxed form control —
+                sort is a page-level choice, not a filter. */}
+            <label className="mono" style={{ color: "var(--color-accent-700)", display: "flex", alignItems: "center", gap: 4 }}>
+              SORT:
+              <select
+                className="mono"
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value as SortOrder);
+                  setPage(0);
+                }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--color-accent-700)",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <option value="reviews">MOST REVIEWED</option>
+                <option value="newest">NEWEST FIRST</option>
+              </select>
+            </label>
           </div>
 
           <div style={{ borderTop: "1px solid var(--color-divider)" }}>
@@ -284,10 +336,24 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
                     </p>
                   )}
                   <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                    {b.genres
-                      .concat(b.readingLevel ? [b.readingLevel] : [])
-                      .concat(b.pages !== null ? [lengthLabel(b.pages)] : [])
-                      .concat(b.isSeries ? ["Part of a series"] : [])
+                    {/* Only shown once someone has actually rated the book —
+                        a book with no reviews gets no stars rather than a
+                        misleading "no stars filled in" row. */}
+                    {Boolean(b.reviewCount) && (
+                      <span className="stars">{starStr(b.avgStars ?? 0)}</span>
+                    )}
+                    {/* .tag-genre, not tag-accent — genre tags are
+                        ink-outline, never accent-filled, per the RULES
+                        plate. Level/length/series stay tag-neutral,
+                        a slightly different ink shade but the same
+                        outline idea, matching the book detail page. */}
+                    {b.genres.map((t) => (
+                      <span key={t} className="tag tag-genre">
+                        {t}
+                      </span>
+                    ))}
+                    {[b.readingLevel || null, b.pages !== null ? lengthLabel(b.pages) : null, b.isSeries ? "Part of a series" : null]
+                      .filter((t): t is string => Boolean(t))
                       .map((t) => (
                         <span key={t} className="tag tag-neutral">
                           {t}
@@ -296,6 +362,17 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
                   </div>
                 </Link>
                 <div style={{ alignSelf: "center", flex: "none", textAlign: "right" }}>
+                  {/* A guest has no reading status to show — the badge
+                      is what tells a signed-in reader at a glance which
+                      of these they've already read, are reading, or
+                      saved, without opening each one. */}
+                  {b.myStatus && (
+                    <div style={{ marginBottom: 8 }}>
+                      <span className={STATUS_BADGE[b.myStatus].className}>
+                        {STATUS_BADGE[b.myStatus].label}
+                      </span>
+                    </div>
+                  )}
                   <Link href={`/book/${b.id}`} className="btn btn-secondary">
                     Open
                   </Link>
@@ -355,7 +432,7 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
 
           {/* Always here, not just when nothing matched. Finding five books
               that are not the one you wanted is as much a dead end as
-              finding none. */}
+              finding none. Copy matches A2 in the wireframes exactly. */}
           {!emptyCatalogue && (
             <div
               style={{
@@ -369,14 +446,14 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
             >
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>
-                  Not what you were looking for?
+                  Couldn&apos;t find the book you wanted?
                 </div>
                 <p className="text-muted" style={{ fontSize: 13, margin: "2px 0 0" }}>
                   Search for it and we&apos;ll add it if it&apos;s right for the site.
                 </p>
               </div>
               <Link href="/requests/new" className="btn btn-secondary">
-                Suggest a book
+                Request it
               </Link>
             </div>
           )}
