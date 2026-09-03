@@ -12,7 +12,7 @@ import {
 } from "@/app/actions/accounts";
 import { adminModerateReview, type ActionResult as ReviewActionResult } from "@/app/actions/reviews";
 import { adminSetReportStatus, type ActionResult as ReportActionResult } from "@/app/actions/reports";
-import { daysLeft, isInFuture } from "@/lib/dates";
+import { daysLeft, formatDate, isInFuture } from "@/lib/dates";
 import { REVIEW_STATUS_STYLE } from "@/lib/review-status";
 
 export type UserReview = {
@@ -38,6 +38,7 @@ export type UserReport = {
 type Account = {
   id: string;
   displayName: string | null;
+  email: string | null;
   avatarColor: string;
   joined: string;
   isAdmin: boolean;
@@ -57,7 +58,7 @@ const BAN_OPTIONS: { label: string; caption: string; rec?: boolean }[] = [
 
 export default function UserDetail({
   account,
-  initialReviews,
+  initialReviews: reviews,
   reports,
 }: {
   account: Account;
@@ -81,48 +82,45 @@ export default function UserDetail({
     adminSetReportStatus,
     undefined
   );
+  const [renameState, renameAction, renamePending] = useActionState<ActionResult, FormData>(
+    adminForceRename,
+    undefined
+  );
+  const [banState, banAction, banPending] = useActionState<ActionResult, FormData>(adminBanAccount, undefined);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
-  const [renameError, setRenameError] = useState("");
-  const [renamePending, setRenamePending] = useState(false);
 
   const [banOpen, setBanOpen] = useState(false);
   const [banDuration, setBanDuration] = useState("6 hours");
-  const [banError, setBanError] = useState("");
-  const [banPending, setBanPending] = useState(false);
-
-  const reviews = initialReviews;
 
   const isBanned = Boolean(account.ban?.bannedUntil && isInFuture(account.ban.bannedUntil));
   const isWarned = Boolean(account.ban && !account.ban.bannedUntil);
 
-  async function doRename() {
-    const v = renameValue.trim();
-    if (v.length < 2) return setRenameError("AT LEAST 2 CHARACTERS");
-    setRenamePending(true);
-    const formData = new FormData();
-    formData.set("userId", account.id);
-    formData.set("newName", v);
-    const result = await adminForceRename(undefined, formData);
-    setRenamePending(false);
-    if (result && "error" in result) return setRenameError(result.error);
-    setRenameOpen(false);
-    setRenameValue("");
-    setRenameError("");
+  // Both dialogs are local UI state (renameOpen/banOpen), not something
+  // the server response can drive directly, so a successful submit needs
+  // an explicit close — everywhere else in this file, "the thing the
+  // state controls" is derived straight from the account/report/review
+  // data that revalidatePath refreshes, so nothing extra is needed there.
+  // This closes during render rather than in an effect (comparing
+  // against the last-seen state, React's own recommended way to react to
+  // a value changing) since setting state from inside an effect just to
+  // reflect another state change is the cascading-render effect misuse
+  // the lint rule set-state-in-effect exists to catch.
+  const [prevRenameState, setPrevRenameState] = useState(renameState);
+  if (renameState !== prevRenameState) {
+    setPrevRenameState(renameState);
+    if (renameState && "ok" in renameState) {
+      setRenameOpen(false);
+      setRenameValue("");
+    }
   }
 
-  async function doBan() {
-    setBanPending(true);
-    const formData = new FormData();
-    formData.set("userId", account.id);
-    formData.set("duration", banDuration);
-    const result = await adminBanAccount(undefined, formData);
-    setBanPending(false);
-    if (result && "error" in result) return setBanError(result.error);
-    setBanOpen(false);
-    setBanError("");
+  const [prevBanState, setPrevBanState] = useState(banState);
+  if (banState !== prevBanState) {
+    setPrevBanState(banState);
+    if (banState && "ok" in banState) setBanOpen(false);
   }
 
   const error =
@@ -165,8 +163,13 @@ export default function UserDetail({
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>{account.displayName || "(no name set yet)"}</h1>
           <div className="mono" style={{ color: "var(--color-neutral-700)" }}>
-            JOINED {new Date(account.joined).toLocaleDateString()}
+            JOINED {formatDate(account.joined)}
           </div>
+          {account.email && (
+            <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 3 }}>
+              {account.email}
+            </div>
+          )}
           <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
             {account.isAdmin && <span className="tag tag-accent">Admin</span>}
             {account.isSelf && <span className="tag tag-neutral">You</span>}
@@ -199,7 +202,7 @@ export default function UserDetail({
             ) : confirmingDelete ? (
               <form action={deleteAction} style={{ display: "flex", gap: 8 }}>
                 <input type="hidden" name="userId" value={account.id} />
-                <button type="submit" className="btn" style={{ background: "#C41031", color: "#EFECE3" }}>
+                <button type="submit" className="btn btn-danger">
                   Confirm delete
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={() => setConfirmingDelete(false)}>
@@ -235,8 +238,8 @@ export default function UserDetail({
       {isBanned && account.ban && (
         <div
           style={{
-            background: "#C41031",
-            color: "#EFECE3",
+            background: "var(--color-problem)",
+            color: "var(--color-cream-fixed)",
             border: "3px solid var(--color-text)",
             boxShadow: "4px 4px 0 var(--color-text)",
             padding: "12px 16px",
@@ -266,40 +269,40 @@ export default function UserDetail({
               Pick the name they will be given. They can choose their own again later, as long as
               it passes the same checks anyone else&apos;s does.
             </p>
-            <div className="field">
-              <label>New display name</label>
-              <input
-                className="input"
-                style={{ minHeight: 42 }}
-                placeholder="e.g. reader_4821"
-                value={renameValue}
-                onChange={(e) => {
-                  setRenameValue(e.target.value);
-                  setRenameError("");
-                }}
-              />
-            </div>
-            {renameError && (
-              <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
-                {renameError}
+            <form action={renameAction}>
+              <input type="hidden" name="userId" value={account.id} />
+              <div className="field">
+                <label>New display name</label>
+                <input
+                  className="input"
+                  style={{ minHeight: 42 }}
+                  name="newName"
+                  placeholder="e.g. reader_4821"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                />
               </div>
-            )}
-            <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
-              <button type="button" className="btn btn-primary" onClick={doRename} disabled={renamePending}>
-                {renamePending ? "Renaming…" : "Rename"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setRenameOpen(false);
-                  setRenameValue("");
-                  setRenameError("");
-                }}
-              >
-                Cancel
-              </button>
-            </div>
+              {renameState && "error" in renameState && (
+                <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
+                  {renameState.error}
+                </div>
+              )}
+              <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
+                <button type="submit" className="btn btn-primary" disabled={renamePending}>
+                  {renamePending ? "Renaming…" : "Rename"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setRenameOpen(false);
+                    setRenameValue("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -318,77 +321,72 @@ export default function UserDetail({
               and lists are removed, and their email address can never be used to sign up again —
               a warning does neither.
             </p>
-            <div>
-              <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 8 }}>
-                HOW LONG? PICK THE SMALLEST THING THAT WILL WORK
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {BAN_OPTIONS.map((o) => (
-                  <label
-                    key={o.label}
-                    className="radio"
-                    style={{ alignItems: "flex-start", border: "3px solid var(--color-divider)", padding: "10px 12px" }}
-                  >
-                    <input
-                      type="radio"
-                      name="ban"
-                      checked={banDuration === o.label}
-                      onChange={() => setBanDuration(o.label)}
-                    />
-                    <span className="dot" style={{ marginTop: 2 }} />
-                    <span style={{ flex: 1 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>
-                          {o.label === "warning" ? "Warning only" : o.label}
-                        </span>
-                        {o.rec && (
-                          <span className="tag" style={{ background: "#c6f24e", color: "#14110f" }}>
-                            Start here
+            <form action={banAction}>
+              <input type="hidden" name="userId" value={account.id} />
+              <div>
+                <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 8 }}>
+                  HOW LONG? PICK THE SMALLEST THING THAT WILL WORK
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {BAN_OPTIONS.map((o) => (
+                    <label
+                      key={o.label}
+                      className="radio"
+                      style={{ alignItems: "flex-start", border: "3px solid var(--color-divider)", padding: "10px 12px" }}
+                    >
+                      <input
+                        type="radio"
+                        name="duration"
+                        value={o.label}
+                        checked={banDuration === o.label}
+                        onChange={() => setBanDuration(o.label)}
+                      />
+                      <span className="dot" style={{ marginTop: 2 }} />
+                      <span style={{ flex: 1 }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>
+                            {o.label === "warning" ? "Warning only" : o.label}
                           </span>
-                        )}
+                          {o.rec && (
+                            <span className="tag" style={{ background: "#c6f24e", color: "#14110f" }}>
+                              Start here
+                            </span>
+                          )}
+                        </span>
+                        <span className="mono" style={{ display: "block", color: "var(--color-neutral-700)", lineHeight: 1.6, marginTop: 3 }}>
+                          {o.caption}
+                        </span>
                       </span>
-                      <span className="mono" style={{ display: "block", color: "var(--color-neutral-700)", lineHeight: 1.6, marginTop: 3 }}>
-                        {o.caption}
-                      </span>
-                    </span>
-                  </label>
-                ))}
+                    </label>
+                  ))}
+                </div>
+                <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 10, lineHeight: 1.6 }}>
+                  YOU CAN ALWAYS EXTEND A BAN. YOU CANNOT UN-LOSE A READER WHO DECIDED THE SITE WAS
+                  UNFAIR.
+                </div>
               </div>
-              <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 10, lineHeight: 1.6 }}>
-                YOU CAN ALWAYS EXTEND A BAN. YOU CANNOT UN-LOSE A READER WHO DECIDED THE SITE WAS
-                UNFAIR.
+              {banState && "error" in banState && (
+                <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
+                  {banState.error}
+                </div>
+              )}
+              <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
+                <button
+                  type="submit"
+                  className="btn btn-danger"
+                  disabled={banPending}
+                >
+                  {banPending
+                    ? "Working…"
+                    : banDuration === "warning"
+                      ? "Send the warning"
+                      : `Ban for ${banDuration}`}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setBanOpen(false)}>
+                  Cancel
+                </button>
               </div>
-            </div>
-            {banError && (
-              <div className="mono" style={{ color: "var(--color-problem-text)", fontWeight: 700 }}>
-                {banError}
-              </div>
-            )}
-            <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
-              <button
-                type="button"
-                className="btn"
-                style={{ background: "#C41031", color: "#EFECE3" }}
-                onClick={doBan}
-                disabled={banPending}
-              >
-                {banPending
-                  ? "Working…"
-                  : banDuration === "warning"
-                    ? "Send the warning"
-                    : `Ban for ${banDuration}`}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setBanOpen(false);
-                  setBanError("");
-                }}
-              >
-                Cancel
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
@@ -396,8 +394,8 @@ export default function UserDetail({
       {account.pending && (
         <div
           style={{
-            background: "#C41031",
-            color: "#EFECE3",
+            background: "var(--color-problem)",
+            color: "var(--color-cream-fixed)",
             border: "3px solid var(--color-text)",
             boxShadow: "4px 4px 0 var(--color-text)",
             padding: "12px 16px",

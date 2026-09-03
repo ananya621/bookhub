@@ -6,8 +6,9 @@ import { signUp, type ActionResult } from "@/app/actions/auth";
 
 /*
  * Ported from the `isSignup` block in Prototype with Admin.dc.html
- * (lines 653-669). Chrome-less screen, no <Nav /> — see app/start for
- * why.
+ * (search for `{{ isSignup }}` — the anchor, not the line number, since
+ * that shifts on every design export). Chrome-less screen, no <Nav /> —
+ * see app/start for why.
  *
  * This now creates a real account. The form posts to the signUp server
  * action, which does the same two checks the export did (email has an
@@ -61,7 +62,10 @@ export default function SignupPage() {
       </div>
 
       {state?.error && (
-        <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 14 }}>
+        // Red, not the orange step-kicker colour — RULES reserves red
+        // for errors and nothing else. This used to be accent-700,
+        // which reads as a shade of the primary-action orange.
+        <div className="mono" style={{ color: "var(--color-problem-text)", marginBottom: 14 }}>
           {state.error}
         </div>
       )}

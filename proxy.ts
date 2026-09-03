@@ -1,6 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE } from "@/lib/auth";
-import { PERSONAS, isPersonaId } from "@/lib/personas";
 import { refreshSession } from "@/lib/supabase/proxy";
 
 /*
@@ -93,18 +91,9 @@ export async function proxy(request: NextRequest) {
           ? "survey"
           : null,
     };
-  } else if (process.env.NODE_ENV !== "production") {
-    // Development-only fallback to the fake persona, matching
-    // getCurrentUser(). Production has no fallback.
-    const cookie = request.cookies.get(SESSION_COOKIE)?.value;
-    const persona = cookie && isPersonaId(cookie) ? PERSONAS[cookie].user : null;
-    if (persona) {
-      user = {
-        isAdmin: persona.isAdmin,
-        onboardingStep: persona.onboardingStep,
-      };
-    }
   }
+  // No real session means signed out — no fallback, matching
+  // getCurrentUser(). `user` stays null and falls through below.
 
   // --- Signed out ---------------------------------------------------
   if (!user) {
@@ -140,7 +129,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next internals, API routes (the dev persona
-  // endpoint and the auth callback must stay reachable) and static files.
+  // Everything except Next internals, API routes, the auth callback
+  // (which must stay reachable) and static files.
   matcher: ["/((?!_next/|api/|auth/|favicon.ico|.*\\.[^/]+$).*)"],
 };

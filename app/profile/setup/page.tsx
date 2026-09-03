@@ -6,8 +6,9 @@ import { checkDisplayName, saveProfile, type ActionResult } from "@/app/actions/
 
 /*
  * Ported from the `isProfileSetup` block in Prototype with Admin.dc.html
- * (lines 701-746). Chrome-less screen, no <Nav /> — see app/start for
- * why.
+ * (search for `{{ isProfileSetup }}` — the anchor, not the line number,
+ * since that shifts on every design export). Chrome-less screen, no
+ * <Nav /> — see app/start for why.
  *
  * The name check is now real. It calls check_display_name() in the
  * database, which returns short / banned / reserved / taken / available.
@@ -22,6 +23,18 @@ import { checkDisplayName, saveProfile, type ActionResult } from "@/app/actions/
  *
  * The check while typing is only a hint. saveProfile runs it again on
  * the server before saving, which is what actually decides.
+ *
+ * The wireframe board (B3, Wireframes Pulp-print.dc.html) shows a
+ * seventh reference state, "invalid characters" — "letters, numbers
+ * and underscores only" — alongside short/banned/reserved/taken/
+ * available. There is no such verdict here on purpose: the database's
+ * name_status enum (supabase/migrations/20260901044724_create_display_
+ * name_rules.sql) only ever returns short, banned, reserved, taken or
+ * available — nothing enforces a character allow-list server-side, so
+ * a client-only "invalid characters" state would reject names the
+ * server would happily accept, which is worse than not having it. If a
+ * character restriction is wanted, it needs to start in the database
+ * (a new migration is out of this screen's scope), not here.
  */
 
 type NameStatus =
@@ -39,7 +52,8 @@ const STATUS_CHIP: Record<
 > = {
   short: { mark: "!", text: "A bit short — 2 characters or more", bg: "#C41031", ink: "#EFECE3" },
   banned: { mark: "!", text: "That name isn’t allowed here", bg: "#C41031", ink: "#EFECE3" },
-  reserved: { mark: "!", text: "That one’s reserved — pick another", bg: "#C41031", ink: "#EFECE3" },
+  // Exact wording from board B3's reference key — was "pick another".
+  reserved: { mark: "!", text: "That one’s reserved — pick something else", bg: "#C41031", ink: "#EFECE3" },
   taken: { mark: "✕", text: "Taken already — try one of these", bg: "#C41031", ink: "#EFECE3" },
   available: { mark: "✓", text: "That one’s free", bg: "#c6f24e", ink: "#14110f" },
 };
@@ -120,8 +134,27 @@ export default function ProfileSetupPage() {
       </div>
 
       {status === "checking" && (
-        <div className="mono" style={{ color: "var(--color-neutral-700)", marginBottom: 10 }}>
-          CHECKING…
+        // Same chip shape as the resolved states below (board B3's
+        // reference key draws "checking" as a bordered, unfilled chip
+        // with a "···" mark), rather than a plain mono line — so the
+        // layout doesn't jump once a verdict arrives.
+        <div style={{ marginBottom: 10 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 9,
+              border: "3px solid var(--color-text)",
+              padding: "6px 12px",
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>
+              ···
+            </span>
+            <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 14 }}>
+              Checking if that&apos;s free…
+            </span>
+          </div>
         </div>
       )}
 
@@ -132,7 +165,7 @@ export default function ProfileSetupPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: 9,
-              border: "3px solid #14110F",
+              border: "3px solid var(--color-text)",
               padding: "6px 12px",
               background: STATUS_CHIP[status].bg,
               color: STATUS_CHIP[status].ink,
@@ -171,7 +204,9 @@ export default function ProfileSetupPage() {
       </div>
 
       {state?.error && (
-        <div className="mono" style={{ color: "var(--color-accent-700)" }}>
+        // Red, per RULES — errors only, never the orange used for the
+        // primary action or the accent-700 kicker/label colour.
+        <div className="mono" style={{ color: "var(--color-problem-text)" }}>
           {state.error}
         </div>
       )}

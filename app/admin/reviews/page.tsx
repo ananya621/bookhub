@@ -1,5 +1,6 @@
 import AdminNav from "@/components/AdminNav";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/dates";
 import ReviewQueue, { type QueueRow } from "./ReviewQueue";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -118,7 +119,7 @@ export default async function AdminReviewsPage() {
         userId: review.user_id as string,
         stars: review.stars as number,
         text: review.text as string,
-        when: new Date(review.created_at as string).toLocaleDateString(),
+        when: formatDate(review.created_at as string),
         status: review.status as "allowed" | "deleted",
         openCount,
         why,
@@ -128,7 +129,7 @@ export default async function AdminReviewsPage() {
           .map((r) => ({
             who: nameById.get(r.reporter_id as string) ?? "(no name set yet)",
             reason: TYPE_LABEL[r.type as string] ?? (r.type as string).toUpperCase(),
-            when: new Date(r.created_at as string).toLocaleDateString(),
+            when: formatDate(r.created_at as string),
             note: (r.note as string | null) ?? "",
           })),
       };

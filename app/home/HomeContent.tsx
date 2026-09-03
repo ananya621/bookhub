@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useCurrentUser } from "@/components/AuthProvider";
 import BookCover from "@/components/BookCover";
-import { matchedOnLabel, steps, type Survey } from "@/lib/mock";
+import { matchedOnLabel, starStr, steps, type Survey } from "@/lib/mock";
 import { rankCatalogueBooks, type CatalogueBook } from "@/lib/catalogue";
 import { setReadingStatus } from "@/app/actions/reading";
 import type { ShelfBook } from "@/app/tracker/TrackerShelves";
@@ -20,7 +20,20 @@ import type { ShelfBook } from "@/app/tracker/TrackerShelves";
  * shelf counts (readCount/wantCount/reading) and "MY LISTS"
  * (listsCount) all read real tables, fetched by page.tsx — all were
  * showing fixture data that didn't reflect what's actually tracked or
- * answered.
+ * answered. Same for each book's avgStars, a real average of its
+ * reviews from the book_review_stats view, replacing what used to be a
+ * permanent "NO REVIEWS YET" (B6's wireframe shows star ratings on
+ * every card; a book with no reviews yet still gets that honest empty
+ * label).
+ *
+ * B6 also shows a "Write a review" button in the "Your shelves" corner
+ * instead of "Request a missing book". Kept as "Request a missing
+ * book" here: "Write a review" needs a specific book to review (see
+ * /book/[id]/review), and Home has no book in hand — there's nowhere
+ * for a bare "Write a review" link to go without inventing a
+ * pick-a-book step the wireframes don't show anywhere. "Request a
+ * missing book" is a real destination and pairs naturally with the
+ * empty-catalogue message above.
  */
 
 export default function HomeContent({
@@ -96,7 +109,11 @@ export default function HomeContent({
             >
               <BookCover src={b.coverUrl} />
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>{b.title}</div>
-              <span className="mono text-muted" style={{ fontSize: 11 }}>NO REVIEWS YET</span>
+              {b.avgStars != null ? (
+                <span className="stars">{starStr(b.avgStars)}</span>
+              ) : (
+                <span className="mono text-muted" style={{ fontSize: 11 }}>NO REVIEWS YET</span>
+              )}
             </div>
           ))}
         </div>

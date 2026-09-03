@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import BookCover from "@/components/BookCover";
-import { matchedOnLabel, type Survey } from "@/lib/mock";
+import { matchedOnLabel, starStr, type Survey } from "@/lib/mock";
 import { rankCatalogueBooks, type CatalogueBook } from "@/lib/catalogue";
 
-export default function RecsList({ books, survey }: { books: CatalogueBook[]; survey: Survey | null }) {
+export default function RecsList({
+  books,
+  survey,
+}: {
+  books: CatalogueBook[];
+  survey: Survey | null;
+}) {
   const recs = rankCatalogueBooks(books, survey);
   const emptyCatalogue = books.length === 0;
   const nothingMatched = !emptyCatalogue && recs.length === 0;
@@ -36,10 +42,14 @@ export default function RecsList({ books, survey }: { books: CatalogueBook[]; su
               <BookCover src={book.coverUrl} />
               <div className="card-title">{book.title}</div>
               <div className="card-meta">{book.author}</div>
-              <span className="mono text-muted">NO REVIEWS YET</span>
+              {book.avgStars != null ? (
+                <span className="stars">{starStr(book.avgStars)}</span>
+              ) : (
+                <span className="mono text-muted">NO REVIEWS YET</span>
+              )}
               <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                 {book.genres.map((t) => (
-                  <span key={t} className="tag tag-accent">
+                  <span key={t} className="tag tag-genre">
                     {t}
                   </span>
                 ))}

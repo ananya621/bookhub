@@ -6,7 +6,7 @@ import {
   adminRestoreAccount,
   type ActionResult,
 } from "@/app/actions/accounts";
-import { daysLeft } from "@/lib/dates";
+import { daysLeft, formatDate } from "@/lib/dates";
 
 export type TrashRow = {
   userId: string;
@@ -51,7 +51,7 @@ export default function TrashList({ rows }: { rows: TrashRow[] }) {
               </div>
               <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 3 }}>
                 {t.deletedBy === "self" ? "Deleted by themselves" : "Deleted by an admin"} ·{" "}
-                {new Date(t.deletedAt).toLocaleDateString()}
+                {formatDate(t.deletedAt)}
               </div>
             </div>
             <span className="tag" style={{ flex: "none", background: "#FFD400", color: "#14110f" }}>

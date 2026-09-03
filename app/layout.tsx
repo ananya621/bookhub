@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
-import DevPersonaSwitcher from "@/components/DevPersonaSwitcher";
 import ProjectBanner from "@/components/ProjectBanner";
-import { SESSION_COOKIE, getCurrentUser } from "@/lib/auth";
-import { PERSONAS, isPersonaId, type PersonaId } from "@/lib/personas";
+import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Book Hub",
@@ -21,18 +18,11 @@ const themeInitScript = `
   } catch (e) {}
 `;
 
-const isDev = process.env.NODE_ENV !== "production";
-
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Resolved once, on the server, and handed to client components through
   // AuthProvider. Client components must not work this out themselves —
   // see the note in components/AuthProvider.tsx.
   const user = await getCurrentUser();
-
-  // Only for showing which persona is active in the dev switcher.
-  const raw = (await cookies()).get(SESSION_COOKIE)?.value ?? "guest";
-  const persona: PersonaId = isPersonaId(raw) ? raw : "guest";
-  const data = PERSONAS[persona].data;
 
   return (
     // suppressHydrationWarning because themeInitScript above sets
@@ -45,15 +35,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        {/* key remounts the tree when the persona changes, so pages
-            re-seed their local state from the new fixture instead of
-            keeping the previous reader's shelves. */}
-        <AuthProvider key={persona} user={user} data={data}>
+        <AuthProvider user={user}>
           {/* Above everything, including the nav and the unverified
               banner, and on the chrome-less auth screens too. */}
           <ProjectBanner />
           {children}
-          {isDev && <DevPersonaSwitcher current={persona} />}
         </AuthProvider>
       </body>
     </html>

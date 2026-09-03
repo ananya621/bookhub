@@ -129,6 +129,26 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return { error: "A TITLE IS REQUIRED" };
 
+  const summary = String(formData.get("summary") ?? "").trim();
+
+  const supabase = await createClient();
+
+  // Title and summary are the two fields on this form that go straight
+  // onto the book's public page as free text, so they get the same word
+  // filter a review or a display name does. Step 2 exists precisely so
+  // an admin can retype whatever Google (or a reader's request) supplied
+  // — that retyped text can still carry something that shouldn't go
+  // live, same as any other typed field. Author is left unchecked: it's
+  // a real person's name rather than free text, so the filter is far
+  // more likely to misfire on it (a surname containing a banned
+  // substring) than to ever catch anything genuine.
+  const { data: titleBanned } = await supabase.rpc("contains_banned_word", { v: title });
+  if (titleBanned) return { error: "THAT TITLE CAN’T BE USED — CHECK IT FOR TYPOS" };
+  if (summary) {
+    const { data: summaryBanned } = await supabase.rpc("contains_banned_word", { v: summary });
+    if (summaryBanned) return { error: "THAT SUMMARY CAN’T BE USED — TRY REWORDING IT" };
+  }
+
   const pages = Number.parseInt(String(formData.get("pages") ?? ""), 10);
   const externalId = String(formData.get("externalId") ?? "").trim() || null;
   const requestId = String(formData.get("requestId") ?? "").trim() || null;
@@ -147,7 +167,6 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
     if (file instanceof File) coverUrl = await storeCoverFromFile(file);
   }
 
-  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -160,7 +179,7 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
       title,
       author: String(formData.get("author") ?? "").trim(),
       pages: Number.isFinite(pages) ? pages : null,
-      summary: String(formData.get("summary") ?? "") || null,
+      summary: summary || null,
       cover_url: coverUrl,
       genres: formData.getAll("genres").map(String),
       reading_level: String(formData.get("readingLevel") ?? "Middle Grade"),

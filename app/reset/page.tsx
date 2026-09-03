@@ -6,8 +6,9 @@ import { requestReset, type ActionResult } from "@/app/actions/auth";
 
 /*
  * Ported from the `isReset` block in Prototype with Admin.dc.html
- * (lines 1342-1366). Chrome-less screen, no <Nav /> — see app/start
- * for why.
+ * (search for `{{ isReset }}` — the anchor, not the line number, since
+ * that shifts on every design export). Chrome-less screen, no <Nav />
+ * — see app/start for why.
  *
  * Two sub-states from the source: the request form, and the "check your
  * email" confirmation.
@@ -74,7 +75,9 @@ export default function ResetPage() {
             />
           </div>
           {state?.error ? (
-            <div className="mono" style={{ color: "var(--color-accent-700)", marginTop: 10 }}>
+            // Red, per RULES — errors only, never the orange used for
+            // the primary action or the accent-700 kicker labels.
+            <div className="mono" style={{ color: "var(--color-problem-text)", marginTop: 10 }}>
               {state.error}
             </div>
           ) : null}

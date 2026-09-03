@@ -4,10 +4,13 @@ import TrashList, { type TrashRow } from "./TrashList";
 
 /*
  * Rewritten from the mock `trash` fixture into real pending_deletions
- * rows. Accounts only, for now — the export's trash held reviews and
- * requests too, but there's no soft-delete for those yet (no reviews
- * table exists at all), so this shows what's actually real rather than
- * inventing entries for features that don't exist.
+ * rows. Accounts only, on purpose — the export's trash held reviews and
+ * requests too, but neither of those has a soft-delete here: a review is
+ * moderated (allowed/deleted status, see app/actions/reviews.ts), not
+ * put in a recovery bin, and a request is declined outright. Accounts
+ * are the one thing with an actual 14-day undo window, so Trash shows
+ * only what that window applies to rather than inventing entries for a
+ * shape the other two don't have.
  *
  * pending_deletions and profiles both reference auth.users
  * independently (no direct FK between the two), so PostgREST can't

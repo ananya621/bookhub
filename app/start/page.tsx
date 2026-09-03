@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 
 /*
  * Ported from the `isStart` block in Prototype with Admin.dc.html
- * (lines 634-650). This is one of the export's "chrome-less" screens —
+ * (search the file for `{{ isStart }}` — anchors survive the file's
+ * re-exports, line numbers don't, so that's the reliable way to find
+ * it again). This is one of the export's "chrome-less" screens —
  * its own `chrome` flag only turns the site nav on for
  * landing/home/recs/search/book/tracker/lists/profile/requests, so
  * (like the rest of the auth flow) it renders with no <Nav /> and no
