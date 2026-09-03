@@ -370,14 +370,31 @@ a:hover { color: var(--color-accent); }
    hasn't loaded its image yet. */
 .nocover { background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; border: 3px dashed var(--color-neutral-600); }
 
-/* Swaps mobile chrome/sheets in and desktop chrome/inline controls out
-   at the same 640px breakpoint used above. A plain display toggle on a
-   wrapper, not on .wnav etc. directly, so their own internal flex
-   layout is untouched when shown. */
-.mobile-only { display: none; }
+/*
+ * Swaps mobile chrome/sheets in and desktop chrome/inline controls out
+ * at the same 640px breakpoint used above.
+ *
+ * These only ever say HIDE. That matters, and it was got wrong once.
+ *
+ * The old version set `.mobile-only { display: block }` when shown,
+ * which quietly overrode the display any of those elements had set for
+ * themselves — `.tabs` and `.appbar` are `display: flex`, and both live
+ * behind `.mobile-only`. The result was the five-tab bar rendering as a
+ * vertical stack of full-width rows instead of a row of tabs, on every
+ * page, for every phone. Saying nothing about display when the element
+ * is visible lets each one keep its own.
+ *
+ * The hides are `!important` because several call sites set display
+ * inline — the tracker's three-column shelf grid, for one — and an
+ * inline style beats a plain class rule. Without this the tracker
+ * showed its desktop columns AND its mobile tabs at the same time.
+ */
+@media (min-width: 641px) {
+  .mobile-only { display: none !important; }
+}
+
 @media (max-width: 640px) {
-  .mobile-only { display: block; }
-  .desktop-only { display: none; }
+  .desktop-only { display: none !important; }
   /* .desktop-only alone leaves a grid track reserved for the column it
      hid (e.g. the search page's 200px filter rail) — this collapses it
      to one column on mobile. */
