@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentUser } from "@/lib/auth";
 
 /*
  * Recoverable account deletion — self-service and admin. See
@@ -58,6 +59,10 @@ export async function adminDeleteAccount(
   const userId = String(formData.get("userId") ?? "");
   if (!userId) return { error: "NO ACCOUNT SPECIFIED" };
 
+  const me = await getCurrentUser();
+  if (!me) return { error: "NOT SIGNED IN" };
+  if (!me.isAdmin) return { error: "ADMIN ONLY" };
+
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -85,6 +90,10 @@ export async function adminRestoreAccount(
 ): Promise<ActionResult> {
   const userId = String(formData.get("userId") ?? "");
   if (!userId) return { error: "NO ACCOUNT SPECIFIED" };
+
+  const me = await getCurrentUser();
+  if (!me) return { error: "NOT SIGNED IN" };
+  if (!me.isAdmin) return { error: "ADMIN ONLY" };
 
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -163,10 +172,9 @@ export async function adminBanAccount(
   }
 
   const supabase = await createClient();
-  const {
-    data: { user: me },
-  } = await supabase.auth.getUser();
+  const me = await getCurrentUser();
   if (!me) return { error: "NOT SIGNED IN" };
+  if (!me.isAdmin) return { error: "ADMIN ONLY" };
 
   let bannedUntil: string | null = null;
 
@@ -208,6 +216,10 @@ export async function adminLiftBan(
 ): Promise<ActionResult> {
   const userId = String(formData.get("userId") ?? "");
   if (!userId) return { error: "NO ACCOUNT SPECIFIED" };
+
+  const me = await getCurrentUser();
+  if (!me) return { error: "NOT SIGNED IN" };
+  if (!me.isAdmin) return { error: "ADMIN ONLY" };
 
   const admin = createAdminClient();
   const { error: unbanError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "none" });

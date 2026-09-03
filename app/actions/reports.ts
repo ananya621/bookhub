@@ -53,15 +53,6 @@ export async function submitReport(
   } = await supabase.auth.getUser();
   if (!user) return { error: "SIGN UP TO REPORT SOMETHING" };
 
-  const { data: existing } = await supabase
-    .from("reports")
-    .select("id")
-    .eq("reporter_id", user.id)
-    .eq("target_type", targetType)
-    .eq("target_id", targetId)
-    .maybeSingle();
-  if (existing) return { ok: "already reported" };
-
   const { error } = await supabase.from("reports").insert({
     reporter_id: user.id,
     type,
@@ -69,7 +60,11 @@ export async function submitReport(
     target_id: targetId,
     note,
   });
-  if (error) return { error: error.message.toUpperCase() };
+  // 23505 = reports_reporter_target_uidx -- already reported this target,
+  // treat as success rather than an error (RLS keeps a reporter from
+  // reading their own rows back, so this insert is the only way to know).
+  if (error && error.code !== "23505") return { error: error.message.toUpperCase() };
+  if (error) return { ok: "already reported" };
 
   revalidatePath("/admin/reviews");
   revalidatePath("/admin/safeguarding");

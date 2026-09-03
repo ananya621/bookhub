@@ -27,10 +27,10 @@ import { useTheme } from "@/lib/useTheme";
  * real one.
  */
 
-const TAB_ROOTS = ["/", "/search", "/tracker", "/lists", "/profile"];
+const TAB_ROOTS = ["/", "/home", "/search", "/tracker", "/lists", "/profile"];
 
 const TABS = [
-  { href: "/", label: "Home", icon: "⌂", activeOn: ["/", "/recs"] },
+  { href: "/", label: "Home", icon: "⌂", activeOn: ["/", "/recs", "/home"] },
   { href: "/search", label: "Search", icon: "⌕", activeOn: ["/search"], activePrefix: "/book/" },
   { href: "/tracker", label: "Shelves", icon: "▤", activeOn: ["/tracker"] },
   { href: "/lists", label: "Lists", icon: "≣", activeOn: ["/lists"], activePrefix: "/lists/" },
