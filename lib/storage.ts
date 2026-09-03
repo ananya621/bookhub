@@ -52,3 +52,23 @@ export async function storeCoverFromFile(file: File): Promise<string | null> {
   if (file.size === 0) return null;
   return upload(file, file.type || "image/jpeg");
 }
+
+/*
+ * The counterpart to upload. Every upload writes a new randomly-named
+ * object, so nothing is ever overwritten in place — dropping the row
+ * that points at a cover leaves the file behind unless something
+ * removes it too.
+ *
+ * Takes the public URL rather than the path because that is what the
+ * `books.cover_url` column stores; the path is the tail of it.
+ * Best-effort on purpose: a book that is already gone shouldn't fail to
+ * delete because its cover was missing from the bucket.
+ */
+export async function deleteCover(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  const path = url.split(`/${BUCKET}/`)[1];
+  if (!path) return;
+
+  const supabase = await createClient();
+  await supabase.storage.from(BUCKET).remove([path]);
+}

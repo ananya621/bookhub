@@ -6,6 +6,7 @@ import {
   adminRestoreAccount,
   type ActionResult,
 } from "@/app/actions/accounts";
+import { daysLeft } from "@/lib/dates";
 
 export type TrashRow = {
   userId: string;
@@ -14,11 +15,6 @@ export type TrashRow = {
   deletedAt: string;
   purgeAt: string;
 };
-
-function daysLeft(purgeAt: string): number {
-  const ms = new Date(purgeAt).getTime() - Date.now();
-  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-}
 
 export default function TrashList({ rows }: { rows: TrashRow[] }) {
   const [restoreState, restoreAction] = useActionState<ActionResult, FormData>(

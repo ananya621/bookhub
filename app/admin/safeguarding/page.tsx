@@ -27,6 +27,20 @@ export default async function AdminSafeguardingPage() {
   const reviewTargetIds = Array.from(
     new Set((reportRows ?? []).filter((r) => r.target_type === "review").map((r) => r.target_id as string))
   );
+  const userTargetIds = Array.from(
+    new Set((reportRows ?? []).filter((r) => r.target_type === "user").map((r) => r.target_id as string))
+  );
+  const peopleIds = Array.from(
+    new Set([...userTargetIds, ...(reportRows ?? []).map((r) => r.reporter_id as string)])
+  );
+
+  // Started here rather than awaited here: the names depend only on the
+  // reports, so this runs alongside the reviews-then-books chain below
+  // instead of queueing behind it.
+  const profilesQuery = peopleIds.length
+    ? supabase.from("profiles").select("id, display_name").in("id", peopleIds)
+    : Promise.resolve({ data: [] as { id: string; display_name: string | null }[] });
+
   const { data: reviewRows } = reviewTargetIds.length
     ? await supabase.from("reviews").select("id, book_id").in("id", reviewTargetIds)
     : { data: [] as { id: string; book_id: string }[] };
@@ -39,15 +53,7 @@ export default async function AdminSafeguardingPage() {
     (reviewRows ?? []).map((r) => [r.id as string, (books ?? []).find((b) => b.id === r.book_id)?.title as string | undefined])
   );
 
-  const userTargetIds = Array.from(
-    new Set((reportRows ?? []).filter((r) => r.target_type === "user").map((r) => r.target_id as string))
-  );
-  const peopleIds = Array.from(
-    new Set([...userTargetIds, ...(reportRows ?? []).map((r) => r.reporter_id as string)])
-  );
-  const { data: profiles } = peopleIds.length
-    ? await supabase.from("profiles").select("id, display_name").in("id", peopleIds)
-    : { data: [] as { id: string; display_name: string | null }[] };
+  const { data: profiles } = await profilesQuery;
   const nameById = new Map((profiles ?? []).map((p) => [p.id as string, (p.display_name as string | null) ?? "(no name set yet)"]));
 
   const cases: CaseRow[] = (reportRows ?? []).map((r) => ({

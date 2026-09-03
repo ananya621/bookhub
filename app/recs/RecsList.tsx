@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BookCover from "@/components/BookCover";
 import { matchedOnLabel, type Survey } from "@/lib/mock";
 import { rankCatalogueBooks, type CatalogueBook } from "@/lib/catalogue";
 
@@ -32,18 +33,7 @@ export default function RecsList({ books, survey }: { books: CatalogueBook[]; su
               <i className="corner tr" />
               <i className="corner bl" />
               <i className="corner br" />
-              {book.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={book.coverUrl}
-                  alt=""
-                  style={{ aspectRatio: "2/3", objectFit: "cover", width: "100%", border: "3px solid var(--color-text)" }}
-                />
-              ) : (
-                <div className="cover" style={{ aspectRatio: "2/3" }}>
-                  <span className="mono">COVER</span>
-                </div>
-              )}
+              <BookCover src={book.coverUrl} />
               <div className="card-title">{book.title}</div>
               <div className="card-meta">{book.author}</div>
               <span className="mono text-muted">NO REVIEWS YET</span>

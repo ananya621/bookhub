@@ -47,6 +47,14 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
 
   if (!profile) notFound();
 
+  // Their reviews depend on nothing the reports need, so the two chains
+  // run alongside each other rather than one after the other.
+  const reviewsQuery = supabase
+    .from("reviews")
+    .select("id, book_id, stars, text, status, created_at")
+    .eq("user_id", id)
+    .order("created_at", { ascending: false });
+
   const { data: userReportRows } = await supabase
     .from("reports")
     .select("id, reporter_id, type, note, status, created_at")
@@ -74,11 +82,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   }));
   const openUserReportCount = userReports.filter((r) => r.status === "open").length;
 
-  const { data: reviewRows } = await supabase
-    .from("reviews")
-    .select("id, book_id, stars, text, status, created_at")
-    .eq("user_id", id)
-    .order("created_at", { ascending: false });
+  const { data: reviewRows } = await reviewsQuery;
 
   const bookIds = Array.from(new Set((reviewRows ?? []).map((r) => r.book_id as string)));
   const reviewIds = (reviewRows ?? []).map((r) => r.id as string);
