@@ -1,104 +1,72 @@
-"use client";
-
-import { useState } from "react";
 import AdminNav from "@/components/AdminNav";
-import { safeguarding } from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server";
+import SafeguardingQueue, { type CaseRow } from "./SafeguardingQueue";
 
 /*
- * Ported from the `isAdminSafeguarding` block in Prototype with Admin
- * .dc.html (lines 211-238). This queue is deliberately kept apart from
- * the ordinary moderation queues (source comment: "safeguarding, kept
- * out of the ordinary queues on purpose") and carries its own red
- * banner and copy — ported verbatim, not softened.
+ * Rewritten from a pure-mock page reading `safeguarding` into a server
+ * component reading real reports. Kept out of the ordinary moderation
+ * queues on purpose (same reasoning as before this rewrite) by only
+ * ever querying type = 'safety_concern' — see app/admin/reviews/page.tsx,
+ * which explicitly excludes that type the other way.
  *
- * "Mark as actioned" only flips local state here; the source is
- * explicit that it records something done outside the app (told a
- * safeguarding lead, contacted a school), not a moderation decision.
+ * reports.target_id is polymorphic (a review or a reader, no real
+ * foreign key), and none of reviews/reports/profiles/books share a
+ * direct FK PostgREST could embed across, so everything here is
+ * fetched separately and merged in JS.
  */
+export default async function AdminSafeguardingPage() {
+  const supabase = await createClient();
 
-export default function AdminSafeguardingPage() {
-  const [cases, setCases] = useState(safeguarding);
+  const { data: reportRows } = await supabase
+    .from("reports")
+    .select("id, target_type, target_id, reporter_id, note, status, created_at")
+    .eq("type", "safety_concern")
+    .order("status", { ascending: true })
+    .order("created_at", { ascending: false });
 
-  function action(id: string) {
-    setCases((cs) => cs.map((x) => (x.id === id ? { ...x, status: "done" } : x)));
-  }
-  function undo(id: string) {
-    setCases((cs) => cs.map((x) => (x.id === id ? { ...x, status: "open" } : x)));
-  }
+  const reviewTargetIds = Array.from(
+    new Set((reportRows ?? []).filter((r) => r.target_type === "review").map((r) => r.target_id as string))
+  );
+  const { data: reviewRows } = reviewTargetIds.length
+    ? await supabase.from("reviews").select("id, book_id").in("id", reviewTargetIds)
+    : { data: [] as { id: string; book_id: string }[] };
+
+  const bookIds = Array.from(new Set((reviewRows ?? []).map((r) => r.book_id as string)));
+  const { data: books } = bookIds.length
+    ? await supabase.from("books").select("id, title").in("id", bookIds)
+    : { data: [] as { id: string; title: string }[] };
+  const bookTitleByReviewId = new Map(
+    (reviewRows ?? []).map((r) => [r.id as string, (books ?? []).find((b) => b.id === r.book_id)?.title as string | undefined])
+  );
+
+  const userTargetIds = Array.from(
+    new Set((reportRows ?? []).filter((r) => r.target_type === "user").map((r) => r.target_id as string))
+  );
+  const peopleIds = Array.from(
+    new Set([...userTargetIds, ...(reportRows ?? []).map((r) => r.reporter_id as string)])
+  );
+  const { data: profiles } = peopleIds.length
+    ? await supabase.from("profiles").select("id, display_name").in("id", peopleIds)
+    : { data: [] as { id: string; display_name: string | null }[] };
+  const nameById = new Map((profiles ?? []).map((p) => [p.id as string, (p.display_name as string | null) ?? "(no name set yet)"]));
+
+  const cases: CaseRow[] = (reportRows ?? []).map((r) => ({
+    id: r.id as string,
+    who: nameById.get(r.reporter_id as string) ?? "(no name set yet)",
+    target:
+      r.target_type === "user"
+        ? `the reader ${nameById.get(r.target_id as string) ?? "(no name set yet)"}`
+        : `a review on “${bookTitleByReviewId.get(r.target_id as string) ?? "(deleted book)"}”`,
+    when: new Date(r.created_at as string).toLocaleDateString(),
+    text: (r.note as string | null) ?? "(no further detail given)",
+    status: r.status as "open" | "actioned",
+  }));
 
   return (
     <>
       <AdminNav />
       <div className="wrap">
-        <div
-          style={{
-            background: "#C41031",
-            color: "#EFECE3",
-            border: "3px solid var(--color-text)",
-            boxShadow: "5px 5px 0 var(--color-text)",
-            padding: "18px 20px",
-            marginBottom: 24,
-          }}
-        >
-          <h1 style={{ fontSize: 34, margin: "0 0 6px" }}>Safeguarding</h1>
-          <p style={{ fontSize: 14, margin: 0 }}>
-            These are reports where a reader said they were worried about someone&apos;s safety.
-            They are kept out of the ordinary queues so they never wait behind spam. Read them
-            first, every time.
-          </p>
-        </div>
-        <div style={{ borderTop: "3px solid var(--color-text)" }}>
-          {cases.map((x) => {
-            const open = x.status === "open";
-            return (
-              <div key={x.id} className="qrow">
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 6,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span
-                      className="tag"
-                      style={
-                        open
-                          ? { background: "#C41031", color: "#EFECE3", borderColor: "#14110f" }
-                          : { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" }
-                      }
-                    >
-                      {open ? "Open" : "Actioned"}
-                    </span>
-                    <span className="mono" style={{ color: "var(--color-neutral-700)" }}>
-                      FROM {x.who} · ABOUT {x.target} · {x.when}
-                    </span>
-                  </div>
-                  <div style={{ borderLeft: "5px solid #C41031", paddingLeft: 12 }}>
-                    <p style={{ fontSize: 14, margin: 0 }}>{x.text}</p>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flex: "none", alignSelf: "center" }}>
-                  {open ? (
-                    <button className="btn btn-primary" onClick={() => action(x.id)}>
-                      Mark as actioned
-                    </button>
-                  ) : (
-                    <button className="btn btn-ghost" onClick={() => undo(x.id)}>
-                      Reopen
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 16, lineHeight: 1.7 }}>
-          &ldquo;MARK AS ACTIONED&rdquo; MEANS YOU HAVE DONE SOMETHING OUTSIDE THIS APP — TOLD A
-          SAFEGUARDING LEAD, CONTACTED A SCHOOL, OR ESCALATED. IT IS NOT A MODERATION DECISION.
-        </div>
+        <SafeguardingQueue cases={cases} />
       </div>
     </>
   );

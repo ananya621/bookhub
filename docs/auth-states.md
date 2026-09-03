@@ -295,15 +295,16 @@ public, but you cannot open its share link until verified.
 Reachable only through the book page's gated `writeReview`, so its own guard is
 a backstop — but it must exist, since the URL is directly navigable.
 
-## Admin — 9 pages
+## Admin — 8 pages
 
 | | G / U / V | A |
 |---|---|---|
 | All of `/admin/*` | **404** (not 403 — don't reveal it exists) | ✓ |
 
-`/admin`, `/admin/reviews`, `/admin/accounts`, `/admin/users`,
-`/admin/users/[id]`, `/admin/catalogue`, `/admin/safeguarding`, `/admin/trash`,
-`/admin/requests`.
+`/admin`, `/admin/reviews`, `/admin/users`, `/admin/users/[id]`,
+`/admin/catalogue`, `/admin/safeguarding`, `/admin/trash`, `/admin/requests`.
+There's no standalone `/admin/accounts` — the current design moved account
+moderation onto `/admin/users/[id]`, alongside that person's reviews.
 
 Admin actions all mutate other users' data (allow/delete reviews, ban accounts,
 force rename, restore from trash, import catalogue books, approve/decline

@@ -29,12 +29,15 @@
   .starbtn.on { color: var(--color-accent); }
   .shell { flex: 1; display: flex; flex-direction: column; }
   .mode-seg { display: inline-flex; border: 3px solid var(--color-text); flex: none; }
-  .anav { display: flex; align-items: center; gap: 16px; padding: 13px 28px; border-bottom: 3px solid var(--color-text); font-size: 13px; white-space: nowrap; }
+  .anav { display: flex; align-items: center; gap: 15px; padding: 13px 28px; border-bottom: 3px solid var(--color-text); font-size: 13px; white-space: nowrap; flex-wrap: wrap; }
   .anav b { font-family: var(--font-display); font-size: 19px; text-transform: uppercase; margin-right: auto; }
   .anav a { color: var(--color-neutral-700); text-decoration: none; cursor: pointer; font-weight: 500; padding-bottom: 2px; border-bottom: 3px solid transparent; }
   .anav a:hover { color: var(--color-accent-700); }
   .anav a[aria-current="page"] { color: var(--color-text); font-weight: 700; border-bottom-color: var(--color-accent); }
   .qrow { display: flex; gap: 14px; padding: 16px 0; border-bottom: 3px solid var(--color-divider); align-items: flex-start; }
+  .chip { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 5px 11px; border: 2px solid var(--color-text); cursor: pointer; min-height: 34px; }
+  .tag2 { display: inline-flex; align-items: center; font-family: var(--font-heading); font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border: 2px solid var(--color-text); }
+  .nocover { background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px); display: grid; place-items: center; text-align: center; border: 3px dashed var(--color-neutral-600); }
   .seg-opt[data-state="read"]:has(input:checked) { background: #c6f24e; color: #14110f; }
   .seg-opt[data-state="reading"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
   .seg-opt[data-state="prog"]:has(input:checked) { background: #ff3d9a; color: #14110f; }
@@ -81,40 +84,38 @@
   <div class="anav">
     <b>Book Hub Admin</b>
     <a onClick="{{ admin.home }}" aria-current="{{ adminCur.home }}">Overview</a>
-    <a onClick="{{ admin.reviews }}" aria-current="{{ adminCur.reviews }}">Reviews</a>
-    <a onClick="{{ admin.accounts }}" aria-current="{{ adminCur.accounts }}">Accounts</a>
-    <a onClick="{{ admin.users }}" aria-current="{{ adminCur.users }}">All users</a>
     <a onClick="{{ admin.catalogue }}" aria-current="{{ adminCur.catalogue }}">Catalogue</a>
+    <a onClick="{{ admin.requests }}" aria-current="{{ adminCur.requests }}">Requests</a>
+    <a onClick="{{ admin.reviews }}" aria-current="{{ adminCur.reviews }}">Reviews</a>
+    <a onClick="{{ admin.users }}" aria-current="{{ adminCur.users }}">Users</a>
     <a onClick="{{ admin.safeguarding }}" aria-current="{{ adminCur.safeguarding }}">Safeguarding</a>
     <a onClick="{{ admin.trash }}" aria-current="{{ adminCur.trash }}">Trash</a>
-    <a onClick="{{ admin.requests }}" aria-current="{{ adminCur.requests }}">Requests</a>
+    <span class="mono" style="color: var(--color-neutral-700);">OWNER</span>
     <button class="btn btn-secondary" onClick="{{ admin.exit }}">Back to site</button>
   </div>
 </sc-if>
 
 <sc-if value="{{ isAdminUsers }}" hint-placeholder-val="{{ false }}">
   <div class="wrap">
-    <h1 style="font-size: 36px; margin: 0 0 6px;">All users</h1>
-    <p style="font-size: 14px; margin-bottom: 20px;">Every account, not just the reported ones. Open anyone to see their reviews and act on them.</p>
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-      <input class="input" style="flex: 1; min-height: 44px;" placeholder="Search display names" value="{{ adminSearch }}" onInput="{{ setAdminSearch }}">
-    </div>
+    <h1 style="font-size: 38px; margin: 0 0 6px;">Users</h1>
+    <p style="font-size: 14px; margin-bottom: 18px;">Every account, not just the reported ones. Open anyone to see their reviews and act on them.</p>
+    <input class="input" style="width: 100%; min-height: 46px; margin-bottom: 18px;" placeholder="Search display names" value="{{ adminSearch }}" onInput="{{ setAdminSearch }}">
     <div style="border-top: 3px solid var(--color-text);">
-      <sc-for list="{{ allUsers }}" as="u" hint-placeholder-count="5">
+      <sc-for list="{{ allUsers }}" as="u" hint-placeholder-count="4">
         <div class="qrow rowlink" style="align-items: center; padding: 12px 8px;" onClick="{{ u.open }}">
           <div style="{{ u.avatarStyle }}">{{ u.initial }}</div>
           <div style="flex: 1;">
             <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ u.name }}</div>
             <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ u.meta }}</div>
           </div>
-          <span class="tag" style="{{ u.stateStyle }}">{{ u.stateLabel }}</span>
+          <span class="tag2" style="{{ u.stateStyle }}">{{ u.stateLabel }}</span>
           <button class="btn btn-secondary" style="flex: none;" onClick="{{ u.open }}">Open</button>
         </div>
       </sc-for>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; margin-top: 18px;">
       <button class="btn btn-secondary" onClick="{{ usersPrev }}">← Previous</button>
-      <span class="mono" style="color: var(--color-neutral-700);">{{ usersPageLabel }}</span>
+      <span class="mono" style="color: var(--color-neutral-700); flex: 1;">{{ usersPageLabel }}</span>
       <button class="btn btn-secondary" onClick="{{ usersNext }}">Next →</button>
     </div>
   </div>
@@ -123,17 +124,21 @@
 <sc-if value="{{ isAdminUser }}" hint-placeholder-val="{{ false }}">
   <div class="wrap">
     <button class="btn btn-ghost" style="margin-bottom: 16px;" onClick="{{ admin.users }}">← All users</button>
-    <div style="display: flex; align-items: flex-start; gap: 18px; margin-bottom: 8px;">
+    <div style="display: flex; align-items: flex-start; gap: 18px; margin-bottom: 10px;">
       <div style="{{ user.avatarStyle }}">{{ user.initial }}</div>
       <div style="flex: 1;">
         <h1 style="font-size: 36px; margin: 0 0 4px;">{{ user.name }}</h1>
         <div class="mono" style="color: var(--color-neutral-700);">{{ user.meta }}</div>
-        <div style="margin-top: 8px;"><span class="tag" style="{{ user.stateStyle }}">{{ user.stateLabel }}</span></div>
+        <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ user.email }}</div>
+        <div style="margin-top: 8px;"><span class="tag2" style="{{ user.stateStyle }}">{{ user.stateLabel }}</span></div>
       </div>
       <sc-if value="{{ user.actionable }}" hint-placeholder-val="{{ true }}">
         <div style="display: flex; gap: 8px; flex: none;">
           <sc-if value="{{ user.isBanned }}" hint-placeholder-val="{{ false }}">
             <button class="btn btn-primary" onClick="{{ user.unban }}">Lift the ban</button>
+          </sc-if>
+          <sc-if value="{{ user.nameFlag }}" hint-placeholder-val="{{ false }}">
+            <button class="btn btn-secondary" onClick="{{ user.rename }}">Force rename</button>
           </sc-if>
           <button class="btn btn-secondary" onClick="{{ user.askBan }}">Ban account</button>
           <button class="btn btn-secondary" onClick="{{ user.askDelete }}">Delete account</button>
@@ -141,43 +146,38 @@
       </sc-if>
     </div>
     <sc-if value="{{ user.isBanned }}" hint-placeholder-val="{{ false }}">
-      <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 12px 16px; margin: 12px 0 6px;">
+      <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 12px 16px; margin: 12px 0;">
         <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Banned for {{ user.banUntil }}</div>
-        <p style="font-size: 13px; margin: 4px 0 0;">They cannot post reviews, share lists or request books until it lifts. Their existing reviews stay visible unless you delete them individually.</p>
+        <p style="font-size: 13px; margin: 4px 0 0;">Their reviews and lists have been deleted, and {{ user.email }} is blocked from signing up again. They cannot post, share or request anything until the ban lifts.</p>
       </div>
     </sc-if>
     <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin: 18px 0 10px;">{{ user.why }}</div>
     <h4 style="margin: 0 0 10px;">Their reviews</h4>
     <sc-if value="{{ user.noReviews }}" hint-placeholder-val="{{ false }}">
-      <div style="border: 3px dashed var(--color-divider); padding: 26px; text-align: center;">
-        <div class="mono" style="color: var(--color-neutral-700);">NOTHING POSTED YET</div>
-      </div>
+      <div style="border: 3px dashed var(--color-divider); padding: 26px; text-align: center;"><div class="mono" style="color: var(--color-neutral-700);">NOTHING POSTED YET</div></div>
     </sc-if>
-    <sc-if value="{{ user.hasReviews }}" hint-placeholder-val="{{ true }}">
-      <div style="border-top: 3px solid var(--color-text);">
-        <sc-for list="{{ user.reviews }}" as="r" hint-placeholder-count="2">
-          <div class="qrow">
-            <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                <span class="tag" style="{{ r.stateStyle }}">{{ r.stateLabel }}</span>
-                <span class="mono" style="color: var(--color-neutral-700);">ON “{{ r.book }}” · {{ r.when }} · {{ r.rating }}</span>
-              </div>
-              <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
-                <p style="font-size: 14px; margin: 0;">{{ r.text }}</p>
-              </div>
-              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 8px;">{{ r.why }}</div>
+    <div style="border-top: 3px solid var(--color-text);">
+      <sc-for list="{{ user.reviews }}" as="r" hint-placeholder-count="2">
+        <div class="qrow">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+              <span class="tag2" style="{{ r.stateStyle }}">{{ r.stateLabel }}</span>
+              <span class="mono" style="color: var(--color-neutral-700);">ON “{{ r.book }}” · {{ r.when }} · {{ r.rating }}</span>
             </div>
-            <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
-              <div style="display: flex; gap: 8px; flex: none; align-self: center;">
-                <button class="btn btn-primary" onClick="{{ r.allow }}">Allow</button>
-                <button class="btn btn-secondary" onClick="{{ r.del }}">Delete</button>
-              </div>
-            </sc-if>
+            <div style="border-left: 5px solid var(--color-text); padding-left: 12px;">
+              <p style="font-size: 14px; margin: 0;">{{ r.text }}</p>
+            </div>
           </div>
-        </sc-for>
-      </div>
-    </sc-if>
-    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.6;">REPORTED CONTENT STAYS VISIBLE TO READERS UNTIL YOU DECIDE — NOTHING IS HIDDEN AUTOMATICALLY.</div>
+          <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 8px; flex: none; align-self: center;">
+              <button class="btn btn-primary" onClick="{{ r.allow }}">Allow</button>
+              <button class="btn btn-secondary" onClick="{{ r.del }}">Delete</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.7;">REPORTED CONTENT STAYS VISIBLE TO READERS UNTIL YOU DECIDE — NOTHING IS HIDDEN AUTOMATICALLY. A REPORT IS NOT A VERDICT.</div>
   </div>
 </sc-if>
 
@@ -219,7 +219,7 @@
         <div class="qrow">
           <div style="flex: 1;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-              <span class="tag" style="{{ x.stateStyle }}">{{ x.stateLabel }}</span>
+              <span class="tag2" style="{{ x.stateStyle }}">{{ x.stateLabel }}</span>
               <span class="mono" style="color: var(--color-neutral-700);">FROM {{ x.who }} · ABOUT {{ x.target }} · {{ x.when }}</span>
             </div>
             <div style="border-left: 5px solid #C41031; padding-left: 12px;">
@@ -254,12 +254,12 @@
     <div style="border-top: 3px solid var(--color-text);">
       <sc-for list="{{ trashList }}" as="t" hint-placeholder-count="2">
         <div class="qrow" style="align-items: center;">
-          <span class="tag tag-neutral" style="flex: none;">{{ t.kind }}</span>
+          <span class="tag2" style="flex: none;">{{ t.kind }}</span>
           <div style="flex: 1;">
             <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">{{ t.name }}</div>
             <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ t.by }} · {{ t.when }}</div>
           </div>
-          <span class="tag" style="flex: none; background: #FFD400; color: #14110f;">{{ t.daysLeft }}</span>
+          <span class="tag2" style="flex: none; background: #FFD400; color: #14110f;">{{ t.daysLeft }}</span>
           <div style="display: flex; gap: 8px; flex: none;">
             <button class="btn btn-primary" onClick="{{ t.restore }}">Put it back</button>
             <button class="btn btn-secondary" onClick="{{ t.purge }}">Delete for good</button>
@@ -293,10 +293,10 @@
                 <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">API SUBJECTS: {{ r.subjectsUp }}</div>
               </div>
               <sc-if value="{{ r.matchesRequest }}" hint-placeholder-val="{{ false }}">
-                <span class="tag" style="background: #ff3d9a; color: #14110f; flex: none;">Someone asked for this</span>
+                <span class="tag2" style="background: #ff3d9a; color: #14110f; flex: none;">Someone asked for this</span>
               </sc-if>
               <sc-if value="{{ r.already }}" hint-placeholder-val="{{ false }}">
-                <span class="tag" style="background: #c6f24e; color: #14110f; flex: none;">✓ Already in catalogue</span>
+                <span class="tag2" style="background: #c6f24e; color: #14110f; flex: none;">Already in catalogue</span>
               </sc-if>
               <sc-if value="{{ r.importable }}" hint-placeholder-val="{{ true }}">
                 <button class="btn btn-primary" style="flex: none;" onClick="{{ r.start }}">Import</button>
@@ -329,7 +329,7 @@
               <div class="cover" style="height: 240px; border: 3px solid var(--color-text);"><span class="mono">{{ draft.coverSource }}</span></div>
             </sc-if>
             <sc-if value="{{ draft.noCover }}" hint-placeholder-val="{{ true }}">
-              <div style="height: 240px; display: grid; place-items: center; border: 3px dashed var(--color-neutral-600); background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px);"><span class="mono" style="color: var(--color-neutral-700);">NO COVER YET</span></div>
+              <div class="nocover" style="height: 250px;"><span class="mono" style="color: var(--color-neutral-700);">NO COVER YET</span></div>
             </sc-if>
             <button class="btn btn-secondary btn-block" style="min-height: 44px;" onClick="{{ useApiCover }}">Use the API cover</button>
             <button class="btn btn-secondary btn-block" style="min-height: 44px;" onClick="{{ uploadCover }}">Upload my own</button>
@@ -347,7 +347,7 @@
             <div class="mono" style="color: var(--color-neutral-700); margin-bottom: 10px;">{{ draft.mappedFrom }}</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;">
               <sc-for list="{{ draftGenreChips }}" as="g" hint-placeholder-count="11">
-                <button class="tag" style="{{ g.style }}" onClick="{{ g.toggle }}">{{ g.label }}</button>
+                <button class="chip" style="{{ g.style }}" onClick="{{ g.toggle }}">{{ g.label }}</button>
               </sc-for>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 14px;">
@@ -355,7 +355,7 @@
                 <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 6px;">READING LEVEL — YOUR CALL, NOT THE API'S</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                   <sc-for list="{{ draftLevelChips }}" as="l" hint-placeholder-count="3">
-                    <button class="tag" style="{{ l.style }}" onClick="{{ l.pick }}">{{ l.label }}</button>
+                    <button class="chip" style="{{ l.style }}" onClick="{{ l.pick }}">{{ l.label }}</button>
                   </sc-for>
                 </div>
                 <div class="mono" style="color: var(--color-neutral-700); margin-top: 8px; line-height: 1.6;">THE ONE FIELD NEVER TO TRUST THE API ON. THIS IS WHAT KEEPS ADULT TITLES OFF AN 11-YEAR-OLD'S SCREEN.</div>
@@ -392,7 +392,7 @@
 
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
       <h2 style="margin: 0;">In the catalogue</h2>
-      <span class="mono" style="color: var(--color-neutral-700); flex: 1;">{{ catalogueCount }} BOOKS · {{ missingCovers }} WITHOUT A COVER</span>
+      <span class="mono" style="color: var(--color-neutral-700); flex: 1;">{{ catalogueCount }} BOOKS · EVERYTHING A READER CAN SEARCH · {{ missingCovers }} WITHOUT A COVER</span>
       <input class="input" style="width: 230px;" placeholder="Filter the catalogue" value="{{ catFilter }}" onInput="{{ setCatFilter }}">
     </div>
     <div style="border-top: 3px solid var(--color-text);">
@@ -402,13 +402,13 @@
             <div class="cover" style="width: 42px; height: 62px; flex: none;"></div>
           </sc-if>
           <sc-if value="{{ c.noCover }}" hint-placeholder-val="{{ false }}">
-            <div style="width: 42px; height: 62px; flex: none; display: grid; place-items: center; border: 3px dashed var(--color-neutral-600); background: repeating-linear-gradient(135deg, var(--color-neutral-300) 0 6px, transparent 6px 12px);"><span class="mono" style="color: var(--color-neutral-700);">!</span></div>
+            <div class="nocover" style="width: 42px; height: 62px; flex: none;"><span class="mono" style="color: var(--color-neutral-700);">!</span></div>
           </sc-if>
           <div style="flex: 1;">
             <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">{{ c.title }}</div>
             <div class="mono" style="color: var(--color-neutral-700); margin: 3px 0 6px;">{{ c.meta }}</div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <sc-for list="{{ c.tags }}" as="t" hint-placeholder-count="3"><span class="tag tag-neutral">{{ t }}</span></sc-for>
+              <sc-for list="{{ c.tags }}" as="t" hint-placeholder-count="3"><span class="tag2">{{ t }}</span></sc-for>
             </div>
           </div>
           <sc-if value="{{ c.noCover }}" hint-placeholder-val="{{ false }}">
@@ -423,76 +423,100 @@
 
 <sc-if value="{{ isAdminHome }}" hint-placeholder-val="{{ false }}">
   <div class="wrap">
-    <h1 style="font-size: 40px; margin: 0 0 20px;">What needs you</h1>
+    <h1 style="font-size: 42px; margin: 0 0 18px;">What needs you</h1>
+
     <div class="rowlink" style="border: 3px solid var(--color-text); background: #C41031; color: #EFECE3; box-shadow: 5px 5px 0 var(--color-text); padding: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px;" onClick="{{ admin.safeguarding }}">
       <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ safeguardingCount }}</div>
       <div style="flex: 1;">
         <div style="font-family: var(--font-heading); font-weight: 700; font-size: 19px;">Safeguarding reports</div>
         <div class="mono" style="font-weight: 700; margin-top: 3px;">READERS WORRIED ABOUT SOMEONE'S SAFETY — READ THESE FIRST</div>
       </div>
-      <span class="tag" style="background: #EFECE3; color: #14110f; flex: none;">Open queue</span>
+      <span class="tag2" style="background: #EFECE3; color: #14110f;">Open queue</span>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px;">
-      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 16px;" onClick="{{ admin.reviews }}">
-        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ pendingReviews }}</div>
-        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Reviews to look at</div>
-        <div class="mono" style="font-weight: 700; margin-top: 4px;">REPORTED AND AUTO-BLOCKED</div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px;">
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ admin.requests }}">
+        <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ pendingRequests }}</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Book requests</div>
+        <div class="mono" style="font-weight: 700; margin-top: 3px;">WAITING ON YOU</div>
       </div>
-      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 16px;" onClick="{{ admin.accounts }}">
-        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ pendingAccounts }}</div>
-        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Accounts to look at</div>
-        <div class="mono" style="font-weight: 700; margin-top: 4px;">REPORTED AND REFUSED NAMES</div>
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ admin.reviews }}">
+        <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ pendingReviews }}</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Reviews</div>
+        <div class="mono" style="font-weight: 700; margin-top: 3px;">REPORTED AND BLOCKED</div>
       </div>
-      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 16px;" onClick="{{ admin.requests }}">
-        <div style="font-family: var(--font-display); font-size: 44px; line-height: 1;">{{ pendingRequests }}</div>
-        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">Book requests</div>
-        <div class="mono" style="font-weight: 700; margin-top: 4px;">WAITING ON A DECISION</div>
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #ff3d9a; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ admin.users }}">
+        <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ pendingAccounts }}</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Accounts</div>
+        <div class="mono" style="font-weight: 700; margin-top: 3px;">REPORTED AND REFUSED NAMES</div>
+      </div>
+      <div class="rowlink" style="border: 3px solid var(--color-text); background: #FFD400; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 14px;" onClick="{{ admin.catalogue }}">
+        <div style="font-family: var(--font-display); font-size: 40px; line-height: 1;">{{ missingCovers }}</div>
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">No cover</div>
+        <div class="mono" style="font-weight: 700; margin-top: 3px;">A SHELF OF GREY BOXES SELLS NOTHING</div>
       </div>
     </div>
-    <div style="display: flex; align-items: center; gap: 14px; border: 3px dashed var(--color-divider); padding: 14px 16px; margin-bottom: 26px;">
-      <div style="flex: 1;"><div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Reported content stays live until you decide</div><div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">NOTHING IS HIDDEN AUTOMATICALLY — A REPORT IS NOT A VERDICT</div></div>
-      <button class="btn btn-secondary" onClick="{{ admin.users }}">Browse all users</button>
-      <button class="btn btn-secondary" onClick="{{ admin.catalogue }}">Add a book</button>
-      <button class="btn btn-secondary" onClick="{{ banSelf }}">Ban my own account</button>
+
+    <div class="rowlink" style="border: 3px solid var(--color-text); box-shadow: 5px 5px 0 var(--color-text); padding: 18px 20px; display: flex; align-items: center; gap: 18px; margin-bottom: 26px;" onClick="{{ admin.catalogue }}">
+      <div style="font-family: var(--font-display); font-size: 44px; line-height: 1; color: var(--color-accent);">{{ catalogueCount }}</div>
+      <div style="flex: 1;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">Books in the catalogue</div>
+        <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">READERS ONLY EVER SEE THESE — NOTHING COMES STRAIGHT FROM THE API</div>
+      </div>
+      <button class="btn btn-primary" onClick="{{ admin.catalogue }}">Add a book</button>
     </div>
+
     <sc-if value="{{ allClear }}" hint-placeholder-val="{{ false }}">
       <div style="border: 3px solid var(--color-text); background: #c6f24e; color: #14110f; box-shadow: 5px 5px 0 var(--color-text); padding: 18px 20px; margin-bottom: 26px;">
         <div style="font-family: var(--font-heading); font-weight: 700; font-size: 20px;">Every queue is empty</div>
         <p style="font-size: 13px; margin: 4px 0 0;">Nothing is waiting on you. Undo is still available on anything you cleared this session.</p>
       </div>
     </sc-if>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px;">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-bottom: 26px;">
       <div>
         <h4 style="margin: 0 0 10px;">Last seven days</h4>
         <table class="table">
           <tbody>
-            <tr><td>Reviews posted</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">128</td></tr>
+            <tr><td>Books imported</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">12</td></tr>
+            <tr><td>Requests closed by an import</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">5</td></tr>
             <tr><td>Reviews auto-blocked by the filter</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">9</td></tr>
-            <tr><td>New accounts</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">41</td></tr>
-            <tr><td>Display names refused</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">6</td></tr>
+            <tr><td>Searches with no results</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700;">41</td></tr>
           </tbody>
         </table>
       </div>
       <div>
-        <h4 style="margin: 0 0 10px;">Watch the ratio</h4>
-        <p style="font-size: 14px;">If refusals spike, the word list is too aggressive and you are turning away real readers. If reports spike, it is too loose. Neither number means much alone.</p>
+        <h4 style="margin: 0 0 10px;">The number that matters</h4>
+        <p style="font-size: 14px;">“Searches with no results” tells you what to import next, and it beats the request queue as a signal — most readers search, find nothing, and never bother asking.</p>
+        <p style="font-size: 14px; margin: 0;">If refusals by the word filter spike, the list is too aggressive. If reports spike, it is too loose.</p>
       </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 14px; border: 3px dashed var(--color-divider); padding: 14px 16px;">
+      <div style="flex: 1;">
+        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 17px;">Reported content stays live until you decide</div>
+        <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">NOTHING IS HIDDEN AUTOMATICALLY — A REPORT IS NOT A VERDICT</div>
+      </div>
+      <button class="btn btn-secondary" onClick="{{ banSelf }}">Ban my own account</button>
     </div>
   </div>
 </sc-if>
 
 <sc-if value="{{ isAdminReviews }}" hint-placeholder-val="{{ false }}">
   <div class="wrap">
-    <h1 style="font-size: 36px; margin: 0 0 18px;">Reviews</h1>
-    <div style="display: flex; gap: 10px; margin-bottom: 18px;">
-      <input class="input" style="flex: 1; min-height: 44px;" placeholder="Search reviews, books or readers" value="{{ reviewSearch }}" onInput="{{ setReviewSearch }}">
+    <h1 style="font-size: 38px; margin: 0 0 16px;">Reviews</h1>
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px;">
+      <input class="input" style="flex: 1; min-height: 46px;" placeholder="Search reviews, books or readers" value="{{ reviewSearch }}" onInput="{{ setReviewSearch }}">
+      <span class="mono" style="color: var(--color-neutral-700);">{{ reviewPageLabel }}</span>
+      <button class="btn btn-secondary" onClick="{{ prevReviews }}">←</button>
+      <button class="btn btn-secondary" onClick="{{ nextReviews }}">→</button>
     </div>
     <div style="border-top: 3px solid var(--color-text);">
-      <sc-for list="{{ queueReviews }}" as="r" hint-placeholder-count="4">
+      <sc-for list="{{ queueReviews }}" as="r" hint-placeholder-count="3">
         <div class="qrow">
           <div style="flex: 1;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-              <span class="tag" style="{{ r.flagStyle }}">{{ r.flagLabel }}</span>
+              <span class="tag2" style="{{ r.flagStyle }}">{{ r.flagLabel }}</span>
               <sc-if value="{{ r.hasReporters }}" hint-placeholder-val="{{ false }}">
                 <button class="btn btn-ghost" style="font-size: 12px;" onClick="{{ r.showReporters }}">Who reported it?</button>
               </sc-if>
@@ -520,44 +544,12 @@
   </div>
 </sc-if>
 
-<sc-if value="{{ isAdminAccounts }}" hint-placeholder-val="{{ false }}">
-  <div class="wrap">
-    <h1 style="font-size: 36px; margin: 0 0 18px;">Accounts</h1>
-    <div style="border-top: 3px solid var(--color-text);">
-      <sc-for list="{{ queueAccounts }}" as="a" hint-placeholder-count="3">
-        <div class="qrow" style="align-items: center;">
-          <div style="{{ a.avatarStyle }}">{{ a.initial }}</div>
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">{{ a.name }}</div>
-              <span class="tag" style="{{ a.flagStyle }}">{{ a.flagLabel }}</span>
-            </div>
-            <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">{{ a.meta }}</div>
-            <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-top: 4px;">{{ a.why }}</div>
-          </div>
-          <div style="display: flex; gap: 8px; flex: none; align-self: center;">
-            <sc-if value="{{ a.pending }}" hint-placeholder-val="{{ true }}">
-              <button class="btn btn-primary" onClick="{{ a.allow }}">Allow</button>
-              <sc-if value="{{ a.isName }}" hint-placeholder-val="{{ false }}">
-                <button class="btn btn-secondary" onClick="{{ a.rename }}">Force rename</button>
-              </sc-if>
-              <button class="btn btn-secondary" onClick="{{ a.del }}">Delete</button>
-              <button class="btn btn-secondary" onClick="{{ a.openUser }}">Open profile</button>
-            </sc-if>
-            <sc-if value="{{ a.done }}" hint-placeholder-val="{{ false }}">
-              <button class="btn btn-ghost" onClick="{{ a.undo }}">Undo</button>
-            </sc-if>
-          </div>
-        </div>
-      </sc-for>
-    </div>
-    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.6;">DELETING AN ACCOUNT TAKES ITS REVIEWS AND LISTS WITH IT. IN THE BUILD THIS ASKS YOU TO TYPE THE DISPLAY NAME FIRST, AND SOFT-DELETES SO IT IS RECOVERABLE.</div>
-  </div>
-</sc-if>
+
 
 <sc-if value="{{ isAdminRequests }}" hint-placeholder-val="{{ false }}">
   <div class="wrap">
-    <h1 style="font-size: 36px; margin: 0 0 18px;">Book requests</h1>
+    <h1 style="font-size: 38px; margin: 0 0 6px;">Book requests</h1>
+    <p style="font-size: 14px; margin-bottom: 22px;">“Find &amp; import” takes you to the catalogue with the title already searched. The request closes when the book lands, not before.</p>
     <div style="border-top: 3px solid var(--color-text);">
       <sc-for list="{{ queueRequests }}" as="q" hint-placeholder-count="3">
         <div class="qrow" style="flex-direction: column; align-items: stretch; gap: 12px;">
@@ -565,15 +557,15 @@
             <div class="cover" style="width: 44px; height: 64px; flex: none;"><span class="mono">API</span></div>
             <div style="flex: 1;">
               <div style="font-family: var(--font-heading); font-weight: 700; font-size: 18px;">{{ q.title }}</div>
-              <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">{{ q.author }}</div>
+              <div class="mono" style="color: var(--color-neutral-700); margin-top: 4px;">{{ q.meta }}</div>
               <sc-if value="{{ q.hasReason }}" hint-placeholder-val="{{ false }}">
                 <p style="font-size: 13px; margin: 6px 0 0;">{{ q.reason }}</p>
               </sc-if>
             </div>
-            <span class="tag" style="{{ q.statusStyle }}">{{ q.statusLabel }}</span>
+            <span class="tag2" style="{{ q.statusStyle }}">{{ q.statusLabel }}</span>
             <sc-if value="{{ q.pending }}" hint-placeholder-val="{{ true }}">
               <div style="display: flex; gap: 8px; flex: none;">
-                <button class="btn btn-primary" onClick="{{ q.approve }}">Approve &amp; import</button>
+                <button class="btn btn-primary" onClick="{{ q.findIt }}">Find &amp; import</button>
                 <button class="btn btn-secondary" onClick="{{ q.startDecline }}">Decline</button>
               </div>
             </sc-if>
@@ -583,10 +575,10 @@
           </div>
           <sc-if value="{{ q.isDeclining }}" hint-placeholder-val="{{ false }}">
             <div style="border: 3px solid var(--color-text); background: var(--color-accent-100); padding: 14px;">
-              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">WHY ARE YOU DECLINING? THE READER SEES THIS WORD FOR WORD</div>
+              <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin-bottom: 10px;">WHY? THE READER SEES THIS WORD FOR WORD</div>
               <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
                 <sc-for list="{{ declineReasons }}" as="d" hint-placeholder-count="4">
-                  <label class="radio" style="flex: none; border: 3px solid var(--color-divider); padding: 8px 12px; min-height: 42px; background: var(--color-bg);"><input type="radio" name="dr" checked="{{ d.on }}" onChange="{{ d.pick }}"><span class="dot"></span>{{ d.label }}</label>
+                  <button class="chip" style="{{ d.style }}" onClick="{{ d.pick }}">{{ d.label }}</button>
                 </sc-for>
               </div>
               <textarea class="input" style="min-height: 70px;" value="{{ declineText }}" onInput="{{ setDeclineText }}"></textarea>
@@ -599,7 +591,7 @@
         </div>
       </sc-for>
     </div>
-    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.6;">APPROVING OR DECLINING HERE UPDATES THE READER'S OWN “BOOKS YOU'VE ASKED FOR” SCREEN — ONE DATA MODEL, TWO VIEWS. GO TO PROFILE → SEE MY REQUESTS TO CHECK.</div>
+    <div class="mono" style="color: var(--color-neutral-700); margin-top: 16px; line-height: 1.7;">DECIDING HERE UPDATES THE READER'S OWN “BOOKS YOU'VE ASKED FOR” SCREEN — ONE DATA MODEL, TWO VIEWS. GO TO PROFILE → SEE MY REQUESTS TO CHECK.</div>
   </div>
 </sc-if>
 
@@ -1467,7 +1459,7 @@
                   <span style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-family: var(--font-heading); font-weight: 700; font-size: 15px;">{{ b.label }}</span>
                     <sc-if value="{{ b.rec }}" hint-placeholder-val="{{ false }}">
-                      <span class="tag" style="background: #c6f24e; color: #14110f;">Start here</span>
+                      <span class="tag2" style="background: #c6f24e; color: #14110f;">Start here</span>
                     </sc-if>
                   </span>
                   <span class="mono" style="display: block; color: var(--color-neutral-700); line-height: 1.6; margin-top: 3px;">{{ b.caption }}</span>
@@ -1566,8 +1558,9 @@
   </div>
 </sc-if>
 
-<div style="margin-top: auto; border-top: 1px solid var(--color-divider); padding: 12px 28px; display: flex; align-items: center; gap: 14px;">
-  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 50%, transparent); flex: 1;">CLICKABLE PROTOTYPE · {{ modeUp }} · SCREEN: {{ screenUp }}</span>
+<div style="margin-top: auto; border-top: 1px solid var(--color-divider); padding: 12px 28px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+  <span class="mono" style="color: var(--color-neutral-700); font-weight: 700; flex: 1; line-height: 1.6;">SCHOOL PROJECT — A DESIGN EXERCISE FOR COURSEWORK, NOT A REAL SERVICE. NO REAL ACCOUNTS, EMAILS OR BOOK DATA.</span>
+  <span class="mono" style="color: color-mix(in srgb, var(--color-text) 50%, transparent);">CLICKABLE PROTOTYPE · {{ modeUp }} · SCREEN: {{ screenUp }}</span>
   <button class="btn btn-ghost" onClick="{{ resetAll }}">Reset prototype</button>
 </div>
 </div>
@@ -1602,6 +1595,14 @@ class Component extends DCLogic {
       subjects: ['Juvenile fiction', 'Fantasy & magic', 'Mystery & detective'],
       summary: 'A cursed girl is smuggled into a hidden city and has to win a place at its strangest institution.' }
   ];
+  toTrash = (kind, name, by) => this.setState(st => ({
+    trash: [{ id: 'x' + Date.now(), kind, name, by, when: 'Deleted just now', daysLeft: 14 }].concat(st.trash)
+  }));
+  now24 = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  today = () => new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase();
+  chipStyle = (on) => on
+    ? { background: 'var(--color-link)', color: '#EFECE3', borderColor: 'var(--color-text)' }
+    : { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' };
   bandOf = (p) => { const n = parseInt(p, 10) || 0; return n < 200 ? 'Under 200 pages' : n <= 400 ? '200\u2013400 pages' : n <= 600 ? '400\u2013600 pages' : '600+ pages'; };
   mapSubjects = (subjects) => {
     const out = []; let level = 'Middle Grade';
@@ -1705,7 +1706,7 @@ class Component extends DCLogic {
         { id: 'a5', name: 'kofi_a', colour: '#c6f24e', ink: '#14110F', joined: '19 JAN', reviews: 6, lists: 1, meta: '6 REVIEWS · 1 REPORT · EMAIL VERIFIED', flag: 'reported', why: 'SPAM OR ADVERTISING', status: 'pending' }
       ],
       declining: null, declineReason: 'Too old for the catalogue', declineText: '',
-      adminUser: null, confirm: null, banDuration: '1 week', adminSearch: '',
+      adminUser: null, confirm: null, banDuration: '6 hours', adminSearch: '',
       apiQuery: '', searched: false, catFilter: '', importing: null, draft: null, draftError: '', justAdded: null,
       catalogue: [
         { id: 'hobbit', title: 'The Hobbit', author: 'J.R.R. Tolkien', pages: 310, level: 'Middle Grade', genres: ['Fantasy', 'Adventure'], cover: 'api' },
@@ -1724,11 +1725,11 @@ class Component extends DCLogic {
         { id: 's1', who: 'quiet_reader_11', target: 'a review on “A Long Way Down”', when: '4 HOURS AGO', text: 'they said something about not wanting to be here anymore and it scared me', status: 'open' },
         { id: 's2', who: 'zeni_reads', target: 'the reader kofi_a', when: 'YESTERDAY', text: 'he keeps asking people in reviews how old they are and where they go to school', status: 'open' }
       ],
-      myReports: {}, banned: null, deadLinks: [], listDeleted: false, newPassword: '', newPassword2: '',
+      myReports: {}, banned: null, bannedEmails: [], deadLinks: [], listDeleted: false, newPassword: '', newPassword2: '',
       requests: [
-        { title: 'Impossible Creatures', author: 'Katherine Rundell', status: 'approved', reason: '' },
-        { title: 'The Boy in the Striped Pyjamas', author: 'John Boyne', status: 'declined', reason: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' },
-        { title: 'Skandar and the Unicorn Thief', author: 'A.F. Steadman', status: 'pending', reason: '' }
+        { title: 'Impossible Creatures', author: 'Katherine Rundell', who: 'zeni_reads', when: '4 DAYS AGO', others: 0, status: 'approved', reason: '' },
+        { title: 'The Boy in the Striped Pyjamas', author: 'John Boyne', who: 'kofi_a', when: 'LAST WEEK', others: 0, status: 'declined', reason: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' },
+        { title: 'Skandar and the Unicorn Thief', author: 'A.F. Steadman', who: 'maya', when: '2 DAYS AGO', others: 3, status: 'pending', reason: '' }
       ],
       gate: null
     };
@@ -1763,8 +1764,10 @@ class Component extends DCLogic {
   // rejects real words teaches children the product is broken.
   //   alwaysBad  — safe to match anywhere inside a word
   //   wholeWords — only rejected when they ARE the word
-  alwaysBad = ['fuck', 'fck', 'bitch', 'wanker', 'twat', 'bollocks', 'motherf'];
-  wholeWords = ['shit', 'damn', 'crap', 'arse', 'ass', 'dick', 'cock', 'piss', 'prick', 'slag', 'whore', 'bastard', 'git', 'knob'];
+  // Checked BEFORE the substring pass: real words that contain a banned string.
+  allowList = ['scunthorpe', 'penistone', 'therapist', 'therapists', 'therapy', 'pussycat', 'shiitake', 'assassin', 'assemble', 'assembly', 'classic', 'analysis', 'cockatoo', 'cockerel', 'peacock', 'shuttlecock', 'pedometer', 'grape', 'grapes'];
+  alwaysBad = ['fuck', 'fuk', 'fck', 'phuck', 'motherfuck', 'bitch', 'biatch', 'wanker', 'twat', 'twunt', 'bollocks', 'nigger', 'nigga', 'faggot', 'fagot', 'retard', 'spastic', 'chink', 'kike', 'wetback', 'tranny', 'whore', 'pedoph', 'paedoph', 'asshole', 'arsehole', 'dickhead', 'knobhead', 'bullshit', 'shithead', 'wanker', 'tosser', 'skank', 'douche', 'bastard', 'jizz', 'dumbass', 'jackass', 'bellend'];
+  wholeWords = ['shit', 'shite', 'crap', 'arse', 'ass', 'asses', 'dick', 'cock', 'piss', 'prick', 'slag', 'slut', 'git', 'knob', 'damn', 'goddamn', 'hoe', 'tit', 'tits', 'fanny', 'spic', 'paki', 'pedo', 'cum', 'wang', 'turd', 'prat', 'plonker', 'cunt', 'cnut', 'rapist', 'pussy', 'shag', 'shagging', 'wank', 'nonce', 'minger', 'bugger', 'buggered'];
   // Kept for the display-name screen: names that impersonate the site.
   bannedWords = ['fuck', 'shit', 'bitch', 'damn', 'crap'];
 
@@ -1782,6 +1785,9 @@ class Component extends DCLogic {
     .replace(/9/g, 'g')
     .replace(/2/g, 'z')
     .replace(/vv/g, 'w')
+    .replace(/6/g, 'g')
+    .replace(/\+/g, 't')
+    .replace(/ph/g, 'f')
     .replace(/[^a-z]/g, '')
     .replace(/(.)\1+/g, '$1');
 
@@ -1790,10 +1796,17 @@ class Component extends DCLogic {
   // One gate for every field a stranger can read.
   hasBanned = (text) => {
     const t = String(text || '');
-    const joined = this.fold(t);
-    if (this.alwaysBad.some(w => joined.includes(this.fold(w)))) return true;
     const tokens = t.split(/[^A-Za-z0-9@$!|+*]+/).map(x => this.fold(x)).filter(Boolean);
-    return tokens.some(tok => this.wholeWords.some(w => tok === this.fold(w)));
+    const allowed = this.allowList.map(w => this.fold(w));
+    // Innocent words that happen to contain a banned string are taken out first —
+    // "therapist", "Scunthorpe", "pussycat" must never be refused.
+    const suspect = tokens.filter(tok => allowed.indexOf(tok) === -1);
+    if (suspect.some(tok => this.alwaysBad.some(w => tok.includes(this.fold(w))))) return true;
+    // Separators are not a disguise: with the allow-listed words already removed,
+    // rejoin what is left so "f_u_c_k" and "f u c k" collapse back to one string.
+    const joined = suspect.join('');
+    if (this.alwaysBad.some(w => joined.includes(this.fold(w)))) return true;
+    return suspect.some(tok => this.wholeWords.some(w => tok === this.fold(w)));
   };
 
   // Debounced availability check. The sequence number stops a slow earlier
@@ -1846,6 +1859,8 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state, S = s.screen, b = this.book();
+    const filteredAdminReviews = s.adminReviews.filter(r => !s.reviewSearch || (r.book + ' ' + r.who + ' ' + r.text).toLowerCase().includes(s.reviewSearch.toLowerCase()));
+    const filteredAdminUsers = s.adminAccounts.filter(a => !s.adminSearch || a.name.toLowerCase().includes(s.adminSearch.toLowerCase()));
     const surveyGenres = s.survey.genres;
     const scored = this.books
       .map(x => ({ x, hits: x.genres.filter(g => surveyGenres.includes(g)).length + (x.level === s.survey.level ? 1 : 0) + (this.lengthLabel(x.pages) === s.survey.length ? 1 : 0) }))
@@ -1912,6 +1927,7 @@ class Component extends DCLogic {
       signupError: s.signupError, loginError: s.loginError, resetError: s.resetError,
       submitSignup: () => {
         if (!s.email.includes('@')) return this.setState({ signupError: 'ENTER A VALID EMAIL ADDRESS' });
+        if (s.bannedEmails.includes(s.email.trim().toLowerCase())) return this.setState({ signupError: 'THIS EMAIL ADDRESS IS BANNED \u2014 IT CANNOT BE USED FOR A NEW ACCOUNT' });
         if (s.pw.length < 8) return this.setState({ signupError: 'PASSWORD NEEDS AT LEAST 8 CHARACTERS' });
         this.setState({ screen: 'profileSetup', surveyEditing: false, signupError: '', gate: null });
       },
@@ -1977,12 +1993,17 @@ class Component extends DCLogic {
       },
       submitLogin: () => {
         if (!s.email.includes('@') || s.pw.length < 1) return this.setState({ loginError: 'EMAIL OR PASSWORD DIDN\u2019T MATCH' });
+        if (s.bannedEmails.includes(s.email.trim().toLowerCase())) return this.setState({ loginError: 'THIS ACCOUNT WAS BANNED \u2014 THIS EMAIL CAN NO LONGER BE USED' });
         this.setState({ guest: false, screen: 'home', loginError: '', gate: null });
       },
       resetSent: s.resetSent, resetOpen: !s.resetSent,
       sendReset: () => s.email.includes('@') ? this.setState({ resetSent: true }) : this.setState({ resetError: 'ENTER THE EMAIL YOU SIGNED UP WITH' }),
       openResetLink: () => this.setState({ screen: 'newPassword', newPassword: '', newPassword2: '', pwError: '' }),
-      logout: () => this.setState(Object.assign(this.initial(), { screen: 'landing' })),
+      logout: () => this.setState(st => Object.assign(this.initial(), {
+        screen: 'landing', dark: st.dark, bannedEmails: st.bannedEmails, trash: st.trash,
+        adminAccounts: st.adminAccounts, adminReviews: st.adminReviews, requests: st.requests,
+        catalogue: st.catalogue, safeguarding: st.safeguarding
+      })),
       resetAll: () => this.setState(this.initial()),
 
       surveyKicker: s.surveyEditing ? 'EDIT YOUR ANSWERS' : 'STEP 3 OF 4',
@@ -2118,7 +2139,7 @@ class Component extends DCLogic {
       sendRequest: () => this.hasBanned(s.reqTitle + ' ' + s.reqAuthor)
         ? this.setState({ reqError: 'THAT LOOKS LIKE A JOKE ENTRY \u2014 TRY THE REAL TITLE' })
         : s.reqTitle.trim()
-        ? this.setState(st => ({ requestSent: true, requests: [{ title: st.reqTitle.trim(), author: st.reqAuthor.trim(), status: 'pending', reason: '' }].concat(st.requests), reqTitle: '', reqAuthor: '' }))
+        ? this.setState(st => ({ requestSent: true, requests: [{ title: st.reqTitle.trim(), author: st.reqAuthor.trim(), who: 'you', when: 'JUST NOW', others: 0, status: 'pending', reason: '' }].concat(st.requests), reqTitle: '', reqAuthor: '' }))
         : this.setState({ reqError: 'WE NEED AT LEAST A TITLE' }),
       isRequests: S === 'requests',
       requestCount: s.requests.length,
@@ -2142,11 +2163,11 @@ class Component extends DCLogic {
       gateOpen: !!s.gate, gateTitle: s.gate || '', closeGate: () => this.setState({ gate: null }),
 
       isAdminHome: S === 'adminHome', isAdminReviews: S === 'adminReviews',
-      isAdminAccounts: S === 'adminAccounts', isAdminRequests: S === 'adminRequests',
-      adminChrome: ['adminHome', 'adminReviews', 'adminAccounts', 'adminRequests', 'adminUsers', 'adminUser', 'adminSafeguarding', 'adminTrash', 'adminCatalogue'].includes(S),
+      isAdminRequests: S === 'adminRequests',
+      adminChrome: ['adminHome', 'adminReviews', 'adminRequests', 'adminUsers', 'adminUser', 'adminSafeguarding', 'adminTrash', 'adminCatalogue'].includes(S),
       adminCur: {
         home: S === 'adminHome' ? 'page' : null, reviews: S === 'adminReviews' ? 'page' : null,
-        accounts: S === 'adminAccounts' ? 'page' : null, requests: S === 'adminRequests' ? 'page' : null,
+        requests: S === 'adminRequests' ? 'page' : null,
         users: S === 'adminUsers' || S === 'adminUser' ? 'page' : null,
         catalogue: S === 'adminCatalogue' ? 'page' : null,
         safeguarding: S === 'adminSafeguarding' ? 'page' : null,
@@ -2154,7 +2175,7 @@ class Component extends DCLogic {
       },
       admin: {
         home: () => this.go('adminHome'), reviews: () => this.go('adminReviews'),
-        accounts: () => this.go('adminAccounts'), requests: () => this.go('adminRequests'),
+        requests: () => this.go('adminRequests'),
         users: () => this.go('adminUsers'),
         catalogue: () => this.go('adminCatalogue'),
         safeguarding: () => this.go('adminSafeguarding'),
@@ -2165,7 +2186,10 @@ class Component extends DCLogic {
       pendingAccounts: s.adminAccounts.filter(a => a.status === 'pending').length,
       pendingRequests: s.requests.filter(r => r.status === 'pending').length,
       allClear: s.adminReviews.every(r => r.status !== 'pending') && s.adminAccounts.every(a => a.status !== 'pending') && s.requests.every(r => r.status !== 'pending'),
-      queueReviews: s.adminReviews.map(r => {
+      reviewPageLabel: 'PAGE ' + (s.reviewPage + 1) + ' OF ' + Math.max(1, Math.ceil(filteredAdminReviews.length / 3)) + ' · 3 A PAGE',
+      prevReviews: () => this.setState(st => ({ reviewPage: Math.max(0, st.reviewPage - 1) })),
+      nextReviews: () => this.setState(st => ({ reviewPage: (st.reviewPage + 1) * 3 < filteredAdminReviews.length ? st.reviewPage + 1 : st.reviewPage })),
+      queueReviews: filteredAdminReviews.slice(s.reviewPage * 3, s.reviewPage * 3 + 3).map(r => {
         const done = r.status !== 'pending';
         return {
           book: r.book.toUpperCase(), who: r.who, when: r.when, why: r.why, text: r.text,
@@ -2218,7 +2242,7 @@ class Component extends DCLogic {
       }),
       isAdminUsers: S === 'adminUsers', isAdminUser: S === 'adminUser',
       adminSearch: s.adminSearch,
-      setAdminSearch: (e) => this.setState({ adminSearch: e.target.value }),
+      setAdminSearch: (e) => this.setState({ adminSearch: e.target.value, usersPage: 0 }),
       // — safeguarding, kept out of the ordinary queues on purpose —
       isAdminSafeguarding: S === 'adminSafeguarding',
       safeguardingCount: s.safeguarding.filter(x => x.status === 'open').length,
@@ -2270,18 +2294,17 @@ class Component extends DCLogic {
       cancelRename: () => this.setState({ renaming: null, renameValue: '', renameError: '' }),
 
       usersPage: s.usersPage,
-      usersPageLabel: 'PAGE ' + (s.usersPage + 1) + ' OF ' + Math.max(1, Math.ceil(s.adminAccounts.filter(a => !s.adminSearch || a.name.toLowerCase().includes(s.adminSearch.toLowerCase())).length / 3)),
+      usersPageLabel: 'PAGE ' + (s.usersPage + 1) + ' OF ' + Math.max(1, Math.ceil(filteredAdminUsers.length / 4)) + ' · 4 A PAGE',
       usersPrev: () => this.setState(st => ({ usersPage: Math.max(0, st.usersPage - 1) })),
       usersNext: () => this.setState(st => {
         const total = st.adminAccounts.filter(a => !st.adminSearch || a.name.toLowerCase().includes(st.adminSearch.toLowerCase())).length;
-        return { usersPage: Math.min(Math.ceil(total / 3) - 1, st.usersPage + 1) };
+        return { usersPage: Math.max(0, Math.min(Math.ceil(total / 4) - 1, st.usersPage + 1)) };
       }),
       reviewSearch: s.reviewSearch,
       setReviewSearch: (e) => this.setState({ reviewSearch: e.target.value, reviewPage: 0 }),
 
-      allUsers: s.adminAccounts
-        .filter(a => !s.adminSearch || a.name.toLowerCase().includes(s.adminSearch.toLowerCase()))
-        .slice(s.usersPage * 3, s.usersPage * 3 + 3)
+      allUsers: filteredAdminUsers
+        .slice(s.usersPage * 4, s.usersPage * 4 + 4)
         .map(a => ({
           name: a.name, initial: a.name.slice(0, 1).toUpperCase(),
           meta: 'JOINED ' + a.joined + ' · ' + a.reviews + (a.reviews === 1 ? ' REVIEW · ' : ' REVIEWS · ') + a.lists + (a.lists === 1 ? ' LIST' : ' LISTS'),
@@ -2310,8 +2333,12 @@ class Component extends DCLogic {
           meta: 'JOINED ' + a.joined + ' · ' + a.meta,
           counts: a.reviews + ' reviews · ' + a.lists + ' lists',
           avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '64px', height: '64px', flex: 'none', border: '3px solid var(--color-text)', background: a.colour, color: a.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '28px' },
-          stateLabel: ({ pending: 'Reported — content still live', banned: 'Banned', deleted: 'Deleted', allowed: 'Cleared', renamed: 'Rename forced', warned: 'Warned', clean: 'No action needed' })[a.status],
-          stateStyle: ({
+          stateLabel: a.status === 'pending' && a.flag === 'name'
+            ? 'Name refused'
+            : ({ pending: 'Reported — content still live', banned: 'Banned', deleted: 'Deleted', allowed: 'Cleared', renamed: 'Rename forced', warned: 'Warned', clean: 'No action needed' })[a.status],
+          stateStyle: a.status === 'pending' && a.flag === 'name'
+            ? { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' }
+            : ({
             pending: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
             banned: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
             deleted: { background: '#C41031', color: '#EFECE3', borderColor: '#14110f' },
@@ -2320,6 +2347,7 @@ class Component extends DCLogic {
             warned: { background: '#FFD400', color: '#14110f', borderColor: '#14110f' },
             clean: { background: 'transparent', color: 'var(--color-text)', borderColor: 'var(--color-text)' }
           })[a.status],
+          email: (a.name + '@school.uk').toLowerCase(),
           isBanned: a.status === 'banned', isDeleted: a.status === 'deleted',
           actionable: a.status !== 'deleted', notDeleted: a.status !== 'deleted',
           banUntil: a.banUntil || '',
@@ -2334,17 +2362,19 @@ class Component extends DCLogic {
             allow: () => this.setState(st => ({ adminReviews: st.adminReviews.map(x => x.id === r.id ? Object.assign({}, x, { status: 'allowed' }) : x) })),
             del: () => this.setState({ confirm: { kind: 'review', id: r.id, name: r.book } })
           })),
-          askBan: () => this.setState({ confirm: { kind: 'ban', id: a.id, name: a.name }, banDuration: '1 week' }),
+          nameFlag: a.flag === 'name' && a.status === 'pending',
+          rename: () => this.setState({ renaming: { id: a.id, name: a.name }, renameValue: '', renameError: '' }),
+          askBan: () => this.setState({ confirm: { kind: 'ban', id: a.id, name: a.name }, banDuration: '6 hours' }),
           askDelete: () => this.setState({ confirm: { kind: 'account', id: a.id, name: a.name, counts: a.reviews + ' reviews and ' + a.lists + ' lists' } }),
           unban: () => this.setState(st => ({ adminAccounts: st.adminAccounts.map(x => x.id === a.id ? Object.assign({}, x, { status: 'pending', banUntil: '' }) : x) }))
         };
       })(),
       banOptions: [
-        { label: 'Warning only', caption: 'No ban. Sends them a note saying what was wrong. Right for a first offence, and it is the step most sites skip.', rec: false },
-        { label: '6 hours', caption: 'A cooling-off period. Enough to interrupt an argument between two readers without ending anyone\u2019s evening.', rec: true },
-        { label: '1 day', caption: 'A second rude review after a warning, or unkindness aimed at another reader.', rec: false },
-        { label: '1 week', caption: 'Repeat offender, or something deliberately nasty. Long enough that they notice it is not a glitch.', rec: false },
-        { label: '1 month', caption: 'Effectively a goodbye at this age. Use for spam accounts or targeted bullying \u2014 rarely for a review.', rec: false }
+        { label: 'Warning only', caption: 'NO BAN. SENDS THEM A NOTE SAYING WHAT WAS WRONG. RIGHT FOR A FIRST OFFENCE.', rec: false },
+        { label: '6 hours', caption: 'A COOLING-OFF PERIOD. INTERRUPTS AN ARGUMENT WITHOUT ENDING ANYONE\u2019S EVENING.', rec: true },
+        { label: '1 day', caption: 'A SECOND OFFENCE AFTER A WARNING, OR UNKINDNESS AIMED AT ANOTHER READER.', rec: false },
+        { label: '1 week', caption: 'REPEAT OFFENDER, OR SOMETHING DELIBERATELY NASTY.', rec: false },
+        { label: '1 month', caption: 'EFFECTIVELY A GOODBYE AT THIS AGE. FOR SPAM ACCOUNTS OR TARGETED BULLYING.', rec: false }
       ].map(o => ({
         label: o.label, caption: o.caption, rec: o.rec, notRec: !o.rec,
         on: s.banDuration === o.label,
@@ -2374,7 +2404,7 @@ class Component extends DCLogic {
         myReview: 'It disappears from the book page straight away. Your star rating goes with it, and you can always write a new one later.',
         myAccount: 'Everything goes: your shelves, your lists, your reviews and your requests. This cannot be undone by you \u2014 only the site owner can recover it, and only for 14 days.',
         myList: 'The list goes and its share link stops working \u2014 anyone you sent it to will see a \u201cnot found\u201d page. The books stay on your shelves.',
-        ban: 'A ban stops them posting reviews, sharing lists and requesting books. It does not hide what they have already written \u2014 delete those separately if they need to go.',
+        ban: 'A ban stops them posting reviews, sharing lists and requesting books. Their reviews and lists are deleted, and their email address can never be used to sign up again \u2014 a warning does neither.',
         account: 'This removes ' + (s.confirm.counts || 'their content') + ' along with the account. In the build this is a soft delete, so it is recoverable — but the reader loses access immediately.',
         review: 'It disappears from the book page straight away. The author is not told which report caused it.'
       })[s.confirm.kind] : '',
@@ -2383,8 +2413,12 @@ class Component extends DCLogic {
         const c = s.confirm;
         if (!c) return;
         if (c.kind === 'banSelf') {
+          const permanent = s.banDuration === '1 month';
+          this.toTrash('Account', (s.email || 'maya@school.uk') + ' — banned for ' + s.banDuration, 'REVIEWS AND LISTS REMOVED');
           return this.setState(st => ({
             banned: { until: st.banDuration, at: this.now24(), on: this.today() },
+            bannedEmails: st.bannedEmails.concat([(st.email || 'maya@school.uk').trim().toLowerCase()]),
+            lists: [], extraReviews: {},
             confirm: null, screen: 'home'
           }));
         }
@@ -2397,7 +2431,12 @@ class Component extends DCLogic {
         }
         if (c.kind === 'myAccount') {
           this.toTrash('Account', c.name + ' (deleted their own account)', 'self-service');
-          return this.setState(Object.assign(this.initial(), { screen: 'landing', trash: s.trash }));
+          return this.setState(st => Object.assign(this.initial(), {
+            screen: 'landing', dark: st.dark, trash: st.trash,
+            bannedEmails: st.bannedEmails.concat([(st.email || 'maya@school.uk').trim().toLowerCase()]),
+            adminAccounts: st.adminAccounts, adminReviews: st.adminReviews, requests: st.requests,
+            catalogue: st.catalogue, safeguarding: st.safeguarding
+          }));
         }
         if (c.kind === 'myList') {
           return this.setState(st => ({
@@ -2407,12 +2446,17 @@ class Component extends DCLogic {
           }));
         }
         if (c.kind === 'ban') {
+          const acct = s.adminAccounts.find(x => x.id === c.id);
+          const warnOnly = s.banDuration === 'Warning only';
+          if (!warnOnly && acct) this.toTrash('Account', acct.name + ' — banned for ' + s.banDuration, 'REVIEWS AND LISTS REMOVED · EMAIL BLOCKED');
           return this.setState(st => ({
             adminAccounts: st.adminAccounts.map(x => x.id === c.id
-              ? Object.assign({}, x, st.banDuration === 'Warning only'
+              ? Object.assign({}, x, warnOnly
                 ? { status: 'warned' }
-                : { status: 'banned', banUntil: st.banDuration })
+                : { status: 'banned', banUntil: st.banDuration, reviews: 0, lists: 0, meta: 'REVIEWS AND LISTS DELETED · EMAIL BLOCKED FROM SIGNING UP' })
               : x),
+            adminReviews: warnOnly ? st.adminReviews : st.adminReviews.map(x => acct && x.who === acct.name ? Object.assign({}, x, { status: 'deleted' }) : x),
+            bannedEmails: warnOnly || !acct ? st.bannedEmails : st.bannedEmails.concat([(acct.name + '@school.uk').toLowerCase()]),
             confirm: null
           }));
         }
@@ -2459,7 +2503,7 @@ class Component extends DCLogic {
         coverSource: s.draft.cover === 'upload' ? 'YOUR UPLOAD \u00b7 STORED BY US' : 'FROM THE API \u00b7 COPIED TO OUR STORAGE',
         mappedFrom: 'FROM: ' + s.draft.subjects.join(', ').toUpperCase(),
         matched: s.draft.fulfilIndex > -1,
-        matchLine: s.draft.fulfilIndex > -1 ? ((s.requests[s.draft.fulfilIndex] || {}).title + ' was asked for by a reader') : '',
+        matchLine: s.draft.fulfilIndex > -1 ? (((s.requests[s.draft.fulfilIndex] || {}).who || 'A reader') + ' asked for this ' + String((s.requests[s.draft.fulfilIndex] || {}).when || '').toLowerCase()) : '',
         fulfil: s.draft.fulfil
       } : { title: '', author: '', pages: '', summary: '', band: '', mappedFrom: '', matchLine: '' },
       setTitle: (e) => this.setState(st => ({ draft: Object.assign({}, st.draft, { title: e.target.value }) })),
@@ -2490,6 +2534,7 @@ class Component extends DCLogic {
         const d = s.draft;
         if (!d.title.trim()) return this.setState({ draftError: 'A BOOK NEEDS A TITLE' });
         if (!d.genres.length) return this.setState({ draftError: 'GIVE IT AT LEAST ONE GENRE \u2014 RECOMMENDATIONS MATCH ON THESE' });
+        if (this.hasBanned(d.title + ' ' + d.summary)) return this.setState({ draftError: 'THAT TEXT WOULD FAIL THE READER-FACING FILTER' });
         const closed = d.fulfilIndex > -1 && d.fulfil;
         this.setState(st => ({
           catalogue: st.catalogue.concat([{
@@ -2498,13 +2543,13 @@ class Component extends DCLogic {
           }]),
           requests: st.requests.map((r, i) => i === d.fulfilIndex && closed ? Object.assign({}, r, { status: 'approved', reason: '' }) : r),
           importing: null, draft: null, draftError: '',
-          justAdded: { title: d.title.trim(), closed, cover: !!d.cover }
+          justAdded: { title: d.title.trim(), closed, cover: !!d.cover, who: closed ? ((st.requests[d.fulfilIndex] || {}).who || 'the reader') : '' }
         }));
       },
       justAdded: !!s.justAdded,
       addedLine: s.justAdded ? ('\u201c' + s.justAdded.title + '\u201d is in the catalogue') : '',
       addedNote: s.justAdded
-        ? ((s.justAdded.closed ? 'REQUEST CLOSED AND THE READER TOLD IT IS HERE' : 'NO REQUEST WAS WAITING \u2014 YOU ADDED IT YOURSELF') + (s.justAdded.cover ? '' : ' \u00b7 STILL NEEDS A COVER'))
+        ? ((s.justAdded.closed ? 'REQUEST CLOSED AND ' + String(s.justAdded.who || 'the reader').toUpperCase() + ' TOLD IT IS HERE' : 'NO REQUEST WAS WAITING \u2014 YOU ADDED IT YOURSELF') + (s.justAdded.cover ? '' : ' \u00b7 STILL NEEDS A COVER'))
         : '',
       dismissAdded: () => this.setState({ justAdded: null }),
       catFilter: s.catFilter,
@@ -2523,9 +2568,11 @@ class Component extends DCLogic {
         })),
 
       queueRequests: s.requests.map((r, i) => ({
-        title: r.title, author: (r.author || 'AUTHOR NOT GIVEN').toUpperCase(), reason: r.reason,
+        title: r.title,
+        meta: ((r.author || 'author not given') + ' · asked by ' + (r.who || 'a reader') + ' · ' + (r.when || 'recently') + (r.others ? ' · also requested by ' + r.others + ' others' : '')).toUpperCase(),
+        author: (r.author || 'AUTHOR NOT GIVEN').toUpperCase(), reason: r.reason,
         hasReason: !!r.reason,
-        statusLabel: ({ pending: 'Pending', approved: 'Approved', declined: 'Declined' })[r.status],
+        statusLabel: ({ pending: 'Pending', approved: 'In catalogue', declined: 'Declined' })[r.status],
         statusStyle: ({
           pending: { background: '#ff3d9a', color: '#14110f', borderColor: '#14110f' },
           approved: { background: '#c6f24e', color: '#14110f', borderColor: '#14110f' },
@@ -2533,7 +2580,11 @@ class Component extends DCLogic {
         })[r.status],
         pending: r.status === 'pending',
         isDeclining: s.declining === i,
-        approve: () => this.setState(st => ({ requests: st.requests.map((x, j) => j === i ? Object.assign({}, x, { status: 'approved', reason: '' }) : x), declining: null })),
+        findIt: () => {
+          const src = this.apiLibrary.find(x => x.title.toLowerCase() === r.title.toLowerCase());
+          if (src) return this.startImport(src, i);
+          this.setState({ screen: 'adminCatalogue', apiQuery: r.title, searched: true, declining: null });
+        },
         startDecline: () => this.setState({ declining: i, declineReason: 'Too old for the catalogue', declineText: 'This one is written for older readers and we keep the catalogue to Middle Grade and Young Adult. Ask your school library about it.' }),
         cancelDecline: () => this.setState({ declining: null }),
         decided: r.status !== 'pending',
@@ -2548,7 +2599,7 @@ class Component extends DCLogic {
         }))
       })),
       declineReasons: ['Too old for the catalogue', 'Couldn\u2019t find it', 'Already on the site', 'Other'].map(x => ({
-        label: x, on: s.declineReason === x,
+        label: x, style: this.chipStyle(s.declineReason === x),
         pick: () => this.setState({
           declineReason: x,
           declineText: ({

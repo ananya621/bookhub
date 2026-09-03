@@ -1,240 +1,90 @@
-"use client";
-
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type CSSProperties } from "react";
-import { useSessionData } from "@/components/AuthProvider";
 import Nav from "@/components/Nav";
-import { books, avg, starStr, lengthLabel, steps, type Book } from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server";
+import HomeContent from "./HomeContent";
+import type { CatalogueBook } from "@/lib/catalogue";
+import type { ShelfBook } from "@/app/tracker/TrackerShelves";
+import type { Survey } from "@/lib/mock";
 
 /*
- * Ported from the `isHome` block in Prototype with Admin.dc.html
- * (lines 787-858).
+ * Split out of what used to be a single client component so "Picked
+ * for you" can read the real catalogue (see HomeContent.tsx for why —
+ * this was showing lib/mock.ts fixture books as "recommendations" even
+ * once the real catalogue was genuinely empty, same bug /recs had).
  *
- * The export drives "picked for you", shelf badges and "currently
- * reading" progress off one big shared state object (`statuses`,
- * `progress`, `survey`). There's no account/backend yet, so this page
- * seeds its own local copies of that shape — a few books already on
- * shelves, a finished book, and a completed survey — just so the
- * screen has something to show. Moving a book to "Read" here only
- * updates this page's local state; it isn't shared with the Tracker
- * screen, which seeds its own independent copy of the same shape,
- * until there's a real account to hang this off.
+ * "Currently reading" and the shelf counts now read the real
+ * reading_status table too (see /tracker, built alongside this) —
+ * fetched here the same way /tracker does, for the same reason: a
+ * server component so it comes from the database, not the persona
+ * fixture. "MY LISTS" now reads the real lists table too.
  *
- * "MY LISTS" mirrors the count of the two lists seeded in /lists
- * rather than importing that page's data, to keep the pages
- * independent until lists live behind an API.
- *
- * Book cover art isn't in the export (it comes later from the Google
- * Books API), so covers stay the "COVER" placeholder box, same as the
- * landing page hero.
+ * The survey used to score "Picked for you" is real now too — it was
+ * still reading useSessionData().survey (the dev-persona fixture), so
+ * every real signed-in reader was getting recommendations scored
+ * against the fixture's fake answers instead of their own, same bug
+ * class as the rest of this list. Matches /profile's own real
+ * surveys query.
  */
+export default async function HomePage() {
+  const supabase = await createClient();
 
-type Status = "read" | "reading" | "want" | "none";
-type StepKey = (typeof steps)[number]["key"];
+  const [{ data: books }, { data: statusRows }, { count: listsCount }, { data: surveyRow }] = await Promise.all([
+    supabase
+      .from("books")
+      .select("id, title, author, pages, cover_url, genres, reading_level")
+      .order("created_at", { ascending: false }),
+    supabase.from("reading_status").select("status, progress, books(id, title, author, cover_url)"),
+    supabase.from("lists").select("*", { count: "exact", head: true }),
+    supabase.from("surveys").select("genres, reading_level, preferred_length").maybeSingle(),
+  ]);
 
-const READER_NAME = "Maya";
+  const survey: Survey | null = surveyRow
+    ? {
+        genres: surveyRow.genres as string[],
+        level: surveyRow.reading_level as string,
+        length: surveyRow.preferred_length as string,
+      }
+    : null;
 
+  const catalogueBooks: CatalogueBook[] = (books ?? []).map((b) => ({
+    id: b.id as string,
+    title: b.title as string,
+    author: (b.author as string) ?? "",
+    pages: b.pages as number | null,
+    coverUrl: b.cover_url as string | null,
+    genres: (b.genres as string[]) ?? [],
+    readingLevel: (b.reading_level as string) ?? "",
+  }));
 
+  const rows = (statusRows ?? []) as unknown as {
+    status: "want" | "reading" | "read";
+    progress: string | null;
+    books: { id: string; title: string; author: string; cover_url: string | null } | null;
+  }[];
 
-
-const badgeStyles: Record<Exclude<Status, "none">, CSSProperties> = {
-  read: { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" },
-  reading: { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" },
-  want: { background: "#1B3BFF", color: "#EFECE3", borderColor: "#14110f" },
-};
-
-const badgeLabels: Record<Exclude<Status, "none">, string> = {
-  read: "Read",
-  reading: "Reading",
-  want: "Want to read",
-};
-
-// Same scoring the export uses: genre overlap + level match + length
-// match, falling back to highest-rated first if nothing scores. Takes
-// the survey as an argument because it belongs to the signed-in reader
-// now — an account that skipped the survey scores nothing and gets the
-// highest-rated fallback, which is what the export does too.
-type Survey = { genres: string[]; level: string; length: string };
-
-function recommend(survey: Survey | null): Book[] {
-  if (!survey) return books.slice().sort((a, c) => avg(c) - avg(a)).slice(0, 5);
-  const scored = books
-    .map((b) => ({
-      book: b,
-      hits:
-        b.genres.filter((g) => survey.genres.includes(g)).length +
-        (b.level === survey.level ? 1 : 0) +
-        (lengthLabel(b.pages) === survey.length ? 1 : 0),
-    }))
-    .filter((o) => o.hits > 0)
-    .sort((a, c) => c.hits - a.hits || avg(c.book) - avg(a.book));
-  const ranked = scored.length
-    ? scored.map((o) => o.book)
-    : books.slice().sort((a, c) => avg(c) - avg(a));
-  return ranked.slice(0, 5);
-}
-
-export default function HomePage() {
-  const router = useRouter();
-  const sessionData = useSessionData();
-  const [statuses, setStatuses] = useState<Record<string, Status>>(sessionData.statuses);
-  const [progress] = useState<Record<string, StepKey>>(sessionData.progress);
-  const survey = sessionData.survey;
-  const homeRecs = recommend(survey);
-
-  const statusOf = (id: string): Status => statuses[id] ?? "none";
-  const markRead = (id: string) => setStatuses((s) => ({ ...s, [id]: "read" }));
-
-  const reading = books.filter((b) => statusOf(b.id) === "reading");
-  const readCount = books.filter((b) => statusOf(b.id) === "read").length;
-  const wantCount = books.filter((b) => statusOf(b.id) === "want").length;
-
-  const basedOn = survey
-    ? (survey.genres.length ? survey.genres.join(" · ") + " · " : "") +
-      survey.level +
-      " · " +
-      survey.length
-    : "YOUR SURVEY ANSWERS";
+  const readCount = rows.filter((r) => r.status === "read").length;
+  const wantCount = rows.filter((r) => r.status === "want").length;
+  const reading: ShelfBook[] = rows
+    .filter((r) => r.status === "reading" && r.books)
+    .map((r) => ({
+      id: r.books!.id,
+      title: r.books!.title,
+      author: r.books!.author,
+      coverUrl: r.books!.cover_url,
+      progress: r.progress,
+    }));
 
   return (
     <>
       <Nav />
       <div className="wrap">
-        <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>Welcome back, {READER_NAME}</h1>
-        <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 8 }}>
-          BASED ON: {basedOn} · <Link href="/survey" style={{ cursor: "pointer" }}>EDIT</Link>
-        </div>
-        {readCount > 0 && (
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 9,
-              background: "#c6f24e",
-              color: "#14110f",
-              border: "3px solid var(--color-text)",
-              padding: "6px 14px",
-              marginBottom: 26,
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 22, lineHeight: 1 }}>✓</span>
-            <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15 }}>
-              {readCount} {readCount === 1 ? "book finished" : "books finished"}
-            </span>
-          </div>
-        )}
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
-          <h4 style={{ margin: 0 }}>Picked for you</h4>
-          <Link href="/recs" className="btn btn-ghost">See all recommendations</Link>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: 36 }}>
-          {homeRecs.map((b) => {
-            const status = statusOf(b.id);
-            return (
-              <div
-                key={b.id}
-                className="rowlink"
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-                onClick={() => router.push(`/book/${b.id}`)}
-              >
-                <div className="cover" style={{ aspectRatio: "2/3" }}>
-                  <span className="mono">COVER</span>
-                </div>
-                {status !== "none" && (
-                  <div style={{ display: "flex" }}>
-                    <span className="tag" style={badgeStyles[status]}>{badgeLabels[status]}</span>
-                  </div>
-                )}
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>{b.title}</div>
-                <span className="stars" style={{ fontSize: 13 }}>{starStr(avg(b))}</span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 28 }}>
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-              <h4 style={{ margin: 0 }}>Currently reading</h4>
-              <Link href="/tracker" className="btn btn-ghost">Open tracker</Link>
-            </div>
-            {reading.length > 0 ? (
-              <div style={{ border: "1px solid var(--color-divider)" }}>
-                {reading.map((b) => {
-                  const step = steps.find((s) => s.key === progress[b.id]) ?? steps[0];
-                  return (
-                    <div
-                      key={b.id}
-                      style={{ display: "flex", gap: 12, padding: 12, alignItems: "center", borderBottom: "3px solid var(--color-divider)" }}
-                    >
-                      <div className="cover" style={{ width: 36, height: 52, flex: "none" }} />
-                      <div
-                        className="rowlink"
-                        style={{ flex: 1 }}
-                        onClick={() => router.push(`/book/${b.id}`)}
-                      >
-                        <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 17 }}>{b.title}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-                          <div style={{ flex: 1, maxWidth: 150, height: 10, border: "2px solid var(--color-text)" }}>
-                            <div style={{ width: `${step.pct}%`, background: "#ff3d9a", height: "100%" }} />
-                          </div>
-                          <span className="mono" style={{ color: "var(--color-neutral-700)" }}>{step.caption}</span>
-                        </div>
-                      </div>
-                      <button className="btn btn-secondary" onClick={() => markRead(b.id)}>Mark as read</button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ border: "1px dashed var(--color-divider)", padding: 26, textAlign: "center" }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 20 }}>Nothing on the go</div>
-                <p className="text-muted" style={{ fontSize: 13, margin: "6px 0 14px" }}>
-                  Open a book and mark it as Currently Reading.
-                </p>
-                <Link href="/search" className="btn btn-secondary">Browse books</Link>
-              </div>
-            )}
-          </div>
-          <div>
-            <h4 style={{ margin: "0 0 10px" }}>Your shelves</h4>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div
-                className="card rowlink"
-                style={{ gap: 2, background: "#c6f24e", color: "#14110f", boxShadow: "4px 4px 0 var(--color-text)" }}
-                onClick={() => router.push("/tracker")}
-              >
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{readCount}</div>
-                <div className="mono" style={{ fontWeight: 700 }}>READ</div>
-              </div>
-              <div
-                className="card rowlink"
-                style={{ gap: 2, background: "#ff3d9a", color: "#14110f", boxShadow: "4px 4px 0 var(--color-text)" }}
-                onClick={() => router.push("/tracker")}
-              >
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{reading.length}</div>
-                <div className="mono" style={{ fontWeight: 700 }}>CURRENTLY READING</div>
-              </div>
-              <div
-                className="card rowlink"
-                style={{ gap: 2, background: "#1B3BFF", color: "#EFECE3", boxShadow: "4px 4px 0 var(--color-text)" }}
-                onClick={() => router.push("/tracker")}
-              >
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{wantCount}</div>
-                <div className="mono" style={{ fontWeight: 700 }}>WANT TO READ</div>
-              </div>
-              <div className="card rowlink" style={{ gap: 2 }} onClick={() => router.push("/lists")}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, lineHeight: 1 }}>{sessionData.lists.length}</div>
-                <div className="mono" style={{ fontWeight: 700, color: "var(--color-neutral-700)" }}>MY LISTS</div>
-              </div>
-            </div>
-            <Link href="/requests/new" className="btn btn-secondary btn-block" style={{ minHeight: 42 }}>
-              Request a missing book
-            </Link>
-          </div>
-        </div>
+        <HomeContent
+          catalogueBooks={catalogueBooks}
+          readCount={readCount}
+          wantCount={wantCount}
+          reading={reading}
+          listsCount={listsCount ?? 0}
+          survey={survey}
+        />
       </div>
     </>
   );

@@ -2,8 +2,9 @@ import Nav from "@/components/Nav";
 
 /*
  * Ported from the `isLanding` block in Prototype with Admin.dc.html
- * (lines 606-632). Copy, structure and classes are taken directly from
- * there — nothing rewritten. The hero is a placeholder box in the
+ * (lines 606-632). Structure and classes are taken directly from there.
+ * The "Why this exists" copy is the site owner's own words, not the
+ * source's placeholder text. The hero is a placeholder box in the
  * source too ("HERO — COLLAGE OF WELL-KNOWN COVERS"); real book cover
  * images aren't in the export, they come later from the Google Books
  * API, so this stays a placeholder for now rather than inventing images.
@@ -46,25 +47,26 @@ export default function Home() {
 
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 36,
             borderTop: "1px solid var(--color-divider)",
             paddingTop: 28,
           }}
         >
-          <div>
+          <div style={{ marginBottom: 32 }}>
             <h3 style={{ margin: "0 0 8px" }}>Why this exists</h3>
             <p style={{ fontSize: 14 }}>
-              I got tired of walking into a bookshop and standing there for
-              twenty minutes with no idea what to pick up next. So I built the
-              thing I wanted: somewhere that asks what you like and then just
-              tells you.
+              If someone says they don&apos;t like reading, I think it&apos;s
+              often just that they haven&apos;t found the right book yet. I
+              got frustrated having to travel to my nearest bookshop just to
+              browse and find something I might enjoy — and sites like
+              Goodreads never quite worked for me either, since I&apos;d have
+              to search for books I&apos;d already read and liked before it
+              could suggest anything similar.
             </p>
             <p style={{ fontSize: 14 }}>
-              No algorithms you can&apos;t see, no adverts, no cost. Just
-              books, reviews from other readers, and a place to keep track of
-              what you&apos;ve finished.
+              So I built this instead: somewhere you can discover books based
+              on your own interests, favourite genres, tropes and
+              preferences — without needing to already know what you&apos;re
+              looking for.
             </p>
           </div>
           <div>
@@ -79,24 +81,46 @@ export default function Home() {
               <div className="card">
                 <div className="card-title">Vocabulary</div>
                 <p className="card-body">
-                  You pick up words without trying, and they stay.
+                  Reading regularly exposes you to words in meaningful
+                  contexts, helping new vocabulary stick naturally. Research
+                  by Cunningham &amp; Stanovich (1998) found that reading
+                  experience is strongly linked to vocabulary growth and
+                  knowledge development. The more you read, the more words
+                  you encounter — and the more confidently you can use them.
                 </p>
               </div>
               <div className="card">
                 <div className="card-title">Knowledge</div>
                 <p className="card-body">
-                  Stories smuggle in history, science and places you&apos;ve
-                  never been.
+                  Books can take you beyond your everyday experiences,
+                  introducing you to history, science, cultures and places
+                  you may never encounter personally. Stanovich &amp;
+                  Cunningham (1993) found that reading contributes
+                  significantly to general knowledge, even beyond what is
+                  learned through formal education. Every book can therefore
+                  become a small window into a much bigger world.
                 </p>
               </div>
               <div className="card">
                 <div className="card-title">Imagination</div>
-                <p className="card-body">Nobody draws the pictures for you.</p>
+                <p className="card-body">
+                  Reading requires you to create the characters, settings
+                  and scenes in your own mind. Research by Mar &amp; Oatley
+                  (2008) suggests that reading fiction can engage mental
+                  processes involved in imagining other people, situations
+                  and experiences. Unlike a screen, a book gives your brain
+                  the freedom to build the picture itself.
+                </p>
               </div>
               <div className="card">
                 <div className="card-title">Relaxation</div>
                 <p className="card-body">
-                  Twenty quiet minutes that aren&apos;t a screen.
+                  Reading provides a simple way to slow down and step away
+                  from everyday demands. A study by Lewis (2009), reported
+                  by the University of Sussex, found that just six minutes
+                  of reading was associated with reduced stress levels and
+                  a slower heart rate. Even a short reading session can
+                  therefore create a valuable moment of calm.
                 </p>
               </div>
             </div>

@@ -1,4 +1,3 @@
-import Nav from "@/components/Nav";
 import AdminNav from "@/components/AdminNav";
 import { createClient } from "@/lib/supabase/server";
 import RequestQueue, { type QueueRow } from "./RequestQueue";
@@ -42,14 +41,13 @@ export default async function AdminRequestsPage() {
 
   return (
     <>
-      <Nav />
       <AdminNav />
       <div className="wrap">
-        <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Book requests</h1>
+        <h1 style={{ fontSize: 38, margin: "0 0 6px" }}>Book requests</h1>
         <p style={{ fontSize: 14, marginBottom: 20 }}>
-          Books readers have asked for. Approving one adds it to the catalogue
-          straight away, so this is the moment to check it suits the people
-          reading it.
+          Books readers have asked for. “Find &amp; import” takes you to the
+          catalogue with the title already searched — the request closes once
+          the book actually lands, not before.
         </p>
         <RequestQueue rows={rows} />
       </div>

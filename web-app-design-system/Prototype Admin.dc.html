@@ -390,6 +390,7 @@
         <div style="flex: 1;">
           <h1 style="font-size: 36px; margin: 0 0 4px;">{{ user.name }}</h1>
           <div class="mono" style="color: var(--color-neutral-700);">{{ user.meta }}</div>
+          <div class="mono" style="color: var(--color-neutral-700); margin-top: 3px;">{{ user.email }}</div>
           <div style="margin-top: 8px;"><span class="tag2" style="{{ user.stateStyle }}">{{ user.stateLabel }}</span></div>
         </div>
         <sc-if value="{{ user.actionable }}" hint-placeholder-val="{{ true }}">
@@ -408,7 +409,7 @@
       <sc-if value="{{ user.isBanned }}" hint-placeholder-val="{{ false }}">
         <div style="background: #C41031; color: #EFECE3; border: 3px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); padding: 12px 16px; margin: 12px 0;">
           <div style="font-family: var(--font-heading); font-weight: 700; font-size: 16px;">Banned for {{ user.banUntil }}</div>
-          <p style="font-size: 13px; margin: 4px 0 0;">They cannot post reviews, share lists or request books until it lifts. Existing reviews stay visible unless you delete them individually.</p>
+          <p style="font-size: 13px; margin: 4px 0 0;">Their reviews and lists have been deleted, and {{ user.email }} is blocked from signing up again. They cannot post, share or request anything until the ban lifts.</p>
         </div>
       </sc-if>
       <div class="mono" style="color: var(--color-accent-700); font-weight: 700; margin: 18px 0 10px;">{{ user.why }}</div>
@@ -584,8 +585,9 @@
     </div>
   </sc-if>
 
-  <div style="margin-top: auto; border-top: 3px solid var(--color-text); padding: 12px 28px; display: flex; align-items: center; gap: 14px;">
-    <span class="mono" style="color: var(--color-neutral-700); flex: 1;">ADMIN-ONLY PROTOTYPE · OPENS ON THE OVERVIEW · NO READER VIEW IN THIS FILE</span>
+  <div style="margin-top: auto; border-top: 3px solid var(--color-text); padding: 12px 28px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+    <span class="mono" style="color: var(--color-neutral-700); font-weight: 700; flex: 1; line-height: 1.6;">SCHOOL PROJECT — A DESIGN EXERCISE FOR COURSEWORK, NOT A REAL SERVICE. NO REAL ACCOUNTS, EMAILS OR BOOK DATA.</span>
+    <span class="mono" style="color: var(--color-neutral-700);">ADMIN-ONLY PROTOTYPE · OPENS ON THE OVERVIEW</span>
     <button class="btn btn-ghost" onClick="{{ resetAll }}">Reset prototype</button>
   </div>
 </div>
@@ -635,17 +637,25 @@ class Component extends DCLogic {
     { label: '1 month', caption: 'EFFECTIVELY A GOODBYE AT THIS AGE. FOR SPAM ACCOUNTS OR TARGETED BULLYING.', rec: false }
   ];
 
-  alwaysBad = ['fuck', 'fck', 'bitch', 'wanker', 'twat', 'bollocks'];
-  wholeWords = ['shit', 'damn', 'crap', 'arse', 'ass', 'dick', 'cock', 'piss', 'prick', 'slag', 'whore', 'bastard'];
+  // Checked BEFORE the substring pass: real words that contain a banned string.
+  allowList = ['scunthorpe', 'penistone', 'therapist', 'therapists', 'therapy', 'pussycat', 'shiitake', 'assassin', 'assemble', 'assembly', 'classic', 'analysis', 'cockatoo', 'cockerel', 'peacock', 'shuttlecock', 'pedometer', 'grape', 'grapes'];
+  alwaysBad = ['fuck', 'fuk', 'fck', 'phuck', 'motherfuck', 'bitch', 'biatch', 'wanker', 'twat', 'twunt', 'bollocks', 'nigger', 'nigga', 'faggot', 'fagot', 'retard', 'spastic', 'chink', 'kike', 'wetback', 'tranny', 'whore', 'pedoph', 'paedoph', 'asshole', 'arsehole', 'dickhead', 'knobhead', 'bullshit', 'shithead', 'wanker', 'tosser', 'skank', 'douche', 'bastard', 'jizz', 'dumbass', 'jackass', 'bellend'];
+  wholeWords = ['shit', 'shite', 'crap', 'arse', 'ass', 'asses', 'dick', 'cock', 'piss', 'prick', 'slag', 'slut', 'git', 'knob', 'damn', 'goddamn', 'hoe', 'tit', 'tits', 'fanny', 'spic', 'paki', 'pedo', 'cum', 'wang', 'turd', 'prat', 'plonker', 'cunt', 'cnut', 'rapist', 'pussy', 'shag', 'shagging', 'wank', 'nonce', 'minger', 'bugger', 'buggered'];
   fold = (v) => (v || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[|!1l]/g, 'i').replace(/0/g, 'o').replace(/3/g, 'e').replace(/[4@]/g, 'a')
     .replace(/[5$]/g, 's').replace(/7/g, 't').replace(/8/g, 'b').replace(/vv/g, 'w')
+    .replace(/9/g, 'g').replace(/6/g, 'g').replace(/2/g, 'z').replace(/\+/g, 't').replace(/ph/g, 'f')
     .replace(/[^a-z]/g, '').replace(/(.)\1+/g, '$1');
   hasBanned = (t) => {
-    const joined = this.fold(t);
+    const allowed = this.allowList.map(w => this.fold(w));
+    const suspect = String(t || '').split(/[^A-Za-z0-9@$!|+*]+/).map(x => this.fold(x))
+      .filter(Boolean).filter(tok => allowed.indexOf(tok) === -1);
+    if (suspect.some(tok => this.alwaysBad.some(w => tok.includes(this.fold(w))))) return true;
+    // Separators are not a disguise: with the allow-listed words already removed,
+    // rejoin what is left so "f_u_c_k" and "f u c k" collapse back to one string.
+    const joined = suspect.join('');
     if (this.alwaysBad.some(w => joined.includes(this.fold(w)))) return true;
-    return String(t || '').split(/[^A-Za-z0-9@$!|]+/).map(x => this.fold(x)).filter(Boolean)
-      .some(tok => this.wholeWords.some(w => tok === this.fold(w)));
+    return suspect.some(tok => this.wholeWords.some(w => tok === this.fold(w)));
   };
 
   initial() {
@@ -689,7 +699,7 @@ class Component extends DCLogic {
       ],
       userSearch: '', usersPage: 0, reviewSearch: '', reviewPage: 0,
       openUser: null, reporters: null, renaming: null, renameValue: '', renameError: '',
-      confirm: null, banDuration: '6 hours'
+      confirm: null, banDuration: '6 hours', bannedEmails: []
     };
   }
   state = this.initial();
@@ -764,6 +774,7 @@ class Component extends DCLogic {
         trash: () => this.setState({ screen: 'trash' })
       },
       resetAll: () => this.setState(this.initial()),
+      bannedEmails: s.bannedEmails,
 
       catalogueCount: s.catalogue.length,
       missingCovers: s.catalogue.filter(c => !c.cover).length,
@@ -954,6 +965,7 @@ class Component extends DCLogic {
           meta: 'JOINED ' + acct.joined + ' \u00b7 ' + acct.reviews + ' REVIEWS \u00b7 ' + acct.lists + ' LISTS \u00b7 ' + acct.meta,
           avatarStyle: { display: 'inline-grid', placeItems: 'center', width: '64px', height: '64px', flex: 'none', border: '3px solid var(--color-text)', background: acct.colour, color: acct.ink, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '28px' },
           stateLabel: stateLabel(acct.status, acct.flag), stateStyle: stateStyle(acct.status, acct.flag),
+          email: (acct.name + '@school.uk').toLowerCase(),
           isBanned: acct.status === 'banned', banUntil: acct.banUntil || '',
           actionable: acct.status !== 'deleted',
           nameFlag: acct.flag === 'name' && acct.status === 'pending',
@@ -1019,7 +1031,7 @@ class Component extends DCLogic {
       confirmIsBan: !!s.confirm && s.confirm.kind === 'ban',
       confirmTitle: s.confirm ? ({ ban: 'Ban ' + s.confirm.name + '?', account: 'Delete ' + s.confirm.name + '?', review: 'Delete this review?' })[s.confirm.kind] : '',
       confirmBody: s.confirm ? ({
-        ban: 'A ban stops them posting reviews, sharing lists and requesting books. It does not hide what they have already written — delete those separately if they need to go.',
+        ban: 'A ban stops them posting reviews, sharing lists and requesting books. Their reviews and lists are deleted, and their email address can never be used to sign up again — a warning does neither.',
         account: 'This removes ' + (s.confirm.counts || 'their content') + ' along with the account. It is a soft delete, so it sits in Trash for 14 days — but the reader loses access immediately.',
         review: 'It disappears from the book page straight away. The author is not told which report caused it.'
       })[s.confirm.kind] : '',
@@ -1033,10 +1045,15 @@ class Component extends DCLogic {
         const c = s.confirm;
         if (!c) return;
         if (c.kind === 'ban') {
+          const acct = s.accounts.find(x => x.id === c.id);
+          const warnOnly = s.banDuration === 'Warning only';
+          if (!warnOnly && acct) this.toTrash('Account', acct.name + ' — banned for ' + s.banDuration, 'REVIEWS AND LISTS REMOVED · EMAIL BLOCKED');
           return this.setState(st => ({
             accounts: st.accounts.map(x => x.id === c.id
-              ? Object.assign({}, x, st.banDuration === 'Warning only' ? { status: 'warned' } : { status: 'banned', banUntil: st.banDuration })
+              ? Object.assign({}, x, warnOnly ? { status: 'warned' } : { status: 'banned', banUntil: st.banDuration, reviews: 0, lists: 0, meta: 'REVIEWS AND LISTS DELETED · EMAIL BLOCKED FROM SIGNING UP' })
               : x),
+            reviews: warnOnly ? st.reviews : st.reviews.map(x => acct && x.who === acct.name ? Object.assign({}, x, { status: 'deleted' }) : x),
+            bannedEmails: warnOnly || !acct ? st.bannedEmails : st.bannedEmails.concat([(acct.name + '@school.uk').toLowerCase()]),
             confirm: null
           }));
         }

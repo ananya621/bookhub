@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import Sheet from "@/components/Sheet";
 import { allGenres, allLengths, allLevels, lengthLabel } from "@/lib/mock";
+import type { CatalogueBook } from "@/lib/catalogue";
 
 /*
  * The search box, the filters and the results list. Split out from the
@@ -19,17 +21,7 @@ import { allGenres, allLengths, allLevels, lengthLabel } from "@/lib/mock";
  * dead end as finding none.
  */
 
-export type CatalogueBook = {
-  id: string;
-  title: string;
-  author: string;
-  pages: number | null;
-  summary: string | null;
-  coverUrl: string | null;
-  genres: string[];
-  readingLevel: string;
-  isSeries: boolean;
-};
+export type { CatalogueBook };
 
 const PER_PAGE = 5;
 
@@ -39,6 +31,7 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
   const [fLengths, setFLengths] = useState<string[]>([]);
   const [fLevels, setFLevels] = useState<string[]>([]);
   const [page, setPage] = useState(0);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   function toggle(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((x) => x !== value) : list.concat(value));
@@ -87,10 +80,82 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
             setPage(0);
           }}
         />
+        {/* Mobile: opens the same filters as a bottom sheet instead of
+            the always-visible column desktop uses. */}
+        <button
+          type="button"
+          className="btn btn-secondary mobile-only"
+          style={{ flex: "none", minHeight: 44 }}
+          onClick={() => setFilterSheetOpen(true)}
+        >
+          Filters{(fGenres.length + fLengths.length + fLevels.length) > 0 && ` (${fGenres.length + fLengths.length + fLevels.length})`}
+        </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 32 }}>
-        <div>
+      <Sheet
+        open={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        title="Filters"
+      >
+        <div className="mono" style={{ color: "var(--color-neutral-700)", marginBottom: 8 }}>GENRE</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {allGenres.map((g) => (
+            <button
+              key={g}
+              type="button"
+              className={fGenres.includes(g) ? "chip on" : "chip"}
+              onClick={() => toggle(fGenres, setFGenres, g)}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+        <div className="mono" style={{ color: "var(--color-neutral-700)", marginBottom: 8 }}>LENGTH</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {allLengths.map((l) => (
+            <button
+              key={l}
+              type="button"
+              className={fLengths.includes(l) ? "chip on" : "chip"}
+              onClick={() => toggle(fLengths, setFLengths, l)}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <div className="mono" style={{ color: "var(--color-neutral-700)", marginBottom: 8 }}>READING LEVEL</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
+          {allLevels.map((l) => (
+            <button
+              key={l}
+              type="button"
+              className={fLevels.includes(l) ? "chip on" : "chip"}
+              onClick={() => toggle(fLevels, setFLevels, l)}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary btn-block"
+          style={{ minHeight: 52 }}
+          onClick={() => setFilterSheetOpen(false)}
+        >
+          Show {results.length}
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-block"
+          style={{ minHeight: 48, marginTop: 8 }}
+          onClick={clearFilters}
+        >
+          Clear everything
+        </button>
+      </Sheet>
+
+      <div className="responsive-grid" style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 32 }}>
+        <div className="desktop-only">
           <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 12 }}>
             FILTERS
           </div>
@@ -187,8 +252,7 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
                     <img
                       src={b.coverUrl}
                       alt=""
-                      width={68}
-                      style={{ border: "3px solid var(--color-text)", display: "block" }}
+                      style={{ width: 68, height: 100, objectFit: "cover", border: "3px solid var(--color-text)", display: "block" }}
                     />
                   ) : (
                     <span className="cover" style={{ width: 68, height: 100, display: "grid" }}>
