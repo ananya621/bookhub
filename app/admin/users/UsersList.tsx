@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { daysLeft } from "@/lib/dates";
 
 export type UserRow = {
   id: string;
@@ -17,11 +18,6 @@ export type UserRow = {
 
 const PAGE_SIZE = 3;
 
-function daysLeft(purgeAt: string): number {
-  const ms = new Date(purgeAt).getTime() - Date.now();
-  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-}
-
 export default function UsersList({ users }: { users: UserRow[] }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -35,7 +31,11 @@ export default function UsersList({ users }: { users: UserRow[] }) {
     [users, search]
   );
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageUsers = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  // Clamped, like the Reviews queue: banning or deleting an account
+  // revalidates this list, so the rows can shrink out from under a
+  // reader sitting on the last page.
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageUsers = filtered.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
 
   function openUser(id: string) {
     router.push(`/admin/users/${id}`);
@@ -126,15 +126,15 @@ export default function UsersList({ users }: { users: UserRow[] }) {
         </div>
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
-        <button className="btn btn-secondary" onClick={() => setPage((p) => Math.max(0, p - 1))}>
+        <button className="btn btn-secondary" onClick={() => setPage(Math.max(0, currentPage - 1))}>
           ← Previous
         </button>
         <span className="mono" style={{ color: "var(--color-neutral-700)" }}>
-          PAGE {page + 1} OF {pageCount}
+          PAGE {currentPage + 1} OF {pageCount}
         </span>
         <button
           className="btn btn-secondary"
-          onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+          onClick={() => setPage(Math.min(pageCount - 1, currentPage + 1))}
         >
           Next →
         </button>

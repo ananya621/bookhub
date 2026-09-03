@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useCurrentUser } from "@/components/AuthProvider";
+import BookCover from "@/components/BookCover";
 import { matchedOnLabel, steps, type Survey } from "@/lib/mock";
 import { rankCatalogueBooks, type CatalogueBook } from "@/lib/catalogue";
 import { setReadingStatus } from "@/app/actions/reading";
@@ -93,18 +94,7 @@ export default function HomeContent({
               style={{ display: "flex", flexDirection: "column", gap: 6 }}
               onClick={() => router.push(`/book/${b.id}`)}
             >
-              {b.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={b.coverUrl}
-                  alt=""
-                  style={{ aspectRatio: "2/3", objectFit: "cover", width: "100%", border: "3px solid var(--color-text)" }}
-                />
-              ) : (
-                <div className="cover" style={{ aspectRatio: "2/3" }}>
-                  <span className="mono">COVER</span>
-                </div>
-              )}
+              <BookCover src={b.coverUrl} />
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>{b.title}</div>
               <span className="mono text-muted" style={{ fontSize: 11 }}>NO REVIEWS YET</span>
             </div>

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { searchGoogleBooks, type GoogleBook, type SearchOutcome } from "@/lib/google-books";
-import { storeCoverFromFile, storeCoverFromUrl } from "@/lib/storage";
+import { deleteCover, storeCoverFromFile, storeCoverFromUrl } from "@/lib/storage";
 
 /*
  * Searching for books, asking for missing ones, and the admin side of
@@ -56,6 +56,15 @@ export async function requestBook(_prev: ActionResult, formData: FormData): Prom
 
   const supabase = await createClient();
 
+  // The reader's own words, so the same filter review text goes through.
+  // Not the title or author: those are usually Google's, and an admin
+  // reads every request before it becomes a book anyway.
+  const note = String(formData.get("note") ?? "").trim() || null;
+  if (note) {
+    const { data: hasBanned } = await supabase.rpc("contains_banned_word", { v: note });
+    if (hasBanned) return { error: "THAT NOTE CAN’T BE SENT — TRY REWORDING IT" };
+  }
+
   // request_book() does the merging: if somebody already asked for this
   // book and it is still waiting, we join their request instead of
   // making a second identical one.
@@ -66,7 +75,7 @@ export async function requestBook(_prev: ActionResult, formData: FormData): Prom
     p_pages: Number.isFinite(pages) ? pages : null,
     p_summary: String(formData.get("summary") ?? "") || null,
     p_cover_url: String(formData.get("coverUrl") ?? "") || null,
-    p_note: String(formData.get("note") ?? "").trim() || null,
+    p_note: note,
   });
 
   if (error) {
@@ -205,8 +214,16 @@ export async function addBookCover(_prev: ActionResult, formData: FormData): Pro
   if (!coverUrl) return { error: "COULDN'T STORE THAT FILE — TRY A DIFFERENT IMAGE" };
 
   const supabase = await createClient();
+  const { data: previous } = await supabase
+    .from("books")
+    .select("cover_url")
+    .eq("id", bookId)
+    .maybeSingle();
+
   const { error } = await supabase.from("books").update({ cover_url: coverUrl }).eq("id", bookId);
   if (error) return { error: error.message.toUpperCase() };
+
+  await deleteCover(previous?.cover_url as string | null);
 
   revalidatePath("/admin/catalogue");
   revalidatePath("/admin");
@@ -221,8 +238,16 @@ export async function removeBook(_prev: ActionResult, formData: FormData): Promi
   if (!bookId) return { error: "NO BOOK SPECIFIED" };
 
   const supabase = await createClient();
+  const { data: removing } = await supabase
+    .from("books")
+    .select("cover_url")
+    .eq("id", bookId)
+    .maybeSingle();
+
   const { error } = await supabase.from("books").delete().eq("id", bookId);
   if (error) return { error: error.message.toUpperCase() };
+
+  await deleteCover(removing?.cover_url as string | null);
 
   revalidatePath("/admin/catalogue");
   revalidatePath("/admin");

@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import { adminModerateReview, type ActionResult } from "@/app/actions/reviews";
+import { REVIEW_STATUS_STYLE } from "@/lib/review-status";
 
 /*
  * Rows and actions for the real admin Reviews queue — split out from
@@ -31,12 +31,6 @@ export type QueueRow = {
 };
 
 const PAGE_SIZE = 5;
-
-const FLAG_STYLE: Record<string, CSSProperties> = {
-  pending: { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" },
-  allowed: { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" },
-  deleted: { background: "#C41031", color: "#EFECE3", borderColor: "#14110f" },
-};
 
 export default function ReviewQueue({ rows }: { rows: QueueRow[] }) {
   const [state, action, pending] = useActionState<ActionResult, FormData>(adminModerateReview, undefined);
@@ -104,7 +98,7 @@ export default function ReviewQueue({ rows }: { rows: QueueRow[] }) {
             : r.status === "allowed"
               ? "Allowed"
               : "Deleted";
-          const flagStyle = isPending ? FLAG_STYLE.pending : FLAG_STYLE[r.status];
+          const flagStyle = isPending ? REVIEW_STATUS_STYLE.pending : REVIEW_STATUS_STYLE[r.status];
           const reportersOpen = openReporters === r.id;
 
           return (

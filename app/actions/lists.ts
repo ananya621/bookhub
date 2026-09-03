@@ -33,6 +33,11 @@ export async function createList(_prev: ActionResult, formData: FormData): Promi
   } = await supabase.auth.getUser();
   if (!user) return { error: "SIGN UP TO BUILD READING LISTS" };
 
+  // Same gate display names and review text already go through — a list
+  // name travels as far as either once the link is shared.
+  const { data: hasBanned } = await supabase.rpc("contains_banned_word", { v: name });
+  if (hasBanned) return { error: "THAT NAME ISN’T ALLOWED HERE" };
+
   // A slug collision (two different random suffixes landing on the
   // same value) is rare enough to just retry rather than guard against
   // up front.

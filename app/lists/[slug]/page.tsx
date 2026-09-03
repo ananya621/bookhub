@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import BookCover from "@/components/BookCover";
 
 /*
  * Ported from the `isShared` block in Prototype with Admin.dc.html
@@ -49,18 +50,7 @@ export default async function SharedListPage({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
         {list.books.map((b) => (
           <div key={b.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {b.coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={b.coverUrl}
-                alt=""
-                style={{ aspectRatio: "2/3", width: "100%", objectFit: "cover", border: "3px solid var(--color-text)" }}
-              />
-            ) : (
-              <div className="cover" style={{ aspectRatio: "2/3" }}>
-                <span className="mono">COVER</span>
-              </div>
-            )}
+            <BookCover src={b.coverUrl} />
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{b.title}</div>
           </div>
         ))}

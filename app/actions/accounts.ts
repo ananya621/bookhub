@@ -189,12 +189,17 @@ export async function adminBanAccount(
 
     const { data: target } = await admin.auth.admin.getUserById(userId);
     const email = target.user?.email?.toLowerCase().trim();
-    if (email) {
-      await supabase.from("banned_emails").insert({ email, banned_by: me.id });
-    }
 
-    await supabase.from("lists").delete().eq("user_id", userId);
-    await supabase.from("reviews").update({ status: "deleted" }).eq("user_id", userId);
+    // Three independent writes — blocking the email, removing their
+    // lists, and pulling their reviews. Nothing here reads what the
+    // others wrote, so they go together.
+    await Promise.all([
+      email
+        ? supabase.from("banned_emails").insert({ email, banned_by: me.id })
+        : Promise.resolve(),
+      supabase.from("lists").delete().eq("user_id", userId),
+      supabase.from("reviews").update({ status: "deleted" }).eq("user_id", userId),
+    ]);
 
     bannedUntil = new Date(Date.now() + picked.ms).toISOString();
   }

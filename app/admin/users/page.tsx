@@ -2,10 +2,7 @@ import AdminNav from "@/components/AdminNav";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import UsersList, { type UserRow } from "./UsersList";
-
-function isInFuture(iso: string): boolean {
-  return new Date(iso).getTime() > Date.now();
-}
+import { isInFuture } from "@/lib/dates";
 
 /*
  * Rewritten from a pure-mock page reading `adminAccounts` into a server

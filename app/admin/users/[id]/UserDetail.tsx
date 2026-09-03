@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   adminBanAccount,
@@ -13,6 +12,8 @@ import {
 } from "@/app/actions/accounts";
 import { adminModerateReview, type ActionResult as ReviewActionResult } from "@/app/actions/reviews";
 import { adminSetReportStatus, type ActionResult as ReportActionResult } from "@/app/actions/reports";
+import { daysLeft, isInFuture } from "@/lib/dates";
+import { REVIEW_STATUS_STYLE } from "@/lib/review-status";
 
 export type UserReview = {
   id: string;
@@ -53,21 +54,6 @@ const BAN_OPTIONS: { label: string; caption: string; rec?: boolean }[] = [
   { label: "1 week", caption: "REPEAT OFFENDER, OR SOMETHING DELIBERATELY NASTY." },
   { label: "1 month", caption: "EFFECTIVELY A GOODBYE AT THIS AGE. FOR SPAM ACCOUNTS OR TARGETED BULLYING." },
 ];
-
-const REVIEW_STATE_STYLE: Record<string, CSSProperties> = {
-  allowed: { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" },
-  deleted: { background: "#C41031", color: "#EFECE3", borderColor: "#14110f" },
-  pending: { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" },
-};
-
-function daysLeft(purgeAt: string): number {
-  const ms = new Date(purgeAt).getTime() - Date.now();
-  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-}
-
-function isInFuture(iso: string): boolean {
-  return new Date(iso).getTime() > Date.now();
-}
 
 export default function UserDetail({
   account,
@@ -487,7 +473,7 @@ export default function UserDetail({
           {reviews.map((r) => {
             const live = r.openCount > 0;
             const rLabel = live ? `Reported ×${r.openCount}` : r.status === "allowed" ? "Allowed" : "Deleted";
-            const rStyle = live ? REVIEW_STATE_STYLE.pending : REVIEW_STATE_STYLE[r.status];
+            const rStyle = live ? REVIEW_STATUS_STYLE.pending : REVIEW_STATUS_STYLE[r.status];
             return (
               <div key={r.id} className="qrow">
                 <div style={{ flex: 1 }}>
