@@ -9,6 +9,13 @@ import { submitReview } from "@/app/actions/reviews";
  * split out as a client component so the page above can stay a server
  * component that fetches the book and any existing review first. See
  * the comment there for what's ported vs. deliberately dropped.
+ *
+ * The "can't be posted" banner is real now — submitReview runs the
+ * text through the same word filter display names use (see
+ * app/actions/reviews.ts) and returns `{ blocked: true }` rather than
+ * an error when it trips, which is what shows this banner instead of
+ * the plain error line. The text is never cleared either way, same as
+ * the design.
  */
 export default function ReviewForm({
   id,
@@ -25,8 +32,8 @@ export default function ReviewForm({
   const [stars, setStars] = useState(initialStars);
   const [text, setText] = useState(initialText);
   const [error, setError] = useState("");
+  const [reviewBlocked, setReviewBlocked] = useState(false);
   const [pending, setPending] = useState(false);
-  const reviewBlocked = false;
 
   async function postReview() {
     if (!stars) return setError("PICK A STAR RATING FIRST");
@@ -38,6 +45,7 @@ export default function ReviewForm({
     formData.set("text", text);
     const result = await submitReview(undefined, formData);
     setPending(false);
+    if (result && "blocked" in result) return setReviewBlocked(true);
     if (result && "error" in result) return setError(result.error);
     router.push(`/book/${id}?posted=1`);
   }
@@ -83,6 +91,7 @@ export default function ReviewForm({
           onChange={(e) => {
             setText(e.target.value);
             setError("");
+            setReviewBlocked(false);
           }}
         />
       </div>

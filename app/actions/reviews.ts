@@ -10,9 +10,18 @@ import { createClient } from "@/lib/supabase/server";
  * client; the `reviews_protect_status` trigger stops a non-admin edit
  * from smuggling in a status change, so `submitReview` never touches
  * status at all.
+ *
+ * The word filter (contains_banned_word(), see
+ * supabase/migrations/20260903120000_full_word_filter.sql) blocks a
+ * review before it's ever saved — same gate the design's hasBanned()
+ * uses, and the same one display names already went through. `blocked`
+ * is its own result variant (not just an error) so the write-review
+ * screen can show the design's "This one can't be posted" banner
+ * instead of a plain error line, and keep the reader's text on screen
+ * rather than wiping it.
  */
 
-export type ActionResult = { error: string } | { ok: string } | undefined;
+export type ActionResult = { error: string } | { ok: string } | { blocked: true } | undefined;
 
 export async function submitReview(
   _prev: ActionResult,
@@ -34,6 +43,9 @@ export async function submitReview(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "SIGN UP TO WRITE A REVIEW" };
+
+  const { data: hasBanned } = await supabase.rpc("contains_banned_word", { v: text });
+  if (hasBanned) return { blocked: true };
 
   const { error } = await supabase
     .from("reviews")
