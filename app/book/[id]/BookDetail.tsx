@@ -297,13 +297,27 @@ export default function BookDetail({
         )}
         <div style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 36 }}>
           <div>
-            <div className="cover blueprint" style={{ height: 330 }}>
-              <i className="corner tl" />
-              <i className="corner tr" />
-              <i className="corner bl" />
-              <i className="corner br" />
-              <span className="mono">COVER FROM API</span>
-            </div>
+            {book.coverUrl ? (
+              // Google's URLs (or an admin-uploaded file's), not
+              // something next/image can optimise without every host
+              // allow-listed, so a plain img — objectFit fills the
+              // same 230x330 box the placeholder below reserves,
+              // whatever the source image's own proportions are.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={book.coverUrl}
+                alt=""
+                style={{ width: "100%", height: 330, objectFit: "cover", border: "3px solid var(--color-text)" }}
+              />
+            ) : (
+              <div className="cover blueprint" style={{ height: 330 }}>
+                <i className="corner tl" />
+                <i className="corner tr" />
+                <i className="corner bl" />
+                <i className="corner br" />
+                <span className="mono">COVER FROM API</span>
+              </div>
+            )}
             {/* Desktop: the existing inline segmented control, unchanged. */}
             <div className="desktop-only">
               <div className="mono" style={{ margin: "16px 0 6px", color: "var(--color-accent-700)" }}>

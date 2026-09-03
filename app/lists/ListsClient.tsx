@@ -214,7 +214,18 @@ export default function ListsClient({ lists }: { lists: ListRow[] }) {
                   <span className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
                     {i + 1}
                   </span>
-                  <Link href={`/book/${b.id}`} className="cover rowlink" style={{ width: 34, height: 50, flex: "none" }} />
+                  <Link href={`/book/${b.id}`} className="rowlink" style={{ flex: "none" }}>
+                    {b.coverUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={b.coverUrl}
+                        alt=""
+                        style={{ width: 34, height: 50, objectFit: "cover", border: "3px solid var(--color-text)" }}
+                      />
+                    ) : (
+                      <span className="cover" style={{ width: 34, height: 50, display: "block" }} />
+                    )}
+                  </Link>
                   <Link href={`/book/${b.id}`} className="rowlink" style={{ flex: 1 }}>
                     <div style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>{b.title}</div>
                     <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>

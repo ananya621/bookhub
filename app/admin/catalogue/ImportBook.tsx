@@ -282,8 +282,7 @@ export default function ImportBook({
                   <img
                     src={b.coverUrl}
                     alt=""
-                    width={40}
-                    style={{ flex: "none", border: "3px solid var(--color-text)" }}
+                    style={{ width: 40, height: 58, objectFit: "cover", flex: "none", border: "3px solid var(--color-text)" }}
                   />
                 ) : (
                   <span className="cover" style={{ width: 40, height: 58, flex: "none" }} />

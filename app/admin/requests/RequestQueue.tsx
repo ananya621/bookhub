@@ -89,8 +89,7 @@ export default function RequestQueue({ rows }: { rows: QueueRow[] }) {
               <img
                 src={r.coverUrl}
                 alt=""
-                width={48}
-                style={{ flex: "none", border: "3px solid var(--color-text)" }}
+                style={{ width: 48, height: 70, objectFit: "cover", flex: "none", border: "3px solid var(--color-text)" }}
               />
             ) : (
               <div className="cover" style={{ width: 48, height: 70, flex: "none" }} />

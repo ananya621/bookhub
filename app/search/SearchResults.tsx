@@ -252,8 +252,7 @@ export default function SearchResults({ books }: { books: CatalogueBook[] }) {
                     <img
                       src={b.coverUrl}
                       alt=""
-                      width={68}
-                      style={{ border: "3px solid var(--color-text)", display: "block" }}
+                      style={{ width: 68, height: 100, objectFit: "cover", border: "3px solid var(--color-text)", display: "block" }}
                     />
                   ) : (
                     <span className="cover" style={{ width: 68, height: 100, display: "grid" }}>
