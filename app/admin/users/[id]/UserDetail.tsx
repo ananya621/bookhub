@@ -12,6 +12,7 @@ import {
   type ActionResult,
 } from "@/app/actions/accounts";
 import { adminModerateReview, type ActionResult as ReviewActionResult } from "@/app/actions/reviews";
+import { adminSetReportStatus, type ActionResult as ReportActionResult } from "@/app/actions/reports";
 
 export type UserReview = {
   id: string;
@@ -24,6 +25,15 @@ export type UserReview = {
   why: string;
 };
 
+export type UserReport = {
+  id: string;
+  who: string;
+  reason: string;
+  when: string;
+  note: string;
+  status: "open" | "actioned";
+};
+
 type Account = {
   id: string;
   displayName: string | null;
@@ -33,6 +43,7 @@ type Account = {
   isSelf: boolean;
   pending: { deletedBy: "self" | "admin"; deletedAt: string; purgeAt: string } | null;
   ban: { reason: string; bannedAt: string; bannedUntil: string | null } | null;
+  openReportCount: number;
 };
 
 const BAN_OPTIONS: { label: string; caption: string; rec?: boolean }[] = [
@@ -61,9 +72,11 @@ function isInFuture(iso: string): boolean {
 export default function UserDetail({
   account,
   initialReviews,
+  reports,
 }: {
   account: Account;
   initialReviews: UserReview[];
+  reports: UserReport[];
 }) {
   const [deleteState, deleteAction] = useActionState<ActionResult, FormData>(
     adminDeleteAccount,
@@ -78,6 +91,10 @@ export default function UserDetail({
     undefined
   );
   const [liftBanState, liftBanAction] = useActionState<ActionResult, FormData>(adminLiftBan, undefined);
+  const [reportState, reportAction, reportPending] = useActionState<ReportActionResult, FormData>(
+    adminSetReportStatus,
+    undefined
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const [renameOpen, setRenameOpen] = useState(false);
@@ -127,6 +144,7 @@ export default function UserDetail({
     (restoreState && "error" in restoreState && restoreState.error) ||
     (reviewState && "error" in reviewState && reviewState.error) ||
     (liftBanState && "error" in liftBanState && liftBanState.error) ||
+    (reportState && "error" in reportState && reportState.error) ||
     null;
 
   return (
@@ -174,6 +192,11 @@ export default function UserDetail({
             {isWarned && (
               <span className="tag" style={{ background: "#FFD400", color: "#14110f" }}>
                 Warned
+              </span>
+            )}
+            {account.openReportCount > 0 && (
+              <span className="tag" style={{ background: "#ff3d9a", color: "#14110f" }}>
+                Reported ×{account.openReportCount}
               </span>
             )}
           </div>
@@ -403,6 +426,53 @@ export default function UserDetail({
             They cannot sign in until this is undone. Gone for good once the days run out.
           </p>
         </div>
+      )}
+
+      {reports.length > 0 && (
+        <>
+          <h4 style={{ margin: "18px 0 10px" }}>Reports about them</h4>
+          <div style={{ borderTop: "3px solid var(--color-text)", marginBottom: 16 }}>
+            {reports.map((rep) => {
+              const open = rep.status === "open";
+              return (
+                <div key={rep.id} className="qrow">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                      <span
+                        className="tag"
+                        style={
+                          open
+                            ? { background: "#ff3d9a", color: "#14110f", borderColor: "#14110f" }
+                            : { background: "#c6f24e", color: "#14110f", borderColor: "#14110f" }
+                        }
+                      >
+                        {open ? "Open" : "Actioned"}
+                      </span>
+                      <span className="mono" style={{ color: "var(--color-neutral-700)" }}>
+                        FROM {rep.who} · {rep.when}
+                      </span>
+                    </div>
+                    <div style={{ borderLeft: "5px solid var(--color-text)", paddingLeft: 12 }}>
+                      <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 4 }}>
+                        {rep.reason}
+                      </div>
+                      {rep.note && <p style={{ fontSize: 14, margin: 0 }}>{rep.note}</p>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flex: "none", alignSelf: "center" }}>
+                    <form action={reportAction}>
+                      <input type="hidden" name="reportId" value={rep.id} />
+                      <input type="hidden" name="status" value={open ? "actioned" : "open"} />
+                      <button type="submit" className={open ? "btn btn-primary" : "btn btn-ghost"} disabled={reportPending}>
+                        {open ? "Mark as actioned" : "Reopen"}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <h4 style={{ margin: "18px 0 10px" }}>Their reviews</h4>

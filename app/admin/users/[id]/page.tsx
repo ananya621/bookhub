@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import AdminNav from "@/components/AdminNav";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import UserDetail, { type UserReview } from "./UserDetail";
+import UserDetail, { type UserReview, type UserReport } from "./UserDetail";
 
 const TYPE_LABEL: Record<string, string> = {
   rude: "RUDE TO OTHER READERS",
@@ -21,6 +21,16 @@ const TYPE_LABEL: Record<string, string> = {
  * "Their reviews" — reading real reviews and reports the same way
  * app/admin/reviews/page.tsx does (see that file for why openCount,
  * not review status, decides whether Allow/Delete show).
+ *
+ * "Reports about them" (target_type='user' reports — filed via "Report
+ * this reader" on the book page) is new: previously those saved for
+ * real but had nowhere to be seen or acted on. Deliberately NOT
+ * resolved by Force rename or Ban/Warning — a rename only fixes a name
+ * problem and a ban doesn't necessarily mean every report was correct,
+ * so each report is only cleared by an explicit Mark as
+ * actioned/Reopen here, same shape as Safeguarding. safety_concern
+ * reports are excluded, same as everywhere else — those go to
+ * Safeguarding only.
  */
 export default async function AdminUserPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,6 +46,33 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   ]);
 
   if (!profile) notFound();
+
+  const { data: userReportRows } = await supabase
+    .from("reports")
+    .select("id, reporter_id, type, note, status, created_at")
+    .eq("target_type", "user")
+    .eq("target_id", id)
+    .neq("type", "safety_concern")
+    .order("status", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  const reporterIds = Array.from(new Set((userReportRows ?? []).map((r) => r.reporter_id as string)));
+  const { data: reporterProfiles } = reporterIds.length
+    ? await supabase.from("profiles").select("id, display_name").in("id", reporterIds)
+    : { data: [] as { id: string; display_name: string | null }[] };
+  const reporterNameById = new Map(
+    (reporterProfiles ?? []).map((p) => [p.id as string, (p.display_name as string | null) ?? "(no name set yet)"])
+  );
+
+  const userReports: UserReport[] = (userReportRows ?? []).map((r) => ({
+    id: r.id as string,
+    who: reporterNameById.get(r.reporter_id as string) ?? "(no name set yet)",
+    reason: TYPE_LABEL[r.type as string] ?? (r.type as string).toUpperCase(),
+    when: new Date(r.created_at as string).toLocaleDateString(),
+    note: (r.note as string | null) ?? "",
+    status: r.status as "open" | "actioned",
+  }));
+  const openUserReportCount = userReports.filter((r) => r.status === "open").length;
 
   const { data: reviewRows } = await supabase
     .from("reviews")
@@ -117,8 +154,10 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                   bannedUntil: ban.banned_until as string | null,
                 }
               : null,
+            openReportCount: openUserReportCount,
           }}
           initialReviews={reviews}
+          reports={userReports}
         />
       </div>
     </>
