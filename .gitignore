@@ -45,3 +45,6 @@ next-env.d.ts
 
 # playwright-mcp debug artifacts
 .playwright-mcp/
+
+# Stray screenshots from browser-driven testing
+*.png
