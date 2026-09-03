@@ -91,29 +91,12 @@ export const steps = [
     { key: 'nearly', label: 'Nearly done', caption: 'NEARLY DONE', pct: 85 }
   ];
 
-export const adminReviews = [
-  { id: 'r1', book: 'Eragon', who: 'dragonlad_09', stars: 2, when: '3 DAYS AGO', flag: 'reported', reports: 3, why: 'RUDE TO OTHER READERS ×3', text: 'this book is rubbish and anyone who likes it is an idiot, go and read something with pictures instead', status: 'pending' },
-  { id: 'r2', book: 'Holes', who: 'zeni_reads', stars: 5, when: 'YESTERDAY', flag: 'blocked', reports: 0, why: 'FILTER MATCHED “SWEAR” — LIKELY A FALSE POSITIVE', text: 'the bit at the end is so good it made me swear out loud, best book we have done in class', status: 'pending' },
-  { id: 'r3', book: 'Nevermoor', who: 'kofi_a', stars: 1, when: '2 DAYS AGO', flag: 'reported', reports: 1, why: 'NOTHING TO DO WITH THE BOOK ×1', text: 'buy cheap trainers at my shop, link in my profile, best prices anywhere', status: 'pending' },
-  { id: 'r4', book: 'Coraline', who: 'tomasb', stars: 5, when: '4 DAYS AGO', flag: 'reported', reports: 1, why: 'BAD LANGUAGE ×1', text: 'Genuinely frightening in about four places. Buttons.', status: 'pending' }
-];
-export const adminAccounts = [
-  { id: 'a1', name: 'dragonlad_09', colour: '#7B2DFF', ink: '#EFECE3', joined: '12 MAR', reviews: 9, lists: 3, meta: '4 REPORTS ACROSS 3 REVIEWS · EMAIL VERIFIED', flag: 'reported', why: 'RUDE TO OTHER READERS', status: 'pending' },
-  { id: 'a2', name: 'bookhub_official', colour: '#FFD400', ink: '#14110F', joined: 'TODAY', reviews: 0, lists: 0, meta: '0 REVIEWS · EMAIL NOT VERIFIED', flag: 'name', why: 'IMPERSONATES THE SITE — THE FILTER CAUGHT IT AT SIGNUP', status: 'pending' },
-  { id: 'a3', name: 'xx_d4mn_xx', colour: '#C41031', ink: '#EFECE3', joined: 'YESTERDAY', reviews: 1, lists: 0, meta: '1 REVIEW · EMAIL VERIFIED', flag: 'name', why: 'BANNED WORD BEHIND LEETSPEAK', status: 'pending' },
-  { id: 'a4', name: 'zeni_reads', colour: '#1B3BFF', ink: '#EFECE3', joined: '02 FEB', reviews: 14, lists: 2, meta: '14 REVIEWS · 1 REPORT · EMAIL VERIFIED', flag: 'clean', why: 'NO ACTION NEEDED — SHOWN FOR CONTEXT', status: 'clean' },
-  { id: 'a5', name: 'kofi_a', colour: '#c6f24e', ink: '#14110F', joined: '19 JAN', reviews: 6, lists: 1, meta: '6 REVIEWS · 1 REPORT · EMAIL VERIFIED', flag: 'reported', why: 'SPAM OR ADVERTISING', status: 'pending' }
-];
 export const catalogue = [
   { id: 'hobbit', title: 'The Hobbit', author: 'J.R.R. Tolkien', pages: 310, level: 'Middle Grade', genres: ['Fantasy', 'Adventure'], cover: 'api' },
   { id: 'nevermoor', title: 'Nevermoor', author: 'Jessica Townsend', pages: 464, level: 'Middle Grade', genres: ['Fantasy', 'Mystery/Thriller'], cover: 'upload' },
   { id: 'holes', title: 'Holes', author: 'Louis Sachar', pages: 233, level: 'Middle Grade', genres: ['Mystery/Thriller', 'Comedy/Humour'], cover: 'api' },
   { id: 'skellig', title: 'Skellig', author: 'David Almond', pages: 182, level: 'Middle Grade', genres: ['Realistic/Contemporary Fiction'], cover: null },
   { id: 'girlofink', title: 'The Girl of Ink and Stars', author: 'Kiran Millwood Hargrave', pages: 227, level: 'Middle Grade', genres: ['Adventure', 'Historical Fiction'], cover: null }
-];
-export const safeguarding = [
-  { id: 's1', who: 'quiet_reader_11', target: 'a review on “A Long Way Down”', when: '4 HOURS AGO', text: 'they said something about not wanting to be here anymore and it scared me', status: 'open' },
-  { id: 's2', who: 'zeni_reads', target: 'the reader kofi_a', when: 'YESTERDAY', text: 'he keeps asking people in reviews how old they are and where they go to school', status: 'open' }
 ];
 export const requests = [
   { title: 'Impossible Creatures', author: 'Katherine Rundell', status: 'approved', reason: '' },

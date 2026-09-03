@@ -1,7 +1,6 @@
 import Link from "next/link";
 import AdminNav from "@/components/AdminNav";
 import { createClient } from "@/lib/supabase/server";
-import { adminReviews, adminAccounts, safeguarding } from "@/lib/mock";
 
 /*
  * Rebuilt against the current admin prototype (Prototype Admin.dc.html,
@@ -16,11 +15,16 @@ import { adminReviews, adminAccounts, safeguarding } from "@/lib/mock";
  * users/catalogue/ban button row below the tiles are both gone too —
  * neither exists in the current design.
  *
- * Reviews, Accounts (report/refused-name count) and Safeguarding still
- * read the mock arrays — no reports table exists yet, same carve-out as
- * every other admin queue. Requests, catalogue size and missing-cover
- * count are real, using the same tables /admin/requests and
- * /admin/catalogue already read from.
+ * Reviews, Accounts and Safeguarding now read real reports (see
+ * app/admin/reviews, app/admin/safeguarding and app/actions/reports.ts
+ * for the table). The "Accounts" tile counts reported readers only —
+ * there's no persistent "refused name" flag anywhere in the database
+ * (check_display_name only ever runs once, at signup, to block a bad
+ * name before an account is even created; it doesn't leave a record
+ * behind to retroactively count), so that half of the original mock
+ * count is dropped rather than faked. Requests, catalogue size and
+ * missing-cover count are real too, using the same tables
+ * /admin/requests and /admin/catalogue already read from.
  *
  * The "last seven days" table stays static numbers, matching the
  * prototype's own literal values — there's no import/search history
@@ -29,16 +33,38 @@ import { adminReviews, adminAccounts, safeguarding } from "@/lib/mock";
 export default async function AdminHomePage() {
   const supabase = await createClient();
 
-  const [{ count: pendingRequests }, { count: catalogueCount }, { count: missingCovers }] =
-    await Promise.all([
-      supabase.from("book_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("books").select("*", { count: "exact", head: true }),
-      supabase.from("books").select("*", { count: "exact", head: true }).is("cover_url", null),
-    ]);
+  const [
+    { count: pendingRequests },
+    { count: catalogueCount },
+    { count: missingCovers },
+    { count: safeguardingCount },
+    { data: reportedReviewRows },
+    { data: reportedUserRows },
+  ] = await Promise.all([
+    supabase.from("book_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("books").select("*", { count: "exact", head: true }),
+    supabase.from("books").select("*", { count: "exact", head: true }).is("cover_url", null),
+    supabase
+      .from("reports")
+      .select("*", { count: "exact", head: true })
+      .eq("type", "safety_concern")
+      .eq("status", "open"),
+    supabase
+      .from("reports")
+      .select("target_id")
+      .eq("target_type", "review")
+      .neq("type", "safety_concern")
+      .eq("status", "open"),
+    supabase
+      .from("reports")
+      .select("target_id")
+      .eq("target_type", "user")
+      .neq("type", "safety_concern")
+      .eq("status", "open"),
+  ]);
 
-  const pendingReviews = adminReviews.filter((r) => r.status === "pending").length;
-  const pendingAccounts = adminAccounts.filter((a) => a.status === "pending").length;
-  const safeguardingCount = safeguarding.filter((x) => x.status === "open").length;
+  const pendingReviews = new Set((reportedReviewRows ?? []).map((r) => r.target_id as string)).size;
+  const pendingAccounts = new Set((reportedUserRows ?? []).map((r) => r.target_id as string)).size;
 
   return (
     <>
@@ -62,7 +88,7 @@ export default async function AdminHomePage() {
           }}
         >
           <div style={{ fontFamily: "var(--font-display)", fontSize: 44, lineHeight: 1 }}>
-            {safeguardingCount}
+            {safeguardingCount ?? 0}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 19 }}>
@@ -98,7 +124,7 @@ export default async function AdminHomePage() {
               {pendingReviews}
             </div>
             <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 16 }}>Reviews</div>
-            <div className="mono" style={{ fontWeight: 700, marginTop: 3 }}>REPORTED AND BLOCKED</div>
+            <div className="mono" style={{ fontWeight: 700, marginTop: 3 }}>REPORTED</div>
           </Link>
           <Link
             href="/admin/users"
@@ -109,7 +135,7 @@ export default async function AdminHomePage() {
               {pendingAccounts}
             </div>
             <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 16 }}>Accounts</div>
-            <div className="mono" style={{ fontWeight: 700, marginTop: 3 }}>REPORTED AND REFUSED NAMES</div>
+            <div className="mono" style={{ fontWeight: 700, marginTop: 3 }}>REPORTED READERS</div>
           </Link>
           <Link
             href="/admin/catalogue"

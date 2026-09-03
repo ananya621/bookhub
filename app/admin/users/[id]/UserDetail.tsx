@@ -3,10 +3,19 @@
 import { useActionState, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { adminReviews } from "@/lib/mock";
 import { adminDeleteAccount, adminRestoreAccount, type ActionResult } from "@/app/actions/accounts";
+import { adminModerateReview, type ActionResult as ReviewActionResult } from "@/app/actions/reviews";
 
-type Review = (typeof adminReviews)[number];
+export type UserReview = {
+  id: string;
+  book: string;
+  stars: number;
+  text: string;
+  when: string;
+  status: "allowed" | "deleted";
+  openCount: number;
+  why: string;
+};
 
 type Account = {
   id: string;
@@ -34,7 +43,7 @@ export default function UserDetail({
   initialReviews,
 }: {
   account: Account;
-  initialReviews: Review[];
+  initialReviews: UserReview[];
 }) {
   const [deleteState, deleteAction] = useActionState<ActionResult, FormData>(
     adminDeleteAccount,
@@ -44,21 +53,18 @@ export default function UserDetail({
     adminRestoreAccount,
     undefined
   );
+  const [reviewState, reviewAction, reviewPending] = useActionState<ReviewActionResult, FormData>(
+    adminModerateReview,
+    undefined
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  // Still local-only/mock — see the note in page.tsx on why these two
-  // stay out of scope for now.
-  const [reviews, setReviews] = useState<Review[]>(initialReviews);
-  function allowReview(reviewId: string) {
-    setReviews((rs) => rs.map((r) => (r.id === reviewId ? { ...r, status: "allowed" } : r)));
-  }
-  function deleteReview(reviewId: string) {
-    setReviews((rs) => rs.map((r) => (r.id === reviewId ? { ...r, status: "deleted" } : r)));
-  }
+  const reviews = initialReviews;
 
   const error =
     (deleteState && "error" in deleteState && deleteState.error) ||
     (restoreState && "error" in restoreState && restoreState.error) ||
+    (reviewState && "error" in reviewState && reviewState.error) ||
     null;
 
   return (
@@ -172,13 +178,14 @@ export default function UserDetail({
       ) : (
         <div style={{ borderTop: "3px solid var(--color-text)" }}>
           {reviews.map((r) => {
-            const live = r.status === "pending";
-            const rLabel = r.status === "allowed" ? "Allowed" : r.status === "deleted" ? "Deleted" : "Still live";
+            const live = r.openCount > 0;
+            const rLabel = live ? `Reported ×${r.openCount}` : r.status === "allowed" ? "Allowed" : "Deleted";
+            const rStyle = live ? REVIEW_STATE_STYLE.pending : REVIEW_STATE_STYLE[r.status];
             return (
               <div key={r.id} className="qrow">
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                    <span className="tag" style={REVIEW_STATE_STYLE[r.status]}>
+                    <span className="tag" style={rStyle}>
                       {rLabel}
                     </span>
                     <span className="mono" style={{ color: "var(--color-neutral-700)" }}>
@@ -188,18 +195,28 @@ export default function UserDetail({
                   <div style={{ borderLeft: "5px solid var(--color-text)", paddingLeft: 12 }}>
                     <p style={{ fontSize: 14, margin: 0 }}>{r.text}</p>
                   </div>
-                  <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginTop: 8 }}>
-                    {r.why}
-                  </div>
+                  {r.why && (
+                    <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginTop: 8 }}>
+                      {r.why}
+                    </div>
+                  )}
                 </div>
                 {live && (
                   <div style={{ display: "flex", gap: 8, flex: "none", alignSelf: "center" }}>
-                    <button className="btn btn-primary" onClick={() => allowReview(r.id)}>
-                      Allow
-                    </button>
-                    <button className="btn btn-secondary" onClick={() => deleteReview(r.id)}>
-                      Delete
-                    </button>
+                    <form action={reviewAction}>
+                      <input type="hidden" name="reviewId" value={r.id} />
+                      <input type="hidden" name="decision" value="allowed" />
+                      <button type="submit" className="btn btn-primary" disabled={reviewPending}>
+                        Allow
+                      </button>
+                    </form>
+                    <form action={reviewAction}>
+                      <input type="hidden" name="reviewId" value={r.id} />
+                      <input type="hidden" name="decision" value="deleted" />
+                      <button type="submit" className="btn btn-secondary" disabled={reviewPending}>
+                        Delete
+                      </button>
+                    </form>
                   </div>
                 )}
               </div>

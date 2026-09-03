@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Nav from "@/components/Nav";
 import Sheet from "@/components/Sheet";
 import { lengthLabel, starStr, steps } from "@/lib/mock";
 import { setReadingStatus } from "@/app/actions/reading";
+import { deleteOwnReview } from "@/app/actions/reviews";
+import { submitReport } from "@/app/actions/reports";
 
 /*
  * Ported from the `isBook` block in Prototype with Admin.dc.html
@@ -34,18 +36,19 @@ import { setReadingStatus } from "@/app/actions/reading";
  *   this page (the lists screen that owns that state is out of scope),
  *   so the button is inert rather than faking a list. `st.listedIn` is
  *   dropped for the same reason.
- * The book itself now comes from the database, passed in by the page.
- * Reviews do not exist as a table yet, so the only review that can
- * appear is one this browser posted, kept in localStorage.
+ * The book, and now its reviews, come from the database, passed in by
+ * the page — `myReview` and `reviews` are real rows (real, RLS'd),
+ * matching the source's `r.mine`/`r.notMine` split by comparing
+ * `user_id` server-side instead of a display name.
  *
- * - There's no auth/identity yet, so "my review" can't be told apart
- *   from a stranger's the way the source does (`r.who === name`).
- *   Reviews the reader posts locally (see the review screen) are
- *   tracked via localStorage per book id and rendered with the
- *   edit/delete controls the source shows for `r.mine`; every other
- *   review gets the report buttons the source shows for `r.notMine`.
- *   The report buttons don't open anything — the report modal is out
- *   of scope for this pass (see task notes).
+ * The report dialog (ported from Prototype with Admin.dc.html's
+ * `reportOpen` block, ~line 1497) is real too: picking one of the five
+ * reasons and sending it writes a row to `reports`. See
+ * app/actions/reports.ts for the one deliberate deviation from the
+ * source (a reason is required there). The source's `REPORT_LIMIT`
+ * repeat-cap is dropped — same as `reviewBlocked` on the write-review
+ * page, it's a constant the export never defines, so it never actually
+ * triggers there either.
  * - `justPosted` — the source sets this in local state right after
  *   posting. Since posting happens on a different route
  *   (/book/[id]/review), that page redirects back with `?posted=1`
@@ -60,7 +63,6 @@ import { setReadingStatus } from "@/app/actions/reading";
  */
 
 type ReadingStatus = "none" | "read" | "reading" | "want";
-type LocalReview = { stars: number; text: string };
 
 const STATUS_LABEL: Record<Exclude<ReadingStatus, "none">, string> = {
   read: "Read",
@@ -73,18 +75,13 @@ const STATUS_STYLE: Record<Exclude<ReadingStatus, "none">, React.CSSProperties> 
   want: { background: "#1B3BFF", color: "#EFECE3", borderColor: "#14110f" },
 };
 
-const localReviewKey = (id: string) => `bookhub-review-${id}`;
-
-function readLocalReview(id: string): LocalReview | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(localReviewKey(id));
-    return raw ? (JSON.parse(raw) as LocalReview) : null;
-  } catch {
-    return null;
-  }
-}
-
+const REPORT_REASONS: { label: string; type: string }[] = [
+  { label: "Rude or unkind to other readers", type: "rude" },
+  { label: "Bad language or slurs", type: "bad_language" },
+  { label: "Nothing to do with the book", type: "off_topic" },
+  { label: "Spam or advertising", type: "spam" },
+  { label: "Something that worries me about their safety", type: "safety_concern" },
+];
 
 /** The shape the page hands in, mapped from the books table. */
 export type DetailBook = {
@@ -99,20 +96,48 @@ export type DetailBook = {
   isSeries: boolean;
 };
 
+export type DetailReview = {
+  id: string;
+  userId: string;
+  who: string;
+  avatarColor: string;
+  stars: number;
+  text: string;
+  date: string;
+  mine: boolean;
+  alreadyReported: boolean;
+};
+
+type ReportTarget = {
+  kind: "review" | "reader";
+  targetType: "review" | "user";
+  targetId: string;
+  who: string;
+  /** The review card this report was opened from — the key the "Reported" badge tracks, since reporting either the review or its author retires both buttons on that one card. */
+  reviewId: string;
+};
+
 export default function BookDetail({
   id,
   book,
   initialStatus,
   initialProgress,
+  isGuest,
+  myReview: initialMyReview,
+  reviews,
 }: {
   id: string;
   book: DetailBook;
   initialStatus: ReadingStatus;
   initialProgress: string | null;
+  isGuest: boolean;
+  myReview: DetailReview | null;
+  reviews: DetailReview[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justPosted = searchParams.get("posted") === "1";
+  const [, startTransition] = useTransition();
 
   const [status, setStatus] = useState<ReadingStatus>(initialStatus);
   const [progressKey, setProgressKey] = useState(
@@ -120,7 +145,13 @@ export default function BookDetail({
   );
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [myReview, setMyReview] = useState<LocalReview | null>(() => readLocalReview(id));
+  const [myReview, setMyReview] = useState<DetailReview | null>(initialMyReview);
+
+  const [reportOpen, setReportOpen] = useState<ReportTarget | null>(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportNote, setReportNote] = useState("");
+  const [reportError, setReportError] = useState("");
+  const [justReported, setJustReported] = useState<Set<string>>(new Set());
 
   // Optimistic: the UI updates immediately, then the server action's
   // result either confirms it silently or surfaces an error (a guest,
@@ -137,16 +168,52 @@ export default function BookDetail({
     setStatusError(result && "error" in result ? result.error : null);
   }
 
-  function deleteMyReview() {
-    window.localStorage.removeItem(localReviewKey(id));
+  async function deleteMyReview() {
     setMyReview(null);
+    const formData = new FormData();
+    formData.set("bookId", id);
+    await deleteOwnReview(undefined, formData);
+    startTransition(() => router.refresh());
+  }
+
+  function openReport(target: ReportTarget) {
+    setReportOpen(target);
+    setReportReason("");
+    setReportNote("");
+    setReportError("");
+  }
+  function cancelReport() {
+    setReportOpen(null);
+    setReportReason("");
+    setReportNote("");
+    setReportError("");
+  }
+  async function sendReport() {
+    if (!reportOpen) return;
+    if (!reportReason) {
+      setReportError("PICK A REASON");
+      return;
+    }
+    const formData = new FormData();
+    formData.set("type", reportReason);
+    formData.set("targetType", reportOpen.targetType);
+    formData.set("targetId", reportOpen.targetId);
+    formData.set("note", reportNote);
+    const result = await submitReport(undefined, formData);
+    if (result && "error" in result) {
+      setReportError(result.error);
+      return;
+    }
+    setJustReported((s) => new Set(s).add(reportOpen.reviewId));
+    setReportOpen(null);
+    setReportReason("");
+    setReportNote("");
+    setReportError("");
   }
 
   const progressStep = steps.find((s) => s.key === progressKey) ?? steps[0];
-  // No reviews table yet, so the only one that can exist is this
-  // browser's own.
-  const reviews: { who: string; stars: number; date: string; text: string }[] = [];
   const reviewCount = reviews.length + (myReview ? 1 : 0);
+  const isSafeguarding = reportReason === "safety_concern";
 
   return (
     <>
@@ -373,7 +440,7 @@ export default function BookDetail({
                       You
                     </div>
                     <span className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-                      TODAY
+                      {myReview.date}
                     </span>
                   </div>
                   <span className="stars" style={{ fontSize: 13 }}>
@@ -395,34 +462,151 @@ export default function BookDetail({
                   </div>
                 </div>
               )}
-              {reviews.map((r, i) => (
-                <div key={`${book.id}:${i}`} className="card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <div className="card-title" style={{ fontSize: 16 }}>
-                      {r.who}
+              {reviews.map((r) => {
+                const reported = r.alreadyReported || justReported.has(r.id);
+                return (
+                  <div key={r.id} className="card">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <div className="card-title" style={{ fontSize: 16 }}>
+                        {r.who}
+                      </div>
+                      <span className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+                        {r.date}
+                      </span>
                     </div>
-                    <span className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-                      {r.date}
+                    <span className="stars" style={{ fontSize: 13 }}>
+                      {starStr(r.stars)}
                     </span>
+                    <p className="card-body">{r.text}</p>
+                    {!isGuest && !reported && (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() =>
+                            openReport({ kind: "review", targetType: "review", targetId: r.id, who: r.who, reviewId: r.id })
+                          }
+                        >
+                          Report this review
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() =>
+                            openReport({ kind: "reader", targetType: "user", targetId: r.userId, who: r.who, reviewId: r.id })
+                          }
+                        >
+                          Report this reader
+                        </button>
+                      </div>
+                    )}
+                    {!isGuest && reported && (
+                      <span
+                        style={{
+                          alignSelf: "flex-start",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          background: "#c6f24e",
+                          color: "#14110f",
+                          border: "3px solid var(--color-text)",
+                          padding: "4px 10px",
+                        }}
+                      >
+                        <span style={{ fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1 }}>✓</span>
+                        <span className="mono" style={{ fontWeight: 700 }}>
+                          REPORTED — WE&apos;LL TAKE A LOOK
+                        </span>
+                      </span>
+                    )}
                   </div>
-                  <span className="stars" style={{ fontSize: 13 }}>
-                    {starStr(r.stars)}
-                  </span>
-                  <p className="card-body">{r.text}</p>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button type="button" className="btn btn-ghost">
-                      Report this review
-                    </button>
-                    <button type="button" className="btn btn-ghost">
-                      Report this reader
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
+      {reportOpen && (
+        <div className="dialog-backdrop">
+          <div className="dialog blueprint" style={{ width: "min(520px, 100%)" }}>
+            <i className="corner tl" />
+            <i className="corner tr" />
+            <i className="corner bl" />
+            <i className="corner br" />
+            <div className="card-kicker">Report</div>
+            <div className="dialog-title">
+              {reportOpen.kind === "reader" ? `Report ${reportOpen.who}` : "Report this review"}
+            </div>
+            <p className="dialog-body" style={{ margin: 0 }}>
+              {reportOpen.kind === "reader"
+                ? "What is the problem with this reader? Only the site owner sees this — they will not know who reported them."
+                : "What is the problem with this review? Only the site owner sees this — the author will not know who reported it."}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+              {REPORT_REASONS.map((r) => (
+                <label
+                  key={r.type}
+                  className="radio"
+                  style={{ border: "3px solid var(--color-divider)", padding: "10px 12px", minHeight: 44 }}
+                >
+                  <input
+                    type="radio"
+                    name="rep"
+                    checked={reportReason === r.type}
+                    onChange={() => {
+                      setReportReason(r.type);
+                      setReportError("");
+                    }}
+                  />
+                  <span className="dot" />
+                  {r.label}
+                </label>
+              ))}
+            </div>
+            <div className="field">
+              <label>Anything else? (optional)</label>
+              <textarea
+                className="input"
+                style={{ minHeight: 70 }}
+                placeholder="Tell us in your own words"
+                value={reportNote}
+                onChange={(e) => setReportNote(e.target.value)}
+              />
+            </div>
+            {isSafeguarding && (
+              <div
+                style={{
+                  background: "#C41031",
+                  color: "#EFECE3",
+                  border: "3px solid var(--color-text)",
+                  padding: "12px 14px",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+                  If someone is in danger, tell an adult you trust
+                </div>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  We read every report, but we are a book site — we cannot help in an emergency.
+                  Speak to a parent, carer or teacher as well.
+                </p>
+              </div>
+            )}
+            {reportError && (
+              <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700 }}>
+                {reportError}
+              </div>
+            )}
+            <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
+              <button type="button" className="btn btn-primary" onClick={sendReport}>
+                Send report
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={cancelReport}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
