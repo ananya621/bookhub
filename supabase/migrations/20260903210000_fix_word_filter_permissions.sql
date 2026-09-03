@@ -1,0 +1,36 @@
+-- The word filter has never actually run for a reader. Everything it is
+-- supposed to gate -- review text, list names, the note on a book
+-- request, an admin's imported title and summary -- has been going
+-- straight through untouched in production.
+--
+-- Why: contains_banned_word() is security INVOKER and calls fold_name()
+-- internally, but fold_name has no execute grant for `authenticated`.
+-- It lost it in 20260901044820_revoke_execute_on_trigger_functions.sql,
+-- and `create or replace function` does not reset privileges, so the
+-- rewrite in 20260903120000_full_word_filter.sql inherited the revoked
+-- state. Calling it as a signed-in reader raises
+--
+--   42501: permission denied for function fold_name
+--
+-- check_display_name() never hit this because it is security DEFINER --
+-- it runs as its owner, so the caller never needs rights on the
+-- internals. Display names were filtered; nothing else was.
+--
+-- It went unnoticed because the failure is silent on both sides: the
+-- app read only `data` from the RPC and ignored `error`, so a failed
+-- check came back as null, which is falsy, which reads as "clean". The
+-- app-side half of this fix is in lib/word-filter.ts, which now fails
+-- closed.
+--
+-- Two changes here. Making contains_banned_word security definer, like
+-- check_display_name already is, so it stops depending on the caller
+-- holding rights to its own helpers -- otherwise the next helper added
+-- to it reintroduces exactly this bug, just as quietly. It already sets
+-- search_path = '' and takes only a text argument, which is what makes
+-- definer safe here.
+alter function public.contains_banned_word(text) security definer;
+
+-- And granting execute explicitly rather than leaning on Postgres's
+-- default of granting to PUBLIC, which is the accident that made this
+-- one function work while fold_name didn't.
+grant execute on function public.contains_banned_word(text) to anon, authenticated;
