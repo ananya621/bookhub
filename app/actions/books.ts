@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { containsBannedWord } from "@/lib/word-filter";
 import { searchGoogleBooks, type GoogleBook, type SearchOutcome } from "@/lib/google-books";
 import {
   deleteCover,
@@ -67,7 +68,7 @@ export async function requestBook(_prev: ActionResult, formData: FormData): Prom
   // reads every request before it becomes a book anyway.
   const note = String(formData.get("note") ?? "").trim() || null;
   if (note) {
-    const { data: hasBanned } = await supabase.rpc("contains_banned_word", { v: note });
+    const hasBanned = await containsBannedWord(supabase, note);
     if (hasBanned) return { error: "THAT NOTE CAN’T BE SENT — TRY REWORDING IT" };
   }
 
@@ -148,10 +149,10 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
   // a real person's name rather than free text, so the filter is far
   // more likely to misfire on it (a surname containing a banned
   // substring) than to ever catch anything genuine.
-  const { data: titleBanned } = await supabase.rpc("contains_banned_word", { v: title });
+  const titleBanned = await containsBannedWord(supabase, title);
   if (titleBanned) return { error: "THAT TITLE CAN’T BE USED — CHECK IT FOR TYPOS" };
   if (summary) {
-    const { data: summaryBanned } = await supabase.rpc("contains_banned_word", { v: summary });
+    const summaryBanned = await containsBannedWord(supabase, summary);
     if (summaryBanned) return { error: "THAT SUMMARY CAN’T BE USED — TRY REWORDING IT" };
   }
 

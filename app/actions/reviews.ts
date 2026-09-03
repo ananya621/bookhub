@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { containsBannedWord } from "@/lib/word-filter";
 
 /*
  * Reviews — one per (reader, book). See
@@ -44,7 +45,7 @@ export async function submitReview(
   } = await supabase.auth.getUser();
   if (!user) return { error: "SIGN UP TO WRITE A REVIEW" };
 
-  const { data: hasBanned } = await supabase.rpc("contains_banned_word", { v: text });
+  const hasBanned = await containsBannedWord(supabase, text);
   if (hasBanned) return { blocked: true };
 
   const { error } = await supabase
