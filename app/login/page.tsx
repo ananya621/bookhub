@@ -9,11 +9,10 @@ import { signIn, type ActionResult } from "@/app/actions/auth";
  * (lines 1322-1340). Chrome-less screen, no <Nav /> — see app/start
  * for why.
  *
- * `submitLogin` is copied verbatim from the export: it never actually
- * checks a password against an account (there's no backend for
- * that), it just requires an "@" in the email and a non-empty
- * password, same as the source does. Success navigates to /home;
- * that's unauthenticated navigation until the real login API exists.
+ * `signIn` (app/actions/auth.ts) is real: it calls Supabase's own
+ * signInWithPassword, so a wrong email/password is actually rejected —
+ * this isn't the export's no-backend version that accepted anything
+ * with an "@" and a non-empty password.
  */
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
