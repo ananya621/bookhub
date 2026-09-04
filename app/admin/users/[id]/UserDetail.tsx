@@ -165,11 +165,13 @@ export default function UserDetail({
           <div className="mono" style={{ color: "var(--color-neutral-700)" }}>
             JOINED {formatDate(account.joined)}
           </div>
-          {account.email && (
-            <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 3 }}>
-              {account.email}
-            </div>
-          )}
+          {/* Every account signed up with an address, so a missing one
+              here means the lookup failed rather than that there isn't
+              one. Say that, instead of rendering nothing and leaving an
+              admin to conclude this reader somehow has no email. */}
+          <div className="mono" style={{ color: "var(--color-neutral-700)", marginTop: 3 }}>
+            {account.email ?? "EMAIL UNAVAILABLE — THE LOOKUP FAILED"}
+          </div>
           <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
             {account.isAdmin && <span className="tag tag-accent">Admin</span>}
             {account.isSelf && <span className="tag tag-neutral">You</span>}

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+export { MAX_COVER_BYTES, MAX_COVER_LABEL } from "@/lib/cover-limits";
 
 /*
  * Putting a book cover into the `book-covers` storage bucket (see
@@ -11,20 +12,6 @@ import { createClient } from "@/lib/supabase/server";
 
 const BUCKET = "book-covers";
 
-/*
- * Refused before the upload is attempted, so an oversized file gets a
- * sentence explaining itself rather than a 413 the admin sees as a bare
- * internal error.
- *
- * Below next.config.ts's 5MB Server Action body limit on purpose: that
- * limit covers the whole multipart request — the rest of the form and
- * multipart's own boundaries and headers — not just the file, so a file
- * right at the limit still arrives over it.
- */
-export const MAX_COVER_BYTES = 4 * 1024 * 1024;
-
-/** Human-readable, for the message shown when a cover is too big. */
-export const MAX_COVER_LABEL = "4MB";
 
 function extensionFor(contentType: string | null | undefined): string {
   if (contentType?.includes("png")) return "png";

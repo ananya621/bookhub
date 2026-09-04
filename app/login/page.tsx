@@ -80,7 +80,16 @@ function LoginContent() {
             {(bannedUntil || bannedReason) && (
               <div className="mono" style={{ fontWeight: 700, marginTop: 4 }}>
                 {bannedReason ? bannedReason.toUpperCase() + " · " : ""}
-                {bannedUntil ? "UNTIL " + new Date(bannedUntil).toLocaleString("en-GB").toUpperCase() : ""}
+                {/* Time zone pinned for the same reason lib/dates.ts pins
+                    it: the server is UTC and the reader's browser is not,
+                    and a ban that ends near midnight would otherwise be
+                    rendered as two different days. */}
+                {bannedUntil
+                  ? "UNTIL " +
+                    new Date(bannedUntil)
+                      .toLocaleString("en-GB", { timeZone: "Europe/London" })
+                      .toUpperCase()
+                  : ""}
               </div>
             )}
           </div>

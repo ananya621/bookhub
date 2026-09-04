@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useRef, useState } from "react";
 import { addBookCover, removeBook, type ActionResult } from "@/app/actions/books";
+import { MAX_COVER_BYTES, MAX_COVER_LABEL } from "@/lib/cover-limits";
 
 export type CatalogueBook = {
   id: string;
@@ -99,6 +100,7 @@ function CatalogueRow({
   const [coverState, coverAction] = useActionState<ActionResult, FormData>(addBookCover, undefined);
   const fileInput = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [tooBig, setTooBig] = useState<string | null>(null);
   const noCover = !b.coverUrl;
 
   const coverError = coverState && "error" in coverState && coverState.error;
@@ -135,9 +137,9 @@ function CatalogueRow({
           ))}
           <span className="tag tag-outline">{b.source === "manual" ? "Typed in" : "From search"}</span>
         </div>
-        {coverError && (
+        {(coverError || tooBig) && (
           <div className="mono" style={{ color: "var(--color-problem-text)", marginTop: 6 }}>
-            {coverError}
+            {coverError || tooBig}
           </div>
         )}
       </div>
@@ -150,7 +152,23 @@ function CatalogueRow({
             name="coverFile"
             accept="image/png,image/jpeg,image/webp"
             style={{ display: "none" }}
-            onChange={() => formRef.current?.requestSubmit()}
+            onChange={(e) => {
+              // Checked before submitting, not after. Next rejects an
+              // over-sized body before the action runs, so posting it
+              // anyway would return a bare 413 the admin sees as an
+              // unexplained failure. The action keeps its own check —
+              // this one is for the person, not for safety.
+              const file = e.target.files?.[0];
+              if (file && file.size > MAX_COVER_BYTES) {
+                setTooBig(
+                  `That image is ${(file.size / 1024 / 1024).toFixed(1)}MB — ${MAX_COVER_LABEL} is the most we can take.`
+                );
+                e.target.value = "";
+                return;
+              }
+              setTooBig(null);
+              formRef.current?.requestSubmit();
+            }}
           />
           <button
             type="button"
@@ -165,7 +183,7 @@ function CatalogueRow({
       {removing ? (
         <form action={removeAction} style={{ display: "flex", gap: 6, flex: "none" }}>
           <input type="hidden" name="bookId" value={b.id} />
-          <button type="submit" className="btn" style={{ background: "#C41031", color: "#EFECE3" }}>
+          <button type="submit" className="btn btn-danger">
             Confirm
           </button>
           <button type="button" className="btn btn-ghost" onClick={onCancelRemove}>

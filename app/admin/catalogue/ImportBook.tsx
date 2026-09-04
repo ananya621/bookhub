@@ -5,6 +5,7 @@ import { allGenres, allLevels, lengthLabel } from "@/lib/mock";
 import { guessGenres } from "@/lib/genre-mapping";
 import { importBook, suggestFromGoogle, type ActionResult } from "@/app/actions/books";
 import type { GoogleBook } from "@/lib/google-books";
+import { MAX_COVER_BYTES, MAX_COVER_LABEL } from "@/lib/cover-limits";
 
 /*
  * Ported from the `isCatalogue` block in Prototype Admin.dc.html — the
@@ -90,6 +91,7 @@ export default function ImportBook({
 
   const [coverMode, setCoverMode] = useState<CoverMode>("none");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverTooBig, setCoverTooBig] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [fulfil, setFulfil] = useState(true);
@@ -193,8 +195,33 @@ export default function ImportBook({
     setCoverPreview(picked.coverUrl);
   }
 
+  /*
+   * Size is checked HERE, in the browser, not just in the server action.
+   *
+   * The action's own check can never see a file this big: Next rejects
+   * an over-sized request body before the action runs at all, so the
+   * admin got a bare "an unexpected response was received from the
+   * server" — a 413 with nothing explaining it. Refusing the file at the
+   * moment it is picked means they find out immediately, in words, and
+   * the browser never sends 9MB it was only going to have thrown away.
+   *
+   * The server check stays regardless: this one is a courtesy to the
+   * person using the form, not a control. Anyone can post past it.
+   */
   function onFileChosen(file: File | undefined) {
     if (!file) return;
+
+    if (file.size > MAX_COVER_BYTES) {
+      setCoverTooBig(
+        `That image is ${(file.size / 1024 / 1024).toFixed(1)}MB — ${MAX_COVER_LABEL} is the most we can take. Try a smaller version of it.`
+      );
+      if (fileInput.current) fileInput.current.value = "";
+      setCoverMode("none");
+      setCoverPreview(null);
+      return;
+    }
+
+    setCoverTooBig(null);
     setCoverMode("upload");
     setCoverPreview(URL.createObjectURL(file));
   }
@@ -406,6 +433,19 @@ export default function ImportBook({
                   >
                     <span className="mono">NO COVER YET</span>
                   </div>
+                )}
+
+                {coverTooBig && (
+                  <p
+                    className="mono"
+                    style={{
+                      color: "var(--color-problem-text)",
+                      fontWeight: 700,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {coverTooBig}
+                  </p>
                 )}
 
                 <input

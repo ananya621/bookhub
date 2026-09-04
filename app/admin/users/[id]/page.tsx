@@ -55,7 +55,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   // uses for banning.
   const admin = createAdminClient();
 
-  const [{ data: profile }, { data: role }, { data: pending }, { data: ban }, { data: authUser }] =
+  const [{ data: profile }, { data: role }, { data: pending }, { data: ban }, { data: authUser, error: authUserError }] =
     await Promise.all([
       supabase.from("profiles").select("id, display_name, avatar_color, created_at").eq("id", id).maybeSingle(),
       supabase.from("user_roles").select("is_admin").eq("user_id", id).maybeSingle(),
@@ -65,6 +65,19 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
     ]);
 
   if (!profile) notFound();
+
+  // Every account here has an email — it is how they signed up — so a
+  // missing one means the lookup failed, not that there isn't one.
+  // Worth saying out loud: this silently rendered nothing at all when it
+  // failed, which reads to an admin as "this reader has no email"
+  // rather than "we couldn't fetch it", and left no trace anywhere.
+  if (authUserError) {
+    console.error(
+      "[admin/users/[id]] getUserById failed, showing the page without the " +
+        "email rather than pretending the account hasn't got one:",
+      authUserError.message
+    );
+  }
 
   // Their reviews depend on nothing the reports need, so the two chains
   // run alongside each other rather than one after the other.
@@ -159,7 +172,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           account={{
             id: profile.id as string,
             displayName: profile.display_name as string | null,
-            email: authUser.user?.email ?? null,
+            email: authUser?.user?.email ?? null,
             avatarColor: profile.avatar_color as string,
             joined: profile.created_at as string,
             isAdmin: role?.is_admin ?? false,
