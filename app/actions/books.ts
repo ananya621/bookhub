@@ -266,6 +266,88 @@ export async function addBookCover(_prev: ActionResult, formData: FormData): Pro
   return { ok: "cover-added" };
 }
 
+/**
+ * Editing an already-catalogued book — the same fields Step 2 of
+ * import sets (title, author, pages, summary, genres, reading level,
+ * series), on a book that's already live. No screen for this exists in
+ * the design; built to the same shape as importBook()'s Step 2 fields
+ * and the same word-filter rule (title/summary checked, author isn't —
+ * see importBook()'s comment on why).
+ *
+ * Cover handling mirrors addBookCover()/removeBook(): a newly uploaded
+ * file replaces whatever was stored (the old file deleted only after
+ * the new one is safely saved), and checking "Remove cover" on its own
+ * clears it back to no-cover. Leaving both alone keeps the existing
+ * cover untouched.
+ */
+export async function updateBook(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const bookId = String(formData.get("bookId") ?? "");
+  if (!bookId) return { error: "NO BOOK SPECIFIED" };
+
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) return { error: "A TITLE IS REQUIRED" };
+
+  const summary = String(formData.get("summary") ?? "").trim();
+
+  const supabase = await createClient();
+
+  const titleBanned = await containsBannedWord(supabase, title);
+  if (titleBanned) return { error: "THAT TITLE CAN’T BE USED — CHECK IT FOR TYPOS" };
+  if (summary) {
+    const summaryBanned = await containsBannedWord(supabase, summary);
+    if (summaryBanned) return { error: "THAT SUMMARY CAN’T BE USED — TRY REWORDING IT" };
+  }
+
+  const pages = Number.parseInt(String(formData.get("pages") ?? ""), 10);
+
+  const { data: existing } = await supabase
+    .from("books")
+    .select("cover_url")
+    .eq("id", bookId)
+    .maybeSingle();
+
+  let coverUrl = (existing?.cover_url as string | null) ?? null;
+  let oldCoverToDelete: string | null = null;
+
+  const file = formData.get("coverFile");
+  if (file instanceof File && file.size > 0) {
+    if (file.size > MAX_COVER_BYTES) {
+      return { error: `THAT IMAGE IS TOO BIG — ${MAX_COVER_LABEL} OR LESS` };
+    }
+    const newCoverUrl = await storeCoverFromFile(file);
+    if (!newCoverUrl) return { error: "COULDN'T STORE THAT FILE — TRY A DIFFERENT IMAGE" };
+    oldCoverToDelete = coverUrl;
+    coverUrl = newCoverUrl;
+  } else if (formData.get("removeCover") === "on") {
+    oldCoverToDelete = coverUrl;
+    coverUrl = null;
+  }
+
+  const { error } = await supabase
+    .from("books")
+    .update({
+      title,
+      author: String(formData.get("author") ?? "").trim(),
+      pages: Number.isFinite(pages) ? pages : null,
+      summary: summary || null,
+      cover_url: coverUrl,
+      genres: formData.getAll("genres").map(String),
+      reading_level: String(formData.get("readingLevel") ?? "Middle Grade"),
+      is_series: formData.get("isSeries") === "on",
+    })
+    .eq("id", bookId);
+
+  if (error) return { error: error.message.toUpperCase() };
+
+  if (oldCoverToDelete) await deleteCover(oldCoverToDelete);
+
+  revalidatePath("/admin/catalogue");
+  revalidatePath("/admin");
+  revalidatePath("/search");
+  revalidatePath(`/book/${bookId}`);
+  return { ok: "updated" };
+}
+
 /** "Remove" on the catalogue list — takes the book off the shelf entirely. */
 export async function removeBook(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const bookId = String(formData.get("bookId") ?? "");
