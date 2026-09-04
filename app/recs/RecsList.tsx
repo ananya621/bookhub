@@ -59,6 +59,9 @@ export default function RecsList({
                     {t}
                   </span>
                 ))}
+                {book.readingLevel && (
+                  <span className="tag tag-neutral">{book.readingLevel}</span>
+                )}
               </div>
             </Link>
           ))}
