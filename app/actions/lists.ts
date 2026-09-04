@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { containsBannedWord } from "@/lib/word-filter";
 
 /*
  * Reading lists. See supabase/migrations/20260903000200_lists.sql for
@@ -35,7 +36,7 @@ export async function createList(_prev: ActionResult, formData: FormData): Promi
 
   // Same gate display names and review text already go through — a list
   // name travels as far as either once the link is shared.
-  const { data: hasBanned } = await supabase.rpc("contains_banned_word", { v: name });
+  const hasBanned = await containsBannedWord(supabase, name);
   if (hasBanned) return { error: "THAT NAME ISN’T ALLOWED HERE" };
 
   // A slug collision (two different random suffixes landing on the

@@ -86,17 +86,36 @@ These are settings the app reads while it runs. They live in Vercel, not
 in the repo.
 
 Go to the project → **Settings** → **Environment Variables**. Add these
-four. For each one, tick **Production** *and* **Preview**.
+five. For each one, tick **Production** *and* **Preview**.
 
 | Name | Value | Where to get it |
 |---|---|---|
 | `SUPABASE_URL` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **Data API** → **Project URL** |
 | `SUPABASE_PUBLISHABLE_KEY` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **API Keys** → the publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Copy from your `.env.local` | Or: Supabase → **Project Settings** → **API Keys** → the `service_role` key |
 | `SITE_URL` | `https://www.litconnect.io` | Your domain — see Step 3 |
 | `GOOGLE_BOOKS_API_KEY` | Copy from your `.env.local` | Or: Google Cloud console → **APIs & Services** → **Credentials** |
 
 The first two are safe to expose. They are sent to every visitor's browser
 on purpose.
+
+### `SUPABASE_SERVICE_ROLE_KEY` — the one real secret here
+
+**This one is genuinely dangerous.** It bypasses every row-level security
+rule and can act as any user. It must never get the `NEXT_PUBLIC_`
+prefix, never be committed, and never reach a browser. Only
+`lib/supabase/admin.ts` reads it, and only from server code.
+
+It is needed because some things cannot be done as a normal signed-in
+user, no matter their permissions: banning and un-banning an account,
+and reading an account's email address for the admin's user page. Those
+are Supabase Auth operations, not ordinary table writes.
+
+Leaving it out does not fail loudly at build time. The site deploys, and
+then anything touching it dies with `supabaseKey is required` — which
+reaches an admin as a bare internal error. If opening a reader's profile
+in the admin area, or banning or deleting an account, breaks in
+production, check this variable first.
 
 `GOOGLE_BOOKS_API_KEY` is different — treat it as private. Without it the
 "suggest a book" search says it is not set up rather than failing

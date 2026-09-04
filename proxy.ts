@@ -65,7 +65,7 @@ export async function proxy(request: NextRequest) {
     // One call. See the note on current_user_state() in the migration:
     // the ban check needs a database function regardless, so it answers
     // everything at once rather than adding a fourth query.
-    const { data } = await supabase.rpc("current_user_state").maybeSingle();
+    const { data, error } = await supabase.rpc("current_user_state").maybeSingle();
     const state = data as {
       display_name: string | null;
       is_admin: boolean;
@@ -73,14 +73,35 @@ export async function proxy(request: NextRequest) {
       is_banned: boolean;
     } | null;
 
-    if (state?.is_banned) {
+    if (error) {
+      // Same trade as getCurrentUser() (lib/auth.ts) — this RPC is the
+      // only thing that knows whether the session we just refreshed
+      // belongs to a banned account, and a failed call means we cannot
+      // tell. Treating "cannot tell" as "not banned" is the exact
+      // fail-open bug this pass exists to remove, so log it and fall
+      // into the same branch a real ban does, below.
+      console.error(
+        "[proxy] current_user_state failed, signing the request out:",
+        error.message
+      );
+    }
+
+    if (error || state?.is_banned) {
       // Supabase leaves an existing session working for up to an hour
       // after a ban, so end it here rather than waiting for it to
       // expire. Signing out is better than ignoring the session: it
       // clears the cookie, so they stop being asked about on every
       // subsequent request.
+      //
+      // A failed check ends the session too — "cannot tell" must not
+      // mean "not banned" — but it deliberately does NOT claim they
+      // were banned. Being wrongly told your account is banned is
+      // frightening, and most of the people reading it are children;
+      // a database hiccup should not accuse someone of something they
+      // did not do. They get the ordinary sign-in page and log back
+      // in, none the wiser, and the real reason is in the log above.
       await supabase.auth.signOut();
-      return to("/login?banned=1");
+      return to(state?.is_banned ? "/login?banned=1" : "/login");
     }
 
     user = {

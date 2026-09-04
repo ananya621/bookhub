@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { countLabel } from "@/lib/plural";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -60,7 +61,7 @@ export default async function SharedListPage({
         </div>
         <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>{list.name}</h1>
         <div className="mono" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 24 }}>
-          {list.books.length + " BOOKS · VIEW ONLY"}
+          {countLabel(list.books.length, "book") + " · VIEW ONLY"}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
           {list.books.map((b) => (

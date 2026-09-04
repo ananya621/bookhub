@@ -360,7 +360,11 @@ export default function BookDetail({
             </div>
           </div>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 36 }}>
+        {/* responsive-grid, or the two columns stay two columns on a
+            phone and the right-hand one runs off the side of the screen
+            — board E2 is a single column. The class collapses it to 1fr
+            under 640px; the inline template is the desktop shape. */}
+        <div className="responsive-grid" style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 36 }}>
           <div>
             {book.coverUrl ? (
               // Google's URLs (or an admin-uploaded file's), not

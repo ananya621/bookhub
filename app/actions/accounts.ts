@@ -178,6 +178,16 @@ export async function adminBanAccount(
 
   let bannedUntil: string | null = null;
 
+  // Collected rather than returned on the first problem: by the time
+  // any of these can fail, the sign-in block below has already taken
+  // effect on Supabase's side. Bailing out early would leave that
+  // un-recorded in account_bans and the admin none the wiser that
+  // anything happened at all. Better to still do everything that can be
+  // done and tell the admin plainly what didn't — see the doc comment
+  // on this function for why a partial ban must never be reported as a
+  // full one.
+  const failures: string[] = [];
+
   if (duration !== "warning") {
     const picked = BAN_DURATIONS[duration];
     const admin = createAdminClient();
@@ -187,19 +197,51 @@ export async function adminBanAccount(
     });
     if (banError) return { error: banError.message.toUpperCase() };
 
-    const { data: target } = await admin.auth.admin.getUserById(userId);
-    const email = target.user?.email?.toLowerCase().trim();
+    const { data: target, error: lookupError } = await admin.auth.admin.getUserById(userId);
+    const email = target?.user?.email?.toLowerCase().trim();
+
+    if (lookupError) {
+      // Dropping this used to mean `email` silently became undefined
+      // and the banned_emails insert below just quietly didn't happen —
+      // no error anywhere, and the admin was told the ban worked.
+      console.error(
+        "[accounts] getUserById failed while banning, email block skipped:",
+        lookupError.message
+      );
+      failures.push("their email couldn't be looked up, so it wasn't blocked from signing up again");
+    }
 
     // Three independent writes — blocking the email, removing their
     // lists, and pulling their reviews. Nothing here reads what the
-    // others wrote, so they go together.
-    await Promise.all([
+    // others wrote, so they go together. Each result is checked below;
+    // Promise.all used to just discard whatever came back, which is how
+    // a ban could report success while a write silently failed.
+    const [emailResult, listsResult, reviewsResult] = await Promise.all([
       email
-        ? supabase.from("banned_emails").insert({ email, banned_by: me.id })
-        : Promise.resolve(),
+        ? supabase
+            .from("banned_emails")
+            // upsert + ignoreDuplicates, not insert: if an admin retries
+            // after seeing a partial failure below, this write may have
+            // already gone through, and a duplicate-key error on retry
+            // would then be reported as a fresh failure when it isn't one.
+            .upsert({ email, banned_by: me.id }, { onConflict: "email", ignoreDuplicates: true })
+        : Promise.resolve({ error: null as { message: string } | null }),
       supabase.from("lists").delete().eq("user_id", userId),
       supabase.from("reviews").update({ status: "deleted" }).eq("user_id", userId),
     ]);
+
+    if (email && emailResult.error) {
+      console.error("[accounts] banned_emails write failed:", emailResult.error.message);
+      failures.push("their email wasn't blocked from signing up again");
+    }
+    if (listsResult.error) {
+      console.error("[accounts] lists delete failed while banning:", listsResult.error.message);
+      failures.push("their lists weren't removed");
+    }
+    if (reviewsResult.error) {
+      console.error("[accounts] reviews update failed while banning:", reviewsResult.error.message);
+      failures.push("their reviews weren't removed");
+    }
 
     bannedUntil = new Date(Date.now() + picked.ms).toISOString();
   }
@@ -211,6 +253,22 @@ export async function adminBanAccount(
 
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${userId}`);
+
+  // The sign-in block and the account_bans record (the two things that
+  // can't partially fail — each is a single write, checked above) both
+  // succeeded here, or this is a warning, which never touches either of
+  // the other two. Only surface the parts that actually failed, by
+  // name, rather than telling the admin it all worked. There's no
+  // separate "partial success" variant of ActionResult to return here —
+  // an error string that says which part didn't apply is what the UI
+  // (UserDetail.tsx) already knows how to show in red, and it keeps the
+  // ban dialog open so the admin notices instead of it quietly closing.
+  if (failures.length > 0) {
+    return {
+      error: `THE SIGN-IN BLOCK WORKED, BUT ${failures.join("; ")}. CHECK THE LOGS, THEN TRY AGAIN.`.toUpperCase(),
+    };
+  }
+
   return { ok: duration === "warning" ? "warned" : "banned" };
 }
 

@@ -69,7 +69,28 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     // One call, not four. The ban check has to read auth.users, which
     // needs a database function anyway, so that function answers
     // everything at once.
-    const { data } = await supabase.rpc("current_user_state").maybeSingle();
+    const { data, error } = await supabase.rpc("current_user_state").maybeSingle();
+
+    if (error) {
+      // This RPC is the only thing that knows whether this session
+      // belongs to a banned account — see the migration comment on
+      // current_user_state(): Supabase itself leaves a banned session
+      // working for up to an hour, and nothing else here checks. If the
+      // call fails we cannot tell either way, and the bug this whole
+      // pass exists to remove was treating "couldn't tell" as "not
+      // banned." So a failed check is signed out, exactly like a real
+      // ban is a few lines below. That does mean a transient database
+      // error costs a real, non-banned person a re-login — a fair trade
+      // for closing the one window this function exists to close, and
+      // now it shows up in the logs instead of nowhere. Don't "fix"
+      // this by falling back to trusting `user` alone.
+      console.error(
+        "[auth] current_user_state failed, treating the request as signed out:",
+        error.message
+      );
+      return null;
+    }
+
     const state = data as {
       display_name: string | null;
       avatar_color: string;

@@ -2,8 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { containsBannedWord } from "@/lib/word-filter";
 import { searchGoogleBooks, type GoogleBook, type SearchOutcome } from "@/lib/google-books";
-import { deleteCover, storeCoverFromFile, storeCoverFromUrl } from "@/lib/storage";
+import {
+  deleteCover,
+  storeCoverFromFile,
+  storeCoverFromUrl,
+  MAX_COVER_BYTES,
+  MAX_COVER_LABEL,
+} from "@/lib/storage";
 
 /*
  * Searching for books, asking for missing ones, and the admin side of
@@ -61,7 +68,7 @@ export async function requestBook(_prev: ActionResult, formData: FormData): Prom
   // reads every request before it becomes a book anyway.
   const note = String(formData.get("note") ?? "").trim() || null;
   if (note) {
-    const { data: hasBanned } = await supabase.rpc("contains_banned_word", { v: note });
+    const hasBanned = await containsBannedWord(supabase, note);
     if (hasBanned) return { error: "THAT NOTE CAN’T BE SENT — TRY REWORDING IT" };
   }
 
@@ -142,10 +149,10 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
   // a real person's name rather than free text, so the filter is far
   // more likely to misfire on it (a surname containing a banned
   // substring) than to ever catch anything genuine.
-  const { data: titleBanned } = await supabase.rpc("contains_banned_word", { v: title });
+  const titleBanned = await containsBannedWord(supabase, title);
   if (titleBanned) return { error: "THAT TITLE CAN’T BE USED — CHECK IT FOR TYPOS" };
   if (summary) {
-    const { data: summaryBanned } = await supabase.rpc("contains_banned_word", { v: summary });
+    const summaryBanned = await containsBannedWord(supabase, summary);
     if (summaryBanned) return { error: "THAT SUMMARY CAN’T BE USED — TRY REWORDING IT" };
   }
 
@@ -164,7 +171,12 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
     if (apiCoverUrl) coverUrl = await storeCoverFromUrl(apiCoverUrl);
   } else if (coverMode === "upload") {
     const file = formData.get("coverFile");
-    if (file instanceof File) coverUrl = await storeCoverFromFile(file);
+    if (file instanceof File) {
+      if (file.size > MAX_COVER_BYTES) {
+        return { error: `THAT IMAGE IS TOO BIG — ${MAX_COVER_LABEL} OR LESS` };
+      }
+      coverUrl = await storeCoverFromFile(file);
+    }
   }
 
   const {
@@ -228,6 +240,9 @@ export async function addBookCover(_prev: ActionResult, formData: FormData): Pro
   const file = formData.get("coverFile");
   if (!bookId) return { error: "NO BOOK SPECIFIED" };
   if (!(file instanceof File) || file.size === 0) return { error: "PICK A FILE FIRST" };
+  if (file.size > MAX_COVER_BYTES) {
+    return { error: `THAT IMAGE IS TOO BIG — ${MAX_COVER_LABEL} OR LESS` };
+  }
 
   const coverUrl = await storeCoverFromFile(file);
   if (!coverUrl) return { error: "COULDN'T STORE THAT FILE — TRY A DIFFERENT IMAGE" };
