@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /*
  * Everything that changes who is signed in, or what their account says.
@@ -197,11 +198,63 @@ export async function resendConfirmation(
 
 /* --- Signing in and out --------------------------------------------- */
 
+/**
+ * Logging in accepts either the display name or the email — display
+ * name is what already-set-up accounts are meant to use day to day;
+ * email still works too, since email is what Supabase's own
+ * signInWithPassword actually needs under the hood either way.
+ *
+ * A display name never has an "@" in it (check_display_name() already
+ * enforces that indirectly — reserved/banned/taken names are the only
+ * rejections, but in practice nobody's display name looks like an
+ * email), so that's the whole test for which one was typed.
+ *
+ * profiles.display_name is public (profiles_select_all), so finding
+ * whose it is needs no special access — but the account's real email
+ * lives only in auth.users, which nothing but the service-role client
+ * can read for a user who isn't the caller. That's the one place this
+ * needs createAdminClient() rather than the normal RLS-scoped one.
+ */
 export async function signIn(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  const email = String(formData.get("email") ?? "").trim();
+  const identifier = String(formData.get("identifier") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   const supabase = await createClient();
+
+  let email = identifier;
+  if (identifier && !identifier.includes("@")) {
+    const { data: profile, error: lookupError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("display_name", identifier)
+      .maybeSingle();
+
+    // A lookup failure and "no such name" both have to fall through to
+    // the same generic error as a wrong password — distinguishing them
+    // would tell a stranger which display names exist, the exact thing
+    // check_display_name() already guards carefully against everywhere
+    // else. Not "not signing in", though: a failed lookup means we
+    // genuinely don't know, so it must not be treated as "this
+    // identifier doesn't exist" either — same fail-closed reasoning as
+    // the ban check on this file's signUp().
+    if (lookupError) {
+      console.error("[auth-actions] profile lookup failed during username login:", lookupError.message);
+      return { error: "SOMETHING WENT WRONG — TRY AGAIN IN A MOMENT" };
+    }
+    if (!profile) return { error: "EMAIL OR PASSWORD DIDN’T MATCH" };
+
+    const admin = createAdminClient();
+    const { data: target, error: userLookupError } = await admin.auth.admin.getUserById(profile.id);
+    if (userLookupError || !target?.user?.email) {
+      console.error(
+        "[auth-actions] getUserById failed resolving a username login:",
+        userLookupError?.message
+      );
+      return { error: "SOMETHING WENT WRONG — TRY AGAIN IN A MOMENT" };
+    }
+    email = target.user.email;
+  }
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {

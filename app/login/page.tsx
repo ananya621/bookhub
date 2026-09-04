@@ -12,9 +12,15 @@ import { signIn, type ActionResult } from "@/app/actions/auth";
  * — see app/start for why.
  *
  * `signIn` (app/actions/auth.ts) is real: it calls Supabase's own
- * signInWithPassword, so a wrong email/password is actually rejected —
- * this isn't the export's no-backend version that accepted anything
- * with an "@" and a non-empty password.
+ * signInWithPassword, so a wrong identifier/password is actually
+ * rejected — this isn't the export's no-backend version that accepted
+ * anything with an "@" and a non-empty password.
+ *
+ * The field takes a display name or an email — the design's own field
+ * was email-only, but an already-set-up reader is meant to log in with
+ * the name they use everywhere else day to day, not the address they
+ * typed once during signup. Email still works too; see signIn() for
+ * how it tells the two apart.
  *
  * Also carries the "your account is banned" notice — board G3's first
  * variant (Wireframes Pulp-print.dc.html). The board draws it as a
@@ -117,14 +123,15 @@ function LoginContent() {
           </p>
 
           <div className="field" style={{ marginBottom: 14 }}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="identifier">Username or email</label>
             <input
-              id="email"
-              name="email"
-              type="email"
+              id="identifier"
+              name="identifier"
+              type="text"
               className="input"
               style={{ minHeight: 42 }}
-              placeholder="you@school.uk"
+              placeholder="e.g. bookdragon03, or you@school.uk"
+              autoComplete="username"
               required
             />
           </div>
