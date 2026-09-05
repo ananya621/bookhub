@@ -9,7 +9,11 @@ import Nav from "@/components/Nav";
  * placeholder box in the source too ("HERO — COLLAGE OF WELL-KNOWN
  * COVERS"); real book cover images aren't in the export, they come
  * later from the Google Books API, so this stays a placeholder for now
- * rather than inventing images.
+ * rather than inventing images. Now a real photo instead
+ * (public/hero.jpg, the site owner's own) — sized with
+ * objectFit: "cover" in each of the two boxes below, plain img rather
+ * than next/image, since this codebase never uses next/image anywhere
+ * and there's no reason for the hero to be the one exception.
  *
  * A1 shows "Why this exists" and "Why is reading important?" side by
  * side as two columns, not stacked — fixed here (it was rendering as
@@ -29,12 +33,20 @@ export default function Home() {
     <>
       <Nav />
       <div className="wrap">
-        <div className="cover desktop-only" style={{ height: 220, marginBottom: 28 }}>
-          <span className="mono">HERO — COLLAGE OF WELL-KNOWN COVERS</span>
-        </div>
-        <div className="cover mobile-only" style={{ height: 130, marginBottom: 18 }}>
-          <span className="mono">HERO — COLLAGE OF WELL-KNOWN COVERS</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero.jpg"
+          alt=""
+          className="desktop-only"
+          style={{ width: "100%", height: 220, objectFit: "cover", border: "3px solid var(--color-text)", marginBottom: 28 }}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero.jpg"
+          alt=""
+          className="mobile-only"
+          style={{ width: "100%", height: 130, objectFit: "cover", border: "3px solid var(--color-text)", marginBottom: 18 }}
+        />
 
         <h1 className="desktop-only" style={{ fontSize: 52, margin: "0 0 10px" }}>
           Find Your Next Book!
