@@ -19,12 +19,18 @@ export default function RecsList({
   return (
     <>
       <h1 style={{ fontSize: 36, margin: "0 0 4px" }}>Recommendations</h1>
-      <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 24 }}>
+      <div className="mono" style={{ color: "var(--color-accent-700)", marginBottom: 8 }}>
         MATCHED ON: {matchedOnLabel(survey)} ·{" "}
         <Link href="/survey" style={{ cursor: "pointer" }}>
           EDIT MY ANSWERS
         </Link>
       </div>
+      <p className="text-muted" style={{ fontSize: 13, maxWidth: 620, marginBottom: 24 }}>
+        Each book here gets a point for every one of your answers it matches — genre, reading
+        level, length — then they&apos;re sorted by that score, highest first, with better-rated
+        books breaking any tie. A book doesn&apos;t need to match everything to show up, and if
+        nothing matches closely, you&apos;ll see the catalogue&apos;s highest-rated books instead.
+      </p>
 
       {recs.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
@@ -53,6 +59,9 @@ export default function RecsList({
                     {t}
                   </span>
                 ))}
+                {book.readingLevel && (
+                  <span className="tag tag-neutral">{book.readingLevel}</span>
+                )}
               </div>
             </Link>
           ))}

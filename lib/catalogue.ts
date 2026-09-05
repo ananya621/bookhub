@@ -48,19 +48,22 @@ export type CatalogueBook = {
 
 /**
  * Genre overlap + level match + length match, same scoring rankBooks()
- * uses. With no survey — or nothing scoring above zero — this keeps
- * the catalogue's own order (newest-first, same as /search).
+ * uses, with the same rating tie-break the design's own recBooks does
+ * (Prototype with Admin.dc.html ~line 1867:
+ * `.sort((a, c) => c.hits - a.hits || this.avg(c.x) - this.avg(a.x))`)
+ * — this port had dropped that second half, so two books tied on hits
+ * fell back to insertion order instead of the better-rated one first.
  *
- * A rating fallback (like rankBooks()'s highest-rated-first) would fit
- * naturally now: every caller populates avgStars from the
- * book_review_stats view, so it would work rather than silently doing
- * nothing. Deliberately not added here — it changes which books get
- * recommended, which deserves its own thinking about whether "popular"
- * should outrank "matches what you said you like", rather than being
- * slipped in as a tie-breaker.
+ * With no survey — or nothing scoring above zero — this also now
+ * matches the design's fallback exactly: highest-rated first, not the
+ * catalogue's own newest-first order. A book with no reviews yet sorts
+ * as if rated below every reviewed book, not above (null is not the
+ * same as "best"), but still appears — this is a fallback, not a
+ * filter.
  */
 export function rankCatalogueBooks(books: CatalogueBook[], survey: Survey | null): CatalogueBook[] {
-  if (!survey) return books;
+  const byRating = (a: CatalogueBook, c: CatalogueBook) => (c.avgStars ?? -1) - (a.avgStars ?? -1);
+  if (!survey) return books.slice().sort(byRating);
   const scored = books
     .map((book) => ({
       book,
@@ -70,6 +73,6 @@ export function rankCatalogueBooks(books: CatalogueBook[], survey: Survey | null
         (book.pages !== null && lengthLabel(book.pages) === survey.length ? 1 : 0),
     }))
     .filter((o) => o.hits > 0)
-    .sort((a, c) => c.hits - a.hits);
-  return scored.length ? scored.map((o) => o.book) : books;
+    .sort((a, c) => c.hits - a.hits || byRating(a.book, c.book));
+  return scored.length ? scored.map((o) => o.book) : books.slice().sort(byRating);
 }
