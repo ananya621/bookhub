@@ -27,7 +27,7 @@ export default async function AdminCataloguePage({
 
   const { data } = await supabase
     .from("books")
-    .select("id, title, author, pages, cover_url, genres, reading_level, source, created_at")
+    .select("id, title, author, pages, summary, cover_url, genres, reading_level, is_series, source, created_at")
     .order("created_at", { ascending: false });
 
   const books: CatalogueBook[] = (data ?? []).map((b) => ({
@@ -35,9 +35,11 @@ export default async function AdminCataloguePage({
     title: b.title as string,
     author: (b.author as string) ?? "",
     pages: b.pages as number | null,
+    summary: b.summary as string | null,
     coverUrl: b.cover_url as string | null,
     genres: (b.genres as string[]) ?? [],
     readingLevel: b.reading_level as string | null,
+    isSeries: Boolean(b.is_series),
     source: b.source as string,
   }));
 

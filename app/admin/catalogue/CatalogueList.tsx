@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useMemo, useRef, useState } from "react";
-import { addBookCover, removeBook, type ActionResult } from "@/app/actions/books";
+import { allGenres, allLevels, lengthLabel } from "@/lib/mock";
+import { addBookCover, removeBook, updateBook, type ActionResult } from "@/app/actions/books";
 import { MAX_COVER_BYTES, MAX_COVER_LABEL } from "@/lib/cover-limits";
 
 export type CatalogueBook = {
@@ -9,9 +10,11 @@ export type CatalogueBook = {
   title: string;
   author: string;
   pages: number | null;
+  summary: string | null;
   coverUrl: string | null;
   genres: string[];
   readingLevel: string | null;
+  isSeries: boolean;
   source: string;
 };
 
@@ -19,10 +22,17 @@ export type CatalogueBook = {
  * The "In the catalogue" section of Prototype Admin.dc.html's isCatalogue
  * block — previously just a plain list with a count. Missing, and added
  * here: the filter box, the dashed .nocover indicator distinct from an
- * ordinary loading placeholder, and working "Add a cover" / "Remove"
- * per book. The dashboard's "No cover" tile links here specifically so
- * an admin can fix one — before this there was nowhere to actually do
- * that once you arrived.
+ * ordinary loading placeholder, and working "Add a cover" / "Remove" /
+ * "Edit" per book. The dashboard's "No cover" tile links here
+ * specifically so an admin can fix one — before this there was nowhere
+ * to actually do that once you arrived.
+ *
+ * "Edit" has no screen of its own in the design — nothing there covers
+ * correcting a book after it's already live — so it reuses the same
+ * field set and word-filter rule as Step 2 of import (see
+ * updateBook()), in a dialog rather than a dedicated page, matching how
+ * every other "edit this thing" admin action in this app already works
+ * (Force rename, Ban account, the report dialog).
  */
 export default function CatalogueList({ books }: { books: CatalogueBook[] }) {
   const [filter, setFilter] = useState("");
@@ -102,6 +112,7 @@ function CatalogueRow({
   const formRef = useRef<HTMLFormElement>(null);
   const [tooBig, setTooBig] = useState<string | null>(null);
   const noCover = !b.coverUrl;
+  const [editOpen, setEditOpen] = useState(false);
 
   const coverError = coverState && "error" in coverState && coverState.error;
 
@@ -191,10 +202,237 @@ function CatalogueRow({
           </button>
         </form>
       ) : (
-        <button className="btn btn-secondary" style={{ flex: "none" }} onClick={onStartRemove}>
-          Remove
-        </button>
+        <div style={{ display: "flex", gap: 6, flex: "none" }}>
+          <button className="btn btn-secondary" onClick={() => setEditOpen(true)}>
+            Edit
+          </button>
+          <button className="btn btn-secondary" onClick={onStartRemove}>
+            Remove
+          </button>
+        </div>
       )}
+      {editOpen && <EditBookDialog book={b} onClose={() => setEditOpen(false)} />}
+    </div>
+  );
+}
+
+function EditBookDialog({ book: b, onClose }: { book: CatalogueBook; onClose: () => void }) {
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(updateBook, undefined);
+  const [title, setTitle] = useState(b.title);
+  const [author, setAuthor] = useState(b.author);
+  const [pages, setPages] = useState(b.pages ? String(b.pages) : "");
+  const [summary, setSummary] = useState(b.summary ?? "");
+  const [genres, setGenres] = useState(new Set(b.genres));
+  const [readingLevel, setReadingLevel] = useState(b.readingLevel ?? allLevels[0]);
+  const [isSeries, setIsSeries] = useState(b.isSeries);
+  const [removeCover, setRemoveCover] = useState(false);
+  const [newCoverPreview, setNewCoverPreview] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  // Closes on a successful save. Nothing needs to react to an error —
+  // it's shown right here in the still-open dialog via `state`.
+  const [prevState, setPrevState] = useState(state);
+  if (state !== prevState) {
+    setPrevState(state);
+    if (state && "ok" in state) onClose();
+  }
+
+  function toggleGenre(g: string) {
+    setGenres((gs) => {
+      const next = new Set(gs);
+      if (next.has(g)) next.delete(g);
+      else next.add(g);
+      return next;
+    });
+  }
+
+  function onFileChosen(file: File | undefined) {
+    if (!file) return;
+    setRemoveCover(false);
+    setNewCoverPreview(URL.createObjectURL(file));
+  }
+
+  const error = state && "error" in state ? state.error : null;
+  const coverPreview = newCoverPreview ?? (removeCover ? null : b.coverUrl);
+
+  return (
+    <div className="dialog-backdrop">
+      <div className="dialog blueprint" style={{ width: "min(720px, 100%)" }}>
+        <i className="corner tl" />
+        <i className="corner tr" />
+        <i className="corner bl" />
+        <i className="corner br" />
+        <div className="card-kicker">Edit</div>
+        <div className="dialog-title">{b.title}</div>
+        <form action={formAction}>
+          <input type="hidden" name="bookId" value={b.id} />
+          <input type="hidden" name="isSeries" value={isSeries ? "on" : ""} />
+          <input type="hidden" name="readingLevel" value={readingLevel} />
+          <input type="hidden" name="removeCover" value={removeCover ? "on" : ""} />
+          {[...genres].map((g) => (
+            <input key={g} type="hidden" name="genres" value={g} />
+          ))}
+
+          <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 18 }}>
+            <div>
+              {coverPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={coverPreview}
+                  alt=""
+                  style={{ width: "100%", height: 210, objectFit: "cover", border: "3px solid var(--color-text)", marginBottom: 8 }}
+                />
+              ) : (
+                <div className="cover" style={{ height: 210, marginBottom: 8 }}>
+                  <span className="mono">NO COVER</span>
+                </div>
+              )}
+              <input
+                ref={fileInput}
+                type="file"
+                name="coverFile"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: "none" }}
+                onChange={(e) => onFileChosen(e.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary btn-block"
+                style={{ minHeight: 40 }}
+                onClick={() => fileInput.current?.click()}
+              >
+                Replace
+              </button>
+              {coverPreview && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ minHeight: 40 }}
+                  onClick={() => {
+                    setRemoveCover(true);
+                    setNewCoverPreview(null);
+                    if (fileInput.current) fileInput.current.value = "";
+                  }}
+                >
+                  Remove cover
+                </button>
+              )}
+            </div>
+
+            <div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                <div className="field">
+                  <label htmlFor="edit-title">Title</label>
+                  <input
+                    id="edit-title"
+                    name="title"
+                    className="input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="edit-author">Author</label>
+                  <input
+                    id="edit-author"
+                    name="author"
+                    className="input"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 5 }}>
+                GENRES
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                {allGenres.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    className={genres.has(g) ? "tag tag-select" : "tag tag-outline"}
+                    onClick={() => toggleGenre(g)}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 14 }}>
+                <div>
+                  <div className="mono" style={{ color: "var(--color-accent-700)", fontWeight: 700, marginBottom: 6 }}>
+                    READING LEVEL
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {allLevels.map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        className={readingLevel === l ? "tag tag-select" : "tag tag-outline"}
+                        onClick={() => setReadingLevel(l)}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="field" style={{ marginBottom: 8 }}>
+                    <label htmlFor="edit-pages">Pages</label>
+                    <input
+                      id="edit-pages"
+                      name="pages"
+                      type="number"
+                      className="input"
+                      value={pages}
+                      onChange={(e) => setPages(e.target.value)}
+                    />
+                  </div>
+                  <div className="mono" style={{ color: "var(--color-neutral-700)" }}>
+                    {pages ? lengthLabel(Number(pages)).toUpperCase() : "—"}
+                  </div>
+                  <label
+                    className="radio"
+                    style={{ marginTop: 10, border: "3px solid var(--color-divider)", padding: "8px 12px", minHeight: 40 }}
+                  >
+                    <input type="checkbox" checked={isSeries} onChange={(e) => setIsSeries(e.target.checked)} />
+                    <span className="dot" />
+                    Part of a series
+                  </label>
+                </div>
+              </div>
+
+              <div className="field" style={{ marginBottom: 4 }}>
+                <label htmlFor="edit-summary">Summary</label>
+                <textarea
+                  id="edit-summary"
+                  name="summary"
+                  className="input"
+                  style={{ minHeight: 90 }}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mono" style={{ color: "var(--color-problem-text)", marginTop: 10 }}>
+              {error}
+            </div>
+          )}
+
+          <div className="dialog-actions" style={{ justifyContent: "flex-start" }}>
+            <button type="submit" className="btn btn-primary" disabled={pending}>
+              {pending ? "Saving…" : "Save changes"}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
