@@ -151,7 +151,11 @@ export default async function ProfilePage() {
           <div style={{ fontSize: 15 }}>{user.email}</div>
           <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
             <Link href="/profile/setup" className="btn btn-secondary">Name &amp; colour</Link>
-            <Link href="/reset" className="btn btn-secondary">Change password</Link>
+            {/* Straight to the set-new-password screen, not the "email
+                me a link" one — being logged in already proves who they
+                are, so there's no need to make them prove it again via
+                email. See the SIGNED_OUT_ONLY note in proxy.ts. */}
+            <Link href="/reset/new" className="btn btn-secondary">Change password</Link>
             <form action={signOut}>
               <button type="submit" className="btn btn-ghost">Log out</button>
             </form>

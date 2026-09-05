@@ -30,8 +30,15 @@ const ACCOUNT_ONLY = [
   "/survey",
 ];
 
-/** Signed-in users have no use for these. */
-const SIGNED_OUT_ONLY = ["/", "/start", "/signup", "/login", "/reset", "/reset/new"];
+/**
+ * Signed-in users have no use for these — except /reset/new, which is
+ * the one page on this list you can *only* reach while signed in: the
+ * recovery email's link signs you in on purpose (see app/auth/confirm),
+ * specifically so you can set a new password there. Listing it here
+ * bounced that session straight to /home before the form ever rendered,
+ * so nobody using "forgot password" could actually change it.
+ */
+const SIGNED_OUT_ONLY = ["/", "/start", "/signup", "/login", "/reset"];
 
 /** Where each unfinished onboarding step lives. */
 const ONBOARDING_ROUTE = {
