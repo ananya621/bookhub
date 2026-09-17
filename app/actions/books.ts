@@ -140,22 +140,11 @@ export async function importBook(_prev: ActionResult, formData: FormData): Promi
 
   const supabase = await createClient();
 
-  // Title and summary are the two fields on this form that go straight
-  // onto the book's public page as free text, so they get the same word
-  // filter a review or a display name does. Step 2 exists precisely so
-  // an admin can retype whatever Google (or a reader's request) supplied
-  // — that retyped text can still carry something that shouldn't go
-  // live, same as any other typed field. Author is left unchecked: it's
-  // a real person's name rather than free text, so the filter is far
-  // more likely to misfire on it (a surname containing a banned
-  // substring) than to ever catch anything genuine.
-  const titleBanned = await containsBannedWord(supabase, title);
-  if (titleBanned) return { error: "THAT TITLE CAN’T BE USED — CHECK IT FOR TYPOS" };
-  if (summary) {
-    const summaryBanned = await containsBannedWord(supabase, summary);
-    if (summaryBanned) return { error: "THAT SUMMARY CAN’T BE USED — TRY REWORDING IT" };
-  }
-
+  // No word filter here, unlike a review or display name: only admins
+  // reach this action (enforced by the insert policy on `books`
+  // regardless), and real book titles/summaries — fantasy or otherwise
+  // — kept tripping it on ordinary words, with no one but the admin
+  // themself to reword around a false positive.
   const pages = Number.parseInt(String(formData.get("pages") ?? ""), 10);
   const externalId = String(formData.get("externalId") ?? "").trim() || null;
   const requestId = String(formData.get("requestId") ?? "").trim() || null;
