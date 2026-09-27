@@ -16,11 +16,10 @@ import Nav from "@/components/Nav";
  * and there's no reason for the hero to be the one exception.
  *
  * A1 shows "Why this exists" and "Why is reading important?" side by
- * side as two columns, not stacked — fixed here (it was rendering as
- * one column at every width, which is the E1 mobile layout, not A1's).
- * `.responsive-grid` (globals.css) collapses it back to one column
- * under 640px, so E1's stacked mobile layout still happens, just from
- * the same markup instead of a duplicate block.
+ * side as two columns. That's deliberately no longer followed: the site
+ * owner wanted "Why this exists" centred on its own, above the reading
+ * section, at every width — so the two are stacked, which also makes
+ * desktop match E1's mobile order.
  *
  * The hero, headline, subhead and CTAs do need a real mobile/desktop
  * split though — E1's subhead drops a sentence and its CTAs go
@@ -98,16 +97,15 @@ export default function Home() {
         </div>
 
         <div
-          className="responsive-grid"
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            display: "flex",
+            flexDirection: "column",
             gap: 28,
             borderTop: "1px solid var(--color-divider)",
             paddingTop: 28,
           }}
         >
-          <div>
+          <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto" }}>
             <h3 style={{ margin: "0 0 8px" }}>Why this exists</h3>
             <p style={{ fontSize: 14 }}>
               If someone says they don&apos;t like reading, I think it&apos;s
