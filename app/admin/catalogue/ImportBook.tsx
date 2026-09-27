@@ -103,8 +103,11 @@ export default function ImportBook({
 
   // The query the admin arrived with, captured once. requestContext
   // stays attached only while the search box still matches it — see
-  // the note above on why.
-  const requestQuery = useRef(initialQuery).current;
+  // the note above on why. useState's lazy initializer, not useRef:
+  // reading a ref's `.current` during render is disallowed (it's not
+  // safe once React can re-run render), and state is the right tool
+  // for "capture the first value and never change it" anyway.
+  const [requestQuery] = useState(initialQuery);
   const activeRequestContext =
     requestContext && query.trim().toLowerCase() === requestQuery.trim().toLowerCase()
       ? requestContext
