@@ -26,9 +26,11 @@ import { MAX_COVER_BYTES, MAX_COVER_LABEL } from "@/lib/cover-limits";
  * search result back to a specific request by title. Here, arriving
  * with a requestId means "the admin is here to fulfil this request" —
  * the banner shows regardless of which result they pick, or even for a
- * hand-typed entry. Simpler and no less correct for how this is
- * actually used (you only arrive with a requestId by clicking "Find &
- * import" on that exact request).
+ * hand-typed entry, as long as they're still searching for the title
+ * they arrived with. The moment the search box is edited to something
+ * else, the request link drops — otherwise a different book, typed in
+ * because the requested one couldn't be found, got tagged and linked
+ * as if it were the one someone actually asked for.
  */
 
 type Draft = {
@@ -98,6 +100,15 @@ export default function ImportBook({
 
   const seq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The query the admin arrived with, captured once. requestContext
+  // stays attached only while the search box still matches it — see
+  // the note above on why.
+  const requestQuery = useRef(initialQuery).current;
+  const activeRequestContext =
+    requestContext && query.trim().toLowerCase() === requestQuery.trim().toLowerCase()
+      ? requestContext
+      : null;
 
   // suggestFromGoogle() itself sets `searching`; this is only the part
   // that runs once the results (or a reason there aren't any) are back.
@@ -360,7 +371,7 @@ export default function ImportBook({
             STEP 2 — CHECK IT BEFORE IT GOES LIVE
           </div>
 
-          {requestContext && (
+          {activeRequestContext && (
             <div
               style={{
                 display: "flex",
@@ -375,7 +386,7 @@ export default function ImportBook({
             >
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 16 }}>
-                  {requestContext.askedBy} {requestContext.askedBy === 1 ? "person" : "people"} asked
+                  {activeRequestContext.askedBy} {activeRequestContext.askedBy === 1 ? "person" : "people"} asked
                   for this
                 </div>
                 <div className="mono" style={{ fontWeight: 700, marginTop: 3 }}>
@@ -397,9 +408,9 @@ export default function ImportBook({
             <input type="hidden" name="externalId" value={picked?.externalId ?? ""} />
             <input type="hidden" name="coverMode" value={coverMode} />
             <input type="hidden" name="apiCoverUrl" value={picked?.coverUrl ?? ""} />
-            {requestContext && (
+            {activeRequestContext && (
               <>
-                <input type="hidden" name="requestId" value={requestContext.requestId} />
+                <input type="hidden" name="requestId" value={activeRequestContext.requestId} />
                 <input type="hidden" name="fulfilRequest" value={fulfil ? "on" : ""} />
               </>
             )}
