@@ -1,0 +1,23 @@
+-- The word filter is refusing everything again: every list name, review,
+-- book-request note and book edit comes back "not allowed", "Y.A"
+-- included.
+--
+-- Same bug as 20260903210000_fix_word_filter_permissions.sql, back by a
+-- different route. 20260917000000_widen_word_filter.sql rewrote
+-- contains_banned_word() with `create or replace function` and didn't
+-- repeat `security definer`. Replacing a function keeps its grants but
+-- resets every attribute the new definition leaves out, so it went back
+-- to security INVOKER -- and a signed-in caller has no execute right on
+-- fold_name(), which it calls:
+--
+--   42501: permission denied for function fold_name
+--
+-- lib/word-filter.ts fails closed on that error, so instead of text
+-- slipping through unchecked (the 20260903 failure), everything is
+-- refused. check_display_name() is unaffected -- it is security definer
+-- itself, so it runs contains_banned_word() as the owner.
+--
+-- ANY future `create or replace function public.contains_banned_word`
+-- must say `security definer` in the definition itself, or this happens
+-- a third time.
+alter function public.contains_banned_word(text) security definer;

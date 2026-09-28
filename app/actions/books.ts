@@ -259,9 +259,9 @@ export async function addBookCover(_prev: ActionResult, formData: FormData): Pro
  * Editing an already-catalogued book — the same fields Step 2 of
  * import sets (title, author, pages, summary, genres, reading level,
  * series), on a book that's already live. No screen for this exists in
- * the design; built to the same shape as importBook()'s Step 2 fields
- * and the same word-filter rule (title/summary checked, author isn't —
- * see importBook()'s comment on why).
+ * the design; built to the same shape as importBook()'s Step 2 fields.
+ * Unlike importBook(), which has no word filter, title and summary are
+ * checked here; author isn't.
  *
  * Cover handling mirrors addBookCover()/removeBook(): a newly uploaded
  * file replaces whatever was stored (the old file deleted only after
